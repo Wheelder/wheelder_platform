@@ -110,8 +110,8 @@ class config
         $dbConfig = $dbDetails[$hostNumber];
     
         // Use try and catch for mysqli connection
-        $conn = new mysqli($dbConfig['servername'], $dbConfig['user'], $dbConfig['pass'], $dbConfig['dbname']);
-        
+        //$conn = new mysqli($dbConfig['servername'], $dbConfig['user'], $dbConfig['pass'], $dbConfig['dbname']);
+        $conn = new mysqli($this->servername_local, $this->user_local, $this->pass_local, $this->dbname_local);
         if ($conn->connect_error) {
             die("Connection failed: " . $conn->connect_error);
         }
