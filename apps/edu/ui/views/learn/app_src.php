@@ -65,7 +65,7 @@
                 $imgq = preg_replace('/[.,!?]/', '', $imgq);
                 //$imgq = trim($qm); // Remove leading/trailing spaces
             
-                $image = $note->generateImage($imgq);
+                
                 $answer = $note->generateResponse($q);
 
                 // Split the sentences, preserving periods at the beginning of sentences
@@ -91,6 +91,8 @@
                 $unf_answer= $answer;
                 $question= $q;
                 $answer= $formattedAnswer;
+
+                $image = $note->generateImage($answer);
 
             
                 //make the $formattedAnswer a string don't include it here the tags, just the text without losing the format
