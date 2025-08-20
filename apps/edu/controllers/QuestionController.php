@@ -79,11 +79,10 @@ class QuestionController extends Controller
         $url = "https://api.openai.com/v1/images/generations";
 
         // Set the headers
-        $headers = array(
-            "Content-Type: application/json",s
-            "Authorization: Bearer". OPENAI_API_KEY 
-        );
-
+        $headers = [
+            'Content-Type: application/json',
+            'Authorization: Bearer ' . OPENAI_API_KEY
+        ];
         // Set the data as an array
         $data = array(
             "model"=>"dall-e-3",
