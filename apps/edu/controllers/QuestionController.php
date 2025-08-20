@@ -80,8 +80,8 @@ class QuestionController extends Controller
 
         // Set the headers
         $headers = array(
-            "Content-Type: application/json",
-            "Authorization: Bearer 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" // Replace with your OpenAI API key
+            "Content-Type: application/json",s
+            "Authorization: Bearer". OPENAI_API_KEY 
         );
 
         // Set the data as an array
