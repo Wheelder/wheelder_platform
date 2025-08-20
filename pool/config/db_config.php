@@ -43,6 +43,7 @@ class config
     
         // Use switch case to check the host name and return the host number
         switch ($host) {
+            /*
             case 'localhost:3000':
                 return 1;
             case 'localhost':
@@ -53,6 +54,18 @@ class config
                 return 4;
             default:
                 return 0;
+                */
+
+                case 'wheelder.com':
+                    return 1;
+                case 'wheelder.com':
+                    return 2;
+                case 'wheelder.com':
+                    return 3;
+                case 'wheelder.com':
+                    return 4;
+                default:
+                    return 0;
         }
     }
     
