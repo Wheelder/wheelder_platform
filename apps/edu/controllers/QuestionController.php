@@ -1,6 +1,6 @@
 <?php
 $path = $_SERVER['DOCUMENT_ROOT'];
-require_once $path . '/wheelder/apps/edu/controllers/Controller.php';
+require_once $path . '/apps/edu/controllers/Controller.php';
 
 define('OPENAI_API_ENDPOINT', 'https://api.openai.com/v1/chat/completions');
 define('OPENAI_API_KEY', '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'); // Replace 'YOUR_OPENAI_API_KEY' with your actual API key
