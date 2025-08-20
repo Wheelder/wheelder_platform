@@ -4,14 +4,14 @@
 class config
 {
     private $servername_local = "localhost";
-    private $dbname_local = 'wheeleder';
-    private $user_local = "root";
-    private $pass_local = "root";
+    private $dbname_local = 'u946493694_wheelder';
+    private $user_local = "u946493694_wheelderu";
+    private $pass_local = "NLEg2KV&IPQbyNMY";
     
     private $servername = "localhost";
-    private $dbname = 'u946493694_edu_platform';
-    private $user = "u946493694_edu_u";
-    private $pass = "M+oNc88e";
+    private $dbname = 'u946493694_wheelder';
+    private $user = "u946493694_wheelderu";
+    private $pass = "NLEg2KV&IPQbyNMY";
 
     //database details for testing server
     private $servername_d = "localhost";
@@ -40,7 +40,7 @@ class config
                 return 1;
             case 'regrowup.site':
                 return 2;
-            case 'wheeleder.com':
+            case 'wheelder.com':
                 return 3;
             default:
                 return 0;

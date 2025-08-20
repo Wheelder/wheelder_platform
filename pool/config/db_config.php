@@ -10,7 +10,7 @@ class config
     private $user_local = "root";
     private $pass_local = "";
     */
-    rivate $servername_local = "localhost";
+    private $servername_local = "localhost";
     private $dbname_local = 'u946493694_wheelder';
     private $user_local = "u946493694_wheelderu";
     private $pass_local = "NLEg2KV&IPQbyNMY";
