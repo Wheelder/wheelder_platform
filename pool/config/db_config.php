@@ -9,9 +9,9 @@ class config
     private $pass_local = "";
     
     private $servername = "localhost";
-    private $dbname = 'u946493694_edu_platform';
-    private $user = "u946493694_edu_u";
-    private $pass = "M+oNc88e";
+    private $dbname = 'u946493694_wheelder';
+    private $user = "u946493694_wheelderu";
+    private $pass = "NLEg2KV&IPQbyNMY";
 
     //database details for testing server
     private $servername_d = "localhost";
