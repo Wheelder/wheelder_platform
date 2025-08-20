@@ -54,14 +54,14 @@ class config
                 return 0;
         }
     }
-    
+
     public function connectDb() {
         // TEMPORARY: Force local database connection for XAMPP debugging
         $dbConfig = [
             'servername' => 'localhost',
-            'dbname' => 'wheelder',
-            'user' => 'root',
-            'pass' => ''
+            'dbname' => 'u946493694_wheelder',
+            'user' => 'u946493694_wheelderu',
+            'pass' => 'NLEg2KV&IPQbyNMY'
         ];
         
         error_log("DEBUG: Using forced local config: " . print_r($dbConfig, true));
