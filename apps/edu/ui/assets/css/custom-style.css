@@ -1,0 +1,123 @@
+@import "light.min.css";
+@import "brands.min.css";
+@import "regular.min.css";
+@import "solid.min.css";
+@import "slick.css";
+input,
+textarea,
+select,
+ol,
+ul,
+li,
+a,
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  text-decoration: none;
+  outline: none;
+}
+a,
+a:hover,
+a:focus,
+*:focus-visible {
+  cursor: pointer;
+  -webkit-transition: all 0.4s ease 0s;
+  -moz-transition: all 0.4s ease 0s;
+  transition: all 0.4s ease 0s;
+  text-decoration: none;
+  outline: none;
+}
+button:focus {
+  outline: none;
+  border: none;
+}
+button:focus,
+input:focus {
+  box-shadow: none !important;
+}
+button {
+  cursor: pointer;
+}
+*,
+*:after,
+*:before {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+.ls li {
+  list-style: none;
+}
+.cur {
+  cursor: pointer;
+}
+.po img {
+  opacity: 0;
+}
+
+.maxw img {
+  max-width: 100%;
+}
+.g-center {
+  place-items: center;
+  display: grid;
+}
+.fulw img {
+  width: 100%;
+}
+
+.rel {
+  position: relative;
+}
+.ofit img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+.vclip {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+.hclip {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.mac-select {
+  position: relative;
+}
+.mac-select select {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  border: none;
+  background: #fff;
+}
+.mac-select:after {
+  content: "";
+  z-index: 3;
+  top: 54%;
+  right: 8px;
+  border: solid transparent;
+  height: 0;
+  width: 0;
+  position: absolute;
+  pointer-events: none;
+  border-color: rgba(0, 0, 0, 0);
+  border-top-color: #000000;
+  border-width: 5px;
+  margin-left: -10px;
+  transform: translateY(-50%);
+}
+
+.user-log-box {
+    top: 30px !important;
+    }

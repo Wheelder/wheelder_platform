@@ -1,0 +1,50 @@
+body {
+    font-family: 'Exo', sans-serif;
+    margin: 0;
+}
+
+h2 {
+    font-family: 'Exo', sans-serif;
+    font-weight: bold;
+}
+
+.light-blue {
+    background-color: lightblue;
+    color: black;
+    padding: 20px;
+}
+
+.white {
+    background-color: white;
+    color: black;
+    padding: 20px;
+}
+
+.left {
+    float: left;
+    margin-right: 20px;
+}
+
+.column {
+    columns: 2;
+    -webkit-columns: 2;
+    -moz-columns: 2;
+}
+
+.centered {
+    text-align: center;
+}
+
+.btn {
+    background-color: blue;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+}
+
