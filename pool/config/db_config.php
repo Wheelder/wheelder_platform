@@ -3,10 +3,17 @@
 
 class config
 {
+
+    /*
     private $servername_local = "localhost";
     private $dbname_local = 'wheelder';
     private $user_local = "root";
     private $pass_local = "";
+    */
+    rivate $servername_local = "localhost";
+    private $dbname_local = 'u946493694_wheelder';
+    private $user_local = "u946493694_wheelderu";
+    private $pass_local = "NLEg2KV&IPQbyNMY";
     
     private $servername = "localhost";
     private $dbname = 'u946493694_wheelder';
