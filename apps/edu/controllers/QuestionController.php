@@ -126,7 +126,7 @@ class QuestionController extends Controller
 
     public function getBlogByTitle($title)
     {
-        $sql = "SELECT * FROM blogs WHERE title = '$title'";
+        $sql = "SELECT * FROM questions WHERE title = '$title'";
         $stmt = $this->run_query($sql);
         $blog = $stmt->fetch_assoc();
         return $blog;
@@ -258,11 +258,31 @@ class QuestionController extends Controller
         return $stmt;
     }
     
-    public function insert($title, $content)
+    public function insert($question, $answer)
     {
-        $content = $this->connectDb()->real_escape_string($content);
-        $title = $this->connectDb()->real_escape_string($title);
-        $sql = "INSERT INTO blogs (title, content) VALUES ('$title', '$content')";
+        $answer = $this->connectDb()->real_escape_string($answer);
+        $question = $this->connectDb()->real_escape_string($question);
+        $sql = "INSERT INTO questions (question, answer) VALUES ('$question','$answer')";
+        $stmt = $this->run_query($sql);
+        if ($stmt) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    //write a new insert function for the questions table, insert($question,$unf_answer,$answer,$deep_answer,$option,$image );
+
+    public function insert($question, $unf_answer, $answer, $deep_answer, $option, $image)
+    {
+        $answer = $this->connectDb()->real_escape_string($answer);
+        $question = $this->connectDb()->real_escape_string($question);
+        $unf_answer = $this->connectDb()->real_escape_string($unf_answer);
+        $deep_answer = $this->connectDb()->real_escape_string($deep_answer);
+        $option = $this->connectDb()->real_escape_string($option);
+        $image = $this->connectDb()->real_escape_string($image);
+
+        $sql = "INSERT INTO questions (question, unf_answer, answer, deep_answer, option, image) 
+        VALUES ('$question','$unf_answer','$answer','$deep_answer','$option','$image')";
         $stmt = $this->run_query($sql);
         if ($stmt) {
             return true;

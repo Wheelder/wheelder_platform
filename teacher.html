@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultra-Realistic Human Avatar</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #000;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        .main-container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Avatar Section - Left Side */
+        .avatar-container {
+            flex: 1.5;
+            position: relative;
+            background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1e 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #avatar-canvas {
+            width: 100%;
+            height: 100%;
+            max-height: 100vh;
+        }
+
+        .live-badge {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            background: #ff0000;
+            padding: 8px 20px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 20px rgba(255, 0, 0, 0.4);
+            z-index: 10;
+        }
+
+        .live-dot {
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Control Panel - Right Side */
+        .control-panel {
+            flex: 1;
+            background: linear-gradient(180deg, #1e1e2e 0%, #151521 100%);
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            overflow-y: auto;
+        }
+
+        .panel-header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #333;
+        }
+
+        .panel-header h1 {
+            font-size: 36px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .subtitle-display {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #333;
+            border-radius: 15px;
+            padding: 25px;
+            min-height: 150px;
+            backdrop-filter: blur(20px);
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .subtitle-content {
+            font-size: 22px;
+            line-height: 1.8;
+            text-align: center;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .word {
+            display: inline-block;
+            margin: 0 5px;
+            transition: all 0.3s ease;
+        }
+
+        .word.current {
+            color: #ffd700;
+            transform: scale(1.3);
+            font-weight: bold;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+        }
+
+        .word.spoken {
+            color: #666;
+        }
+
+        .word.unspoken {
+            color: #fff;
+        }
+
+        .text-input-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .text-input {
+            width: 100%;
+            min-height: 150px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #444;
+            border-radius: 10px;
+            color: white;
+            padding: 15px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            transition: all 0.3s ease;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .controls-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 15px 40px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-play {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-play:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .btn-stop:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(245, 87, 108, 0.6);
+        }
+
+        .btn-reset {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .btn-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(79, 172, 254, 0.6);
+        }
+
+        .settings-row {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .setting-group {
+            flex: 1;
+        }
+
+        .setting-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .voice-select {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #444;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+        }
+
+        .voice-select option {
+            background: #1e1e2e;
+        }
+
+        .speed-slider {
+            width: 100%;
+            appearance: none;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .speed-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .speed-value {
+            color: #667eea;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .status-bar {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+
+        .status-text {
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        @media (max-width: 968px) {
+            .main-container {
+                flex-direction: column;
+            }
+            
+            .avatar-container {
+                height: 50vh;
+            }
+            
+            .control-panel {
+                height: 50vh;
+                padding: 20px;
+            }
+            
+            .panel-header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Left: Avatar Display -->
+        <div class="avatar-container">
+            <div class="live-badge" id="live-badge" style="display: none;">
+                <div class="live-dot"></div>
+                <span>LIVE</span>
+            </div>
+            
+            <canvas id="avatar-canvas"></canvas>
+            
+            <div class="status-bar">
+                <div class="status-text" id="status-text">AI Avatar Ready</div>
+            </div>
+        </div>
+
+        <!-- Right: Control Panel -->
+        <div class="control-panel">
+            <div class="panel-header">
+                <h1>AI Human Avatar</h1>
+                <p style="color: #666;">Ultra-Realistic Text Reader</p>
+            </div>
+
+            <!-- Subtitle Display -->
+            <div class="subtitle-display">
+                <div class="subtitle-content" id="subtitle-content">
+                    <span style="color: #666;">Enter text below to begin...</span>
+                </div>
+            </div>
+
+            <!-- Text Input -->
+            <div class="text-input-section">
+                <textarea 
+                    id="text-input" 
+                    class="text-input" 
+                    placeholder="Type or paste your text here. The avatar will read it with realistic facial animations and natural voice..."
+                ></textarea>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls-section">
+                <div class="button-row">
+                    <button id="play-btn" class="btn btn-play">▶ Play</button>
+                    <button id="stop-btn" class="btn btn-stop" style="display: none;">⏹ Stop</button>
+                    <button id="reset-btn" class="btn btn-reset">↻ Reset</button>
+                </div>
+
+                <div class="settings-row">
+                    <div class="setting-group">
+                        <label class="setting-label">Voice</label>
+                        <select id="voice-select" class="voice-select">
+                            <option>Loading voices...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="setting-group">
+                        <label class="setting-label">Speed: <span class="speed-value" id="speed-value">1.0x</span></label>
+                        <input type="range" id="speed-slider" class="speed-slider" min="0.5" max="2" step="0.1" value="1">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced 3D Avatar with Ultra-Realistic Features
+        let scene, camera, renderer;
+        let avatar, head, leftEye, rightEye, leftPupil, rightPupil;
+        let upperLip, lowerLip, leftEyeLid, rightEyeLid;
+        let leftCheek, rightCheek, chin, forehead;
+        let hairStrands = [];
+        let isTalking = false;
+        let blinkTimeout;
+        let talkAnimation;
+        let clock = new THREE.Clock();
+
+        function initAvatar() {
+            const canvas = document.getElementById('avatar-canvas');
+            
+            // Scene setup
+            scene = new THREE.Scene();
+            scene.fog = new THREE.Fog(0x1a1a2e, 5, 15);
+            
+            // Camera - closer for bigger face
+            camera = new THREE.PerspectiveCamera(40, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+            camera.position.set(0, 0.3, 3.5);
+            camera.lookAt(0, 0.2, 0);
+            
+            // Renderer with high quality settings
+            renderer = new THREE.WebGLRenderer({ 
+                canvas: canvas, 
+                antialias: true,
+                alpha: true,
+                powerPreference: "high-performance"
+            });
+            renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+
+            // Professional studio lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+
+            // Key light (main light)
+            const keyLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            keyLight.position.set(2, 3, 3);
+            keyLight.castShadow = true;
+            keyLight.shadow.camera.near = 0.1;
+            keyLight.shadow.camera.far = 10;
+            keyLight.shadow.mapSize.width = 2048;
+            keyLight.shadow.mapSize.height = 2048;
+            scene.add(keyLight);
+
+            // Fill light (softer, from opposite side)
+            const fillLight = new THREE.DirectionalLight(0xffd4a3, 0.4);
+            fillLight.position.set(-2, 2, 2);
+            scene.add(fillLight);
+
+            // Rim light (backlight for depth)
+            const rimLight = new THREE.DirectionalLight(0x4488ff, 0.3);
+            rimLight.position.set(0, 2, -3);
+            scene.add(rimLight);
+
+            // Create ultra-realistic avatar
+            avatar = new THREE.Group();
+
+            // Realistic skin material
+            const skinMaterial = new THREE.MeshPhysicalMaterial({
+                color: 0xffdbac,
+                roughness: 0.7,
+                metalness: 0,
+                clearcoat: 0.1,
+                clearcoatRoughness: 0.3
+            });
+
+            // Head with more realistic shape
+            const headGeometry = new THREE.SphereGeometry(1, 64, 64);
+            // Deform for realistic head shape
+            const headVertices = headGeometry.attributes.position;
+            for (let i = 0; i < headVertices.count; i++) {
+                const x = headVertices.getX(i);
+                const y = headVertices.getY(i);
+                const z = headVertices.getZ(i);
+                
+                // Flatten back of head
+                if (z < -0.3) {
+                    headVertices.setZ(i, z * 0.7);
+                }
+                
+                // Widen jaw area
+                if (y < -0.3) {
+                    headVertices.setX(i, x * 1.1);
+                }
+                
+                // Narrow forehead
+                if (y > 0.5) {
+                    headVertices.setX(i, x * 0.95);
+                }
+            }
+            headGeometry.attributes.position.needsUpdate = true;
+            headGeometry.computeVertexNormals();
+            
+            head = new THREE.Mesh(headGeometry, skinMaterial);
+            head.castShadow = true;
+            head.receiveShadow = true;
+            avatar.add(head);
+
+            // Forehead detail
+            const foreheadGeometry = new THREE.SphereGeometry(0.9, 32, 16);
+            foreheadGeometry.scale(1.2, 0.4, 0.8);
+            forehead = new THREE.Mesh(foreheadGeometry, skinMaterial);
+            forehead.position.set(0, 0.7, 0.3);
+            avatar.add(forehead);
+
+            // Realistic hair with multiple layers
+            const hairMaterial = new THREE.MeshPhysicalMaterial({
+                color: 0x2c1810,
+                roughness: 0.8,
+                metalness: 0.1
+            });
+
+            // Base hair
+            const hairGeometry = new THREE.SphereGeometry(1.05, 32, 16);
+            hairGeometry.scale(1.05, 0.9, 1);
+            const hairBase = new THREE.Mesh(hairGeometry, hairMaterial);
+            hairBase.position.y = 0.3;
+            avatar.add(hairBase);
+
+            // Hair strands for realism
+            for (let i = 0; i < 20; i++) {
+                const strandGeometry = new THREE.CylinderGeometry(0.02, 0.01, 0.4, 8);
+                const strand = new THREE.Mesh(strandGeometry, hairMaterial);
+                strand.position.set(
+                    (Math.random() - 0.5) * 1.5,
+                    0.8 + Math.random() * 0.2,
+                    (Math.random() - 0.5) * 0.8
+                );
+                strand.rotation.z = (Math.random() - 0.5) * 0.3;
+                hairStrands.push(strand);
+                avatar.add(strand);
+            }
+
+            // Ultra-realistic eyes
+            const eyeWhiteGeometry = new THREE.SphereGeometry(0.15, 32, 32);
+            const eyeWhiteMaterial = new THREE.MeshPhysicalMaterial({
+                color: 0xffffff,
+                roughness: 0.1,
+                metalness: 0,
+                clearcoat: 1,
+                clearcoatRoughness: 0
+            });
+
+            // Left eye
+            leftEye = new THREE.Group();
+            const leftEyeWhite = new THREE.Mesh(eyeWhiteGeometry, eyeWhiteMaterial);
+            leftEye.add(leftEyeWhite);
+
+            // Iris with detailed texture
+            const irisGeometry = new THREE.RingGeometry(0.001, 0.08, 32);
+            const irisMaterial = new THREE.MeshPhysicalMaterial({
+                color: 0x4a7c59,
+                roughness: 0.2,
+                metalness: 0.1,
+                clearcoat: 0.8
+            });
+            const leftIris = new THREE.Mesh(irisGeometry, irisMaterial);
+            leftIris.position.z = 0.12;
+            leftEye.add(leftIris);
+
+            // Pupil
+            const pupilGeometry = new THREE.CircleGeometry(0.04, 32);
+            const pupilMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+            leftPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
+            leftPupil.position.z = 0.13;
+            leftEye.add(leftPupil);
+
+            // Eye reflection
+            const reflectionGeometry = new THREE.CircleGeometry(0.015, 16);
+            const reflectionMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.8
+            });
+            const leftReflection = new THREE.Mesh(reflectionGeometry, reflectionMaterial);
+            leftReflection.position.set(0.02, 0.02, 0.14);
+            leftEye.add(leftReflection);
+
+            leftEye.position.set(-0.35, 0.15, 0.85);
+            avatar.add(leftEye);
+
+            // Right eye (clone with adjustments)
+            rightEye = leftEye.clone();
+            rightEye.position.set(0.35, 0.15, 0.85);
+            rightPupil = rightEye.children[2];
+            avatar.add(rightEye);
+
+            // Eyelids for blinking
+            const eyelidGeometry = new THREE.SphereGeometry(0.16, 32, 8);
+            eyelidGeometry.scale(1, 0.3, 0.5);
+            const eyelidMaterial = new THREE.MeshPhysicalMaterial({
+                color: 0xffdbac,
+                roughness: 0.7
+            });
+            
+            leftEyeLid = new THREE.Mesh(eyelidGeometry, eyelidMaterial);
+            leftEyeLid.position.set(-0.35, 0.28, 0.95);
+            leftEyeLid.visible = false;
+            avatar.add(leftEyeLid);
+
+            rightEyeLid = new THREE.Mesh(eyelidGeometry, eyelidMaterial);
+            rightEyeLid.position.set(0.35, 0.28, 0.95);
+            rightEyeLid.visible = false;
+            avatar.add(rightEyeLid);
+
+            // Realistic nose
+            const noseGeometry = new THREE.ConeGeometry(0.08, 0.3, 8);
+            const noseBridge = new THREE.Mesh(noseGeometry, skinMaterial);
+            noseBridge.position.set(0, 0, 0.95);
+            noseBridge.rotation.x = Math.PI / 2;
+            avatar.add(noseBridge);
+
+            // Nostrils
+            const nostrilGeometry = new THREE.SphereGeometry(0.03, 16, 16);
+            const leftNostril = new THREE.Mesh(nostrilGeometry, skinMaterial);
+            leftNostril.position.set(-0.05, -0.1, 0.98);
+            leftNostril.scale.set(1.2, 0.6, 0.8);
+            avatar.add(leftNostril);
+
+            const rightNostril = new THREE.Mesh(nostrilGeometry, skinMaterial);
+            rightNostril.position.set(0.05, -0.1, 0.98);
+            rightNostril.scale.set(1.2, 0.6, 0.8);
+            avatar.add(rightNostril);
+
+            // Realistic mouth with separate lips
+            const lipMaterial = new THREE.MeshPhysicalMaterial({
+                color: 0xd4626a,
+                roughness: 0.3,
+                metalness: 0,
+                clearcoat: 0.5
+            });
+
+            // Upper lip
+            const upperLipGeometry = new THREE.TorusGeometry(0.12, 0.03, 8, 16, Math.PI);
+            upperLip = new THREE.Mesh(upperLipGeometry, lipMaterial);
+            upperLip.position.set(0, -0.35, 0.9);
+            upperLip.rotation.z = Math.PI;
+            avatar.add(upperLip);
+
+            // Lower lip
+            const lowerLipGeometry = new THREE.TorusGeometry(0.1, 0.04, 8, 16, Math.PI);
+            lowerLip = new THREE.Mesh(lowerLipGeometry, lipMaterial);
+            lowerLip.position.set(0, -0.38, 0.9);
+            avatar.add(lowerLip);
+
+            // Cheeks for expression
+            const cheekGeometry = new THREE.SphereGeometry(0.15, 16, 16);
+            leftCheek = new THREE.Mesh(cheekGeometry, skinMaterial);
+            leftCheek.position.set(-0.45, -0.1, 0.6);
+            leftCheek.scale.set(1.2, 1, 0.8);
+            avatar.add(leftCheek);
+
+            rightCheek = new THREE.Mesh(cheekGeometry, skinMaterial);
+            rightCheek.position.set(0.45, -0.1, 0.6);
+            rightCheek.scale.set(1.2, 1, 0.8);
+            avatar.add(rightCheek);
+
+            // Chin
+            const chinGeometry = new THREE.SphereGeometry(0.2, 16, 16);
+            chin = new THREE.Mesh(chinGeometry, skinMaterial);
+            chin.position.set(0, -0.65, 0.7);
+            chin.scale.set(1.1, 0.8, 0.9);
+            avatar.add(chin);
+
+            // Ears
+            const earGeometry = new THREE.SphereGeometry(0.15, 16, 16);
+            earGeometry.scale(0.5, 1.2, 0.4);
+            
+            const leftEar = new THREE.Mesh(earGeometry, skinMaterial);
+            leftEar.position.set(-1, 0, 0);
+            avatar.add(leftEar);
+
+            const rightEar = new THREE.Mesh(earGeometry, skinMaterial);
+            rightEar.position.set(1, 0, 0);
+            avatar.add(rightEar);
+
+            // Neck
+            const neckGeometry = new THREE.CylinderGeometry(0.35, 0.4, 0.8, 32);
+            const neck = new THREE.Mesh(neckGeometry, skinMaterial);
+            neck.position.y = -1.2;
+            avatar.add(neck);
+
+            // Shirt collar
+            const collarGeometry = new THREE.CylinderGeometry(0.45, 0.5, 0.3, 32);
+            const collarMaterial = new THREE.MeshPhysicalMaterial({
+                color: 0x2c3e50,
+                roughness: 0.8,
+                metalness: 0
+            });
+            const collar = new THREE.Mesh(collarGeometry, collarMaterial);
+            collar.position.y = -1.7;
+            avatar.add(collar);
+
+            scene.add(avatar);
+
+            // Start animations
+            animate();
+            startIdleAnimations();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            const time = clock.getElapsedTime();
+
+            // Subtle idle animations
+            if (!isTalking) {
+                // Gentle breathing
+                avatar.position.y = Math.sin(time * 2) * 0.01;
+                
+                // Slight head movement
+                head.rotation.y = Math.sin(time * 0.5) * 0.02;
+                head.rotation.x = Math.sin(time * 0.7) * 0.01;
+                
+                // Eye movement
+                const eyeMovement = Math.sin(time) * 0.1;
+                leftPupil.position.x = eyeMovement;
+                rightPupil.position.x = eyeMovement;
+            } else {
+                // More dynamic movement when talking
+                head.rotation.y = Math.sin(time * 3) * 0.05;
+                avatar.position.y = Math.sin(time * 4) * 0.02;
+                
+                // Eyebrow movement
+                forehead.position.y = 0.7 + Math.sin(time * 5) * 0.02;
+            }
+
+            // Hair physics
+            hairStrands.forEach((strand, i) => {
+                strand.rotation.z = Math.sin(time * 2 + i) * 0.05;
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        function startIdleAnimations() {
+            // Random blinking
+            function scheduleBlink() {
+                blinkTimeout = setTimeout(() => {
+                    blink();
+                    scheduleBlink();
+                }, 2000 + Math.random() * 3000);
+            }
+            scheduleBlink();
+        }
+
+        function blink() {
+            leftEyeLid.visible = true;
+            rightEyeLid.visible = true;
+            
+            setTimeout(() => {
+                leftEyeLid.visible = false;
+                rightEyeLid.visible = false;
+            }, 150);
+        }
+
+        function startTalkingAnimation() {
+            isTalking = true;
+            let frame = 0;
+            
+            talkAnimation = setInterval(() => {
+                const time = Date.now() * 0.01;
+                
+                // Complex mouth movements
+                const mouthOpen = Math.abs(Math.sin(time * 1.5));
+                upperLip.position.y = -0.35 + mouthOpen * 0.02;
+                lowerLip.position.y = -0.38 - mouthOpen * 0.03;
+                
+                // Lip width changes
+                upperLip.scale.x = 1 + mouthOpen * 0.2;
+                lowerLip.scale.x = 1 + mouthOpen * 0.15;
+                
+                // Cheek movement
+                leftCheek.scale.x = 1.2 + Math.sin(time * 2) * 0.05;
+                rightCheek.scale.x = 1.2 + Math.sin(time * 2) * 0.05;
+                
+                // Chin movement
+                chin.position.y = -0.65 - mouthOpen * 0.02;
+                
+                frame++;
+            }, 50);
+        }
+
+        function stopTalkingAnimation() {
+            isTalking = false;
+            if (talkAnimation) {
+                clearInterval(talkAnimation);
+                talkAnimation = null;
+            }
+            
+            // Reset mouth to neutral
+            upperLip.position.y = -0.35;
+            lowerLip.position.y = -0.38;
+            upperLip.scale.x = 1;
+            lowerLip.scale.x = 1;
+            leftCheek.scale.x = 1.2;
+            rightCheek.scale.x = 1.2;
+            chin.position.y = -0.65;
+        }
+
+        // Speech synthesis
+        let voices = [];
+        let selectedVoice = null;
+        let utterance = null;
+        let words = [];
+        let currentWordIndex = -1;
+        let wordTimeouts = [];
+
+        function loadVoices() {
+            voices = window.speechSynthesis.getVoices();
+            const voiceSelect = document.getElementById('voice-select');
+            voiceSelect.innerHTML = '';
+            
+            // Prefer more natural voices
+            const preferredVoices = voices.filter(v => 
+                v.name.includes('Natural') || 
+                v.name.includes('Enhanced') ||
+                v.name.includes('Premium') ||
+                v.lang.startsWith('en')
+            );
+            
+            const voicesToUse = preferredVoices.length > 0 ? preferredVoices : voices;
+            
+            voicesToUse.forEach((voice, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `${voice.name} (${voice.lang})`;
+                voiceSelect.appendChild(option);
+            });
+            
+            selectedVoice = voicesToUse[0];
+        }
+
+        function play() {
+            const text = document.getElementById('text-input').value.trim();
+            if (!text) return;
+
+            words = text.split(/\s+/);
+            currentWordIndex = 0;
+            displayWords();
+            
+            utterance = new SpeechSynthesisUtterance(text);
+            utterance.voice = selectedVoice;
+            utterance.rate = parseFloat(document.getElementById('speed-slider').value);
+            
+            utterance.onstart = () => {
+                startTalkingAnimation();
+                document.getElementById('status-text').textContent = 'Speaking...';
+                document.getElementById('live-badge').style.display = 'flex';
+                document.getElementById('play-btn').style.display = 'none';
+                document.getElementById('stop-btn').style.display = 'inline-block';
+                highlightWords();
+            };
+            
+            utterance.onend = () => {
+                stopSpeaking();
+            };
+            
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function highlightWords() {
+            const duration = 400 / parseFloat(document.getElementById('speed-slider').value);
+            
+            function highlightNext() {
+                if (currentWordIndex < words.length) {
+                    displayWords();
+                    currentWordIndex++;
+                    const timeout = setTimeout(highlightNext, duration);
+                    wordTimeouts.push(timeout);
+                }
+            }
+            highlightNext();
+        }
+
+        function displayWords() {
+            const container = document.getElementById('subtitle-content');
+            container.innerHTML = words.map((word, index) => {
+                let className = 'word unspoken';
+                if (index === currentWordIndex) {
+                    className = 'word current';
+                } else if (index < currentWordIndex) {
+                    className = 'word spoken';
+                }
+                return `<span class="${className}">${word}</span>`;
+            }).join(' ');
+        }
+
+        function stopSpeaking() {
+            window.speechSynthesis.cancel();
+            stopTalkingAnimation();
+            
+            wordTimeouts.forEach(timeout => clearTimeout(timeout));
+            wordTimeouts = [];
+            
+            currentWordIndex = -1;
+            words = [];
+            
+            document.getElementById('status-text').textContent = '';
+            document.getElementById('live-badge').style.display = 'none';
+            document.getElementById('play-btn').style.display = 'inline-block';
+            document.getElementById('stop-btn').style.display = 'none';
+        }
+
+        function reset() {
+            stopSpeaking();
+            document.getElementById('text-input').value = '';
+            document.getElementById('subtitle-content').innerHTML = '<span style="color: #666;">Enter text below to begin...</span>';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initAvatar();
+            
+            loadVoices();
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = loadVoices;
+            }
+            
+            document.getElementById('play-btn').addEventListener('click', play);
+            document.getElementById('stop-btn').addEventListener('click', stopSpeaking);
+            document.getElementById('reset-btn').addEventListener('click', reset);
+            
+            document.getElementById('voice-select').addEventListener('change', (e) => {
+                selectedVoice = voices[e.target.value];
+            });
+            
+            document.getElementById('speed-slider').addEventListener('input', (e) => {
+                document.getElementById('speed-value').textContent = parseFloat(e.target.value).toFixed(1) + 'x';
+            });
+            
+            window.addEventListener('resize', () => {
+                const canvas = document.getElementById('avatar-canvas');
+                camera.aspect = canvas.clientWidth / canvas.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+            });
+        });
+    </script>
+</body>
+</html>
