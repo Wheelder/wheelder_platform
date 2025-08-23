@@ -100,11 +100,11 @@ class BlogController extends Controller
         //camel case the title
         $title = ucwords($title);
 
-        $sql = "SELECT * FROM questions WHERE question = '$title'";
+        $sql = "SELECT * FROM blogs WHERE title = '$title'";
         $stmt = $this->run_query($sql);
         while ($row = $stmt->fetch_assoc()) {
             $blog[] = $row;
-            $content = $row['answer'];
+            $content = $row['content'];
             $content=str_replace("*", "", $content);
             $content=str_replace("`", "", $content);
             $content=str_replace("~", "", $content);
@@ -113,7 +113,7 @@ class BlogController extends Controller
             $content=str_replace("`", "", $content);
             $content=str_replace("**", "", $content);
             $content=str_replace("Certainly!", "", $content);
-            $image = $row['filepath'];
+           // $image = $row['filepath'];
             $content = trim($content);
 
             echo "<div class='content' id='contentDiv'>";
