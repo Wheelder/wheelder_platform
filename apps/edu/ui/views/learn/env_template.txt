@@ -2,8 +2,8 @@
 # Copy this file to .env and fill in your actual API keys
 
 # OpenAI API Configuration
-OPENAI_API_KEY=your_openai_api_key_here
-OPENAI_IMAGE_API_KEY=your_openai_image_api_key_here
+OPENAI_API_KEY=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
+OPENAI_IMAGE_API_KEY=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
 
 # Optional: Override default settings
 # DEFAULT_MODEL=gpt-4o

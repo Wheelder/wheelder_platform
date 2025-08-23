@@ -67,7 +67,8 @@ class config
         error_log("DEBUG: Using forced local config: " . print_r($dbConfig, true));
 
         // Use try and catch for mysqli connection
-        $conn = new mysqli($dbConfig['servername'], $dbConfig['user'], $dbConfig['pass'], $dbConfig['dbname']);        if ($conn->connect_error) {
+        $conn = new mysqli($dbConfig['servername'], $dbConfig['user'], $dbConfig['pass'], $dbConfig['dbname']);
+        if ($conn->connect_error) {
             die("Connection failed: " . $conn->connect_error);
         }
     
