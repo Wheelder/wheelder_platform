@@ -102,7 +102,7 @@ class BlogController extends Controller
 
         //$sql = "SELECT * FROM blogs WHERE title = '$title'";
         //select distinct title from blogs
-        $sql = "SELECT DISTINCT title, content FROM blogs ORDER BY id DESC";
+        $sql = "SELECT DISTINCT title, content FROM blogs WHERE title = '$title'";
         $stmt = $this->run_query($sql);
         while ($row = $stmt->fetch_assoc()) {
             $blog[] = $row;
