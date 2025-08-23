@@ -421,10 +421,10 @@
             scene = new THREE.Scene();
             scene.fog = new THREE.Fog(0x1a1a2e, 5, 15);
             
-            // Camera - closer for bigger face
+            // Camera - further back for smaller face
             camera = new THREE.PerspectiveCamera(40, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
-            camera.position.set(0, 0.3, 3.5);
-            camera.lookAt(0, 0.2, 0);
+            camera.position.set(0, 0.3, 6);
+            camera.lookAt(0, 0, 0);
             
             // Renderer with high quality settings
             renderer = new THREE.WebGLRenderer({ 
@@ -704,6 +704,9 @@
             avatar.add(collar);
 
             scene.add(avatar);
+            
+            // Scale avatar to be smaller
+            avatar.scale.set(0.7, 0.7, 0.7);
 
             // Start animations
             animate();
@@ -810,7 +813,7 @@
             chin.position.y = -0.65;
         }
 
-        // Speech synthesis
+        // Enhanced Speech synthesis with natural voice selection
         let voices = [];
         let selectedVoice = null;
         let utterance = null;
@@ -823,24 +826,90 @@
             const voiceSelect = document.getElementById('voice-select');
             voiceSelect.innerHTML = '';
             
-            // Prefer more natural voices
-            const preferredVoices = voices.filter(v => 
-                v.name.includes('Natural') || 
-                v.name.includes('Enhanced') ||
-                v.name.includes('Premium') ||
-                v.lang.startsWith('en')
+            // Group voices by quality
+            const enhancedVoices = voices.filter(v => 
+                v.name.toLowerCase().includes('enhanced') ||
+                v.name.toLowerCase().includes('premium') ||
+                v.name.toLowerCase().includes('natural') ||
+                v.name.toLowerCase().includes('neural') ||
+                v.name.toLowerCase().includes('microsoft') ||
+                v.name.toLowerCase().includes('google') ||
+                v.name.toLowerCase().includes('samantha') ||
+                v.name.toLowerCase().includes('daniel') ||
+                v.name.toLowerCase().includes('karen') ||
+                v.name.toLowerCase().includes('david') ||
+                v.name.toLowerCase().includes('zira')
             );
             
-            const voicesToUse = preferredVoices.length > 0 ? preferredVoices : voices;
+            const standardVoices = voices.filter(v => 
+                !enhancedVoices.includes(v) && v.lang.startsWith('en')
+            );
             
-            voicesToUse.forEach((voice, index) => {
-                const option = document.createElement('option');
-                option.value = index;
-                option.textContent = `${voice.name} (${voice.lang})`;
-                voiceSelect.appendChild(option);
-            });
+            const otherVoices = voices.filter(v => 
+                !enhancedVoices.includes(v) && !standardVoices.includes(v)
+            );
             
-            selectedVoice = voicesToUse[0];
+            // Add enhanced voices first
+            if (enhancedVoices.length > 0) {
+                const enhancedGroup = document.createElement('optgroup');
+                enhancedGroup.label = '⭐ Natural/Premium Quality';
+                voiceSelect.appendChild(enhancedGroup);
+                
+                enhancedVoices.forEach((voice, index) => {
+                    const option = document.createElement('option');
+                    option.value = voices.indexOf(voice);
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    enhancedGroup.appendChild(option);
+                });
+            }
+            
+            // Add standard English voices
+            if (standardVoices.length > 0) {
+                const standardGroup = document.createElement('optgroup');
+                standardGroup.label = '📢 Standard Voices';
+                voiceSelect.appendChild(standardGroup);
+                
+                standardVoices.forEach((voice) => {
+                    const option = document.createElement('option');
+                    option.value = voices.indexOf(voice);
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    standardGroup.appendChild(option);
+                });
+            }
+            
+            // Add other language voices
+            if (otherVoices.length > 0) {
+                const otherGroup = document.createElement('optgroup');
+                otherGroup.label = '🌍 Other Languages';
+                voiceSelect.appendChild(otherGroup);
+                
+                otherVoices.forEach((voice) => {
+                    const option = document.createElement('option');
+                    option.value = voices.indexOf(voice);
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    otherGroup.appendChild(option);
+                });
+            }
+            
+            // Select best available voice
+            selectedVoice = enhancedVoices[0] || standardVoices[0] || voices[0];
+            
+            // Add info about better TTS (only once)
+            if (!document.getElementById('tts-info')) {
+                const infoDiv = document.createElement('div');
+                infoDiv.id = 'tts-info';
+                infoDiv.style.cssText = 'margin-top: 10px; padding: 10px; background: rgba(102, 126, 234, 0.1); border-radius: 8px; font-size: 12px; color: #aaa;';
+                infoDiv.innerHTML = `
+                    <strong>💡 Best Natural Voices (Free):</strong><br>
+                    • <strong>Chrome/Edge:</strong> Look for "Microsoft" or "Google" voices<br>
+                    • <strong>Mac/iOS:</strong> "Samantha", "Daniel", or "Karen" voices<br>
+                    • <strong>Windows:</strong> "Microsoft David" or "Zira" voices
+                `;
+                const voiceSettingGroup = document.querySelector('.setting-group');
+                if (voiceSettingGroup) {
+                    voiceSettingGroup.appendChild(infoDiv);
+                }
+            }
         }
 
         function play() {
@@ -851,24 +920,47 @@
             currentWordIndex = 0;
             displayWords();
             
+            // Use native Web Speech API with selected voice
             utterance = new SpeechSynthesisUtterance(text);
-            utterance.voice = selectedVoice;
+            
+            const voiceSelect = document.getElementById('voice-select');
+            const selectedIndex = parseInt(voiceSelect.value);
+            
+            if (!isNaN(selectedIndex)) {
+                utterance.voice = voices[selectedIndex];
+            } else {
+                utterance.voice = selectedVoice;
+            }
+            
             utterance.rate = parseFloat(document.getElementById('speed-slider').value);
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
             
             utterance.onstart = () => {
-                startTalkingAnimation();
-                document.getElementById('status-text').textContent = 'Speaking...';
-                document.getElementById('live-badge').style.display = 'flex';
-                document.getElementById('play-btn').style.display = 'none';
-                document.getElementById('stop-btn').style.display = 'inline-block';
-                highlightWords();
+                startSpeechAnimation();
             };
             
             utterance.onend = () => {
                 stopSpeaking();
             };
             
+            utterance.onerror = (event) => {
+                console.error('Speech error:', event);
+                stopSpeaking();
+            };
+            
+            // Cancel any ongoing speech before starting new
+            window.speechSynthesis.cancel();
             window.speechSynthesis.speak(utterance);
+        }
+
+        function startSpeechAnimation() {
+            startTalkingAnimation();
+            document.getElementById('status-text').textContent = 'Speaking...';
+            document.getElementById('live-badge').style.display = 'flex';
+            document.getElementById('play-btn').style.display = 'none';
+            document.getElementById('stop-btn').style.display = 'inline-block';
+            highlightWords();
         }
 
         function highlightWords() {
@@ -899,7 +991,9 @@
         }
 
         function stopSpeaking() {
+            // Stop speech synthesis
             window.speechSynthesis.cancel();
+            
             stopTalkingAnimation();
             
             wordTimeouts.forEach(timeout => clearTimeout(timeout));
@@ -908,7 +1002,7 @@
             currentWordIndex = -1;
             words = [];
             
-            document.getElementById('status-text').textContent = '';
+            document.getElementById('status-text').textContent = 'AI Avatar Ready';
             document.getElementById('live-badge').style.display = 'none';
             document.getElementById('play-btn').style.display = 'inline-block';
             document.getElementById('stop-btn').style.display = 'none';
@@ -934,7 +1028,10 @@
             document.getElementById('reset-btn').addEventListener('click', reset);
             
             document.getElementById('voice-select').addEventListener('change', (e) => {
-                selectedVoice = voices[e.target.value];
+                const value = parseInt(e.target.value);
+                if (!isNaN(value)) {
+                    selectedVoice = voices[value];
+                }
             });
             
             document.getElementById('speed-slider').addEventListener('input', (e) => {
