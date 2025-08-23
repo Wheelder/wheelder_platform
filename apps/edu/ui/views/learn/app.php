@@ -13,7 +13,7 @@ require_once __DIR__ . '/../../../controllers/QuestionController.php';
 //$note = new QuestionController();
 $blog = new QuestionController();
 
-//$blog->check_auth();
+$blog->check_auth();
 
 $ip = $_SERVER['REMOTE_ADDR'];
 
