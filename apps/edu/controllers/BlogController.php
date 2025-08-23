@@ -117,7 +117,7 @@ class BlogController extends Controller
             $content = trim($content);
 
             echo "<div class='content' id='contentDiv'>";
-            echo "<h4>{$row['content']}</h4><br>";
+            echo "<h4>{$row['title']}</h4><br>";
             echo "{$content}";
             echo "&nbsp;";
             //echo "<img src='$image' alt='Image' style='width: 100%; height: auto;'>";
