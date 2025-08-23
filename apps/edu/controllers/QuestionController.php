@@ -257,7 +257,7 @@ class QuestionController extends Controller
         $stmt = $this->run_query($sql);
         return $stmt;
     }
-    
+    /*
     public function insert($question, $answer)
     {
         $answer = $this->connectDb()->real_escape_string($answer);
@@ -270,6 +270,8 @@ class QuestionController extends Controller
             return false;
         }
     }
+        */
+
     //write a new insert function for the questions table, insert($question,$unf_answer,$answer,$deep_answer,$option,$image );
 
     public function insert($question, $unf_answer, $answer, $deep_answer, $option, $image)
