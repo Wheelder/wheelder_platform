@@ -11,7 +11,7 @@ class BlogController extends Controller
 
     public function getBlogByTitle($title)
     {
-        $sql = "SELECT * FROM questions WHERE question = '$title'";
+        $sql = "SELECT * FROM blogs WHERE title = '$title'";
         $stmt = $this->run_query($sql);
         $blog = $stmt->fetch_assoc();
         return $blog;
@@ -32,24 +32,24 @@ class BlogController extends Controller
 
     public function titles()
     {
-        $sql = "SELECT DISTINCT question FROM questions ORDER BY id DESC";
+        $sql = "SELECT DISTINCT title FROM blogs ORDER BY id DESC";
         $stmt = $this->run_query($sql);
         while ($row = $stmt->fetch_array()) {
             $titles[] = $row;
             
-            $title = $row["question"];
+            $title = $row["title"];
             //make to lower case and use _ inplace of + to
             $title = str_replace(" ", "_", strtolower($title));
             //encode the url and
             
-            if ($row["question"] != "Home" ) {
+            if ($row["title"] != "Home" ) {
                 //convert the title to short encrpted code 
                 echo
                     '<div class="toc">
                 <li class="nav-item">
                 <a class="nav-link active" aria-current="page" href="?t=' .urldecode($title) . '">
                     <span data-feather="home" class="align-text-bottom"></span>' .
-                    $row["question"] . '
+                    $row["title"] . '
                 </a>
             </li>
             </div>';
@@ -62,7 +62,7 @@ class BlogController extends Controller
 
     public function get_default_blog($title)
     {
-        $sql = "SELECT * FROM questions WHERE question = '$title'";
+        $sql = "SELECT * FROM blogs WHERE title = '$title'";
         $stmt = $this->run_query($sql);
         while ($row = $stmt->fetch_assoc()) {
             $notes[] = $row;
@@ -83,7 +83,7 @@ class BlogController extends Controller
 
     public function get_blog_edit($id)
     {
-        $sql = "SELECT * FROM questions WHERE id = '$id'";
+        $sql = "SELECT * FROM blogs WHERE id = '$id'";
         $stmt = $this->run_query($sql);
         $blog = $stmt->fetch_assoc();
         return $blog;
@@ -117,7 +117,7 @@ class BlogController extends Controller
             $content = trim($content);
 
             echo "<div class='content' id='contentDiv'>";
-            echo "<h4>{$row['question']}</h4><br>";
+            echo "<h4>{$row['content']}</h4><br>";
             echo "{$content}";
             echo "&nbsp;";
             //echo "<img src='$image' alt='Image' style='width: 100%; height: auto;'>";
