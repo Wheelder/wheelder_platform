@@ -30,10 +30,10 @@ include $path.'/apps/edu/ui/layouts/nav.php';
                 <?php foreach ($notes as $index => $note): ?>
                     <tr>
                         <th scope="row"><?php echo $index + 1; ?></th>
-                        <td><?php echo $note['question']; ?></td>
-                        <td><?php echo substr($note['answer'], 0, 50).'...'; ?></td>
+                        <td><?php echo $note['title']; ?></td>
+                        <td><?php echo substr($note['title'], 0, 50).'...'; ?></td>
                         <td>
-                            <a href="/blog?title=<?php echo $note['question']; ?>" class="btn btn-success">View</a>
+                            <a href="/blog?title=<?php echo $note['title']; ?>" class="btn btn-success">View</a>
                             <a href="/blog/cms/edit?id=<?php echo $note['id']; ?>" class="btn btn-warning">Edit</a>
                             <a href="/blog/cms/delete?id=<?php echo $note['id']; ?>" class="btn btn-danger">Delete</a>
                         </td>
