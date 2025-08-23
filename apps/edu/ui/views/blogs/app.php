@@ -30,7 +30,7 @@ $blog->store_website_traffic($ip, $country, $city, $latitude, $longitude, $timez
 
 <head>
     <title>
-        Wheeleder
+        Wheelder
     </title>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -567,7 +567,7 @@ $blog->store_website_traffic($ip, $country, $city, $latitude, $longitude, $timez
 
     <header class="navbar navbar-dark sticky-top bg-dark  flex-md-nowrap p-0 shadow">
 
-        <a class="navbar-brand col-md-2 col-lg-2 me-0 px-3 fs-6" href="/lab">Wheeleder</a>
+        <a class="navbar-brand col-md-2 col-lg-2 me-0 px-3 fs-6" href="/blog">Wheelder</a>
 
         <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse"
             data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false"
@@ -578,7 +578,7 @@ $blog->store_website_traffic($ip, $country, $city, $latitude, $longitude, $timez
 
         <div class="controls  form-control w-100 rounded-0 border-0">
             <!-- Icons with IDs -->
-            <span class="tl">Open-Source Solutions&nbsp;|</span>
+            
             
             <i id="start" class="fas fa-play"></i>
             
@@ -661,7 +661,7 @@ $blog->store_website_traffic($ip, $country, $city, $latitude, $longitude, $timez
 
             </nav>
 
-            <main class="col-md-7 ms-sm-auto col-lg-7 px-md-4">
+            <main class="col-md-10 ms-sm-auto col-lg-10 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 ">
 
 
@@ -674,38 +674,12 @@ $blog->store_website_traffic($ip, $country, $city, $latitude, $longitude, $timez
 
                         $blog->get_default_blog("Home");
                     }
-
-
                     ?>
-
-
-
                 </div>
-                
-
-
             </main>
-            <div class="col-md-3 col-lg-3 px-md-4"> 
-                <div class="">
-
-                    <div class="toc" id="dynamicSectionList">
-                    <?php
-                    $title = $_GET['t'] ?? Null;
-                    if ($title) {
-
-                        $blog->get_image($title);
-                    } 
-
-
-                    ?>
-                    </div>
-
-
-                </div>
-
             
-        
-        </div>
+           
+
     </div>
 
     <script>
