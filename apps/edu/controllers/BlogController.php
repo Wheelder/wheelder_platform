@@ -100,9 +100,9 @@ class BlogController extends Controller
         //camel case the title
         $title = ucwords($title);
 
-        //$sql = "SELECT * FROM blogs WHERE title = '$title'";
-        //select distinct title from blogs
-        $sql = "SELECT DISTINCT title, content FROM blogs WHERE title = '$title'";
+        $sql = "SELECT DISTINCT title, content FROM blogs WHERE title = '$title' LIMIT 1";
+        //write below the complete code to one blog with the same title
+
         $stmt = $this->run_query($sql);
         while ($row = $stmt->fetch_assoc()) {
             $blog[] = $row;
