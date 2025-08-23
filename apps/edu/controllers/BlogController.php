@@ -69,6 +69,16 @@ class BlogController extends Controller
         while ($row = $stmt->fetch_assoc()) {
             $title = $row['title'];
             $content = $row['content'];
+           
+            $content=str_replace("*", "", $content);
+            $content=str_replace("`", "", $content);
+            $content=str_replace("~", "", $content);
+            $content=str_replace("#", "", $content);
+            $content=str_replace("---", "", $content);
+            $content=str_replace("`", "", $content);
+            $content=str_replace("**", "", $content);
+            $content=str_replace("Certainly!", "", $content);
+           
             echo "<div class='content' id='contentDiv'>";
             echo "<h4>{$title}</h4><br>";
             echo "{$content}";
