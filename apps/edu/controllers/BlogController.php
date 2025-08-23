@@ -145,7 +145,7 @@ class BlogController extends Controller
 
     public function list_suggestions()
     {
-        $sql = "SELECT * FROM questions ORDER BY id DESC LIMIT 5";
+        $sql = "SELECT * FROM blogs ORDER BY id DESC LIMIT 5";
         $stmt = $this->run_query($sql);
         return $stmt;
     }
@@ -153,7 +153,7 @@ class BlogController extends Controller
 
     public function list_blogs()
     {
-        $sql = "SELECT * FROM questions ORDER BY id DESC";
+        $sql = "SELECT * FROM blogs ORDER BY id DESC";
         $stmt = $this->run_query($sql);
         return $stmt;
     }
