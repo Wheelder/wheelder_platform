@@ -672,7 +672,7 @@ $blog->store_website_traffic($ip, $country, $city, $latitude, $longitude, $timez
                         $blog->getBlog($title);
                     } else {
 
-                        $blog->get_default_blog("Home");
+                        $blog->get_default_blog();
                     }
                     ?>
                 </div>

@@ -42,7 +42,7 @@ class BlogController extends Controller
             $title = str_replace(" ", "_", strtolower($title));
             //encode the url and
             
-            if ($row["title"] != "Home" ) {
+            if ($row["title"] != " " || $row["title"] != null ) {
                 //convert the title to short encrpted code 
                 echo
                     '<div class="toc">
@@ -60,24 +60,22 @@ class BlogController extends Controller
 
     }
 
-    public function get_default_blog($title)
-    {
-        $sql = "SELECT * FROM blogs WHERE title = '$title'";
+    public function get_default_blog()
+    { 
+        //show the latest blog as default blog
+
+        $sql = "SELECT * FROM blogs ORDER BY id DESC LIMIT 1";
         $stmt = $this->run_query($sql);
         while ($row = $stmt->fetch_assoc()) {
-            $notes[] = $row;
-            $content = $row['answer'];
-            //$content = preg_replace('/(\S+\s*){10}/', '$0<br/>', $content);
-
+            $title = $row['title'];
+            $content = $row['content'];
             echo "<div class='content' id='contentDiv'>";
-
-
+            echo "<h4>{$title}</h4><br>";
             echo "{$content}";
-
-
             echo "</div>";
 
         }
+
     }
 
 
