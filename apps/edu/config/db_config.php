@@ -4,14 +4,14 @@
 class config
 {
     private $servername_local = "localhost";
-    private $dbname_local = 'u946493694_wheelder';
-    private $user_local = "u946493694_wheelderu";
-    private $pass_local = "NLEg2KV&IPQbyNMY";
-    
-    private $servername = "localhost";
-    private $dbname = 'u946493694_wheelder';
-    private $user = "u946493694_wheelderu";
-    private $pass = "NLEg2KV&IPQbyNMY";
+private $dbname_local = "wheelder_db";
+private $user_local = "wheelder_user";
+private $pass_local = "StrongPassword123!";
+
+private $servername = "localhost";
+private $dbname = "wheelder_db";
+private $user = "wheelder_user";
+private $pass = "StrongPassword123!";
 
     //database details for testing server
     private $servername_d = "localhost";
