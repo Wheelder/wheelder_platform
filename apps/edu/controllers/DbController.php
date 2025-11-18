@@ -1,6 +1,6 @@
 <?php
 $path = $_SERVER['DOCUMENT_ROOT'];
-include_once $path . '/apps/edu/models/database.php';
+include_once $path . '/wheelder/apps/edu/models/database.php';
 
 class Db extends Database
 {

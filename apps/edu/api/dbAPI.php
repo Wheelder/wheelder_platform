@@ -1,6 +1,6 @@
 <?php
 $path = $_SERVER['DOCUMENT_ROOT'];
-include $path . '/apps/edu/controllers/DbController.php';
+include $path . '/wheelder/apps/edu/controllers/DbController.php';
 
 $db = new Db();
 

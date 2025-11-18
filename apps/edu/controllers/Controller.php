@@ -1,7 +1,7 @@
 <?php
 //session_start();
 $path = $_SERVER['DOCUMENT_ROOT'];
-require_once $path . '/apps/edu/models/database.php';
+require_once $path . '/wheelder/apps/edu/models/database.php';
 
 
 class Controller extends Database

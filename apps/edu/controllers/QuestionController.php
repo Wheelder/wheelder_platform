@@ -1,14 +1,14 @@
 <?php
 $path = $_SERVER['DOCUMENT_ROOT'];
-require_once $path . '/apps/edu/controllers/Controller.php';
+require_once $path . '/wheelder/apps/edu/controllers/Controller.php';
 
 define('OPENAI_API_ENDPOINT', 'https://api.openai.com/v1/chat/completions');
-define('OPENAI_API_KEY', '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'); // Replace 'YOUR_OPENAI_API_KEY' with your actual API key
+define('OPENAI_API_KEY', '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'); // Replace 'YOUR_OPENAI_API_KEY' with your actual API key
 
 
 class QuestionController extends Controller
 {
-    private $open_ai = "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";
+    private $open_ai = "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";
 
     public function __construct()
     {
@@ -79,10 +79,11 @@ class QuestionController extends Controller
         $url = "https://api.openai.com/v1/images/generations";
 
         // Set the headers
-        $headers = [
-            'Content-Type: application/json',
-            'Authorization: Bearer ' . OPENAI_API_KEY
-        ];
+        $headers = array(
+            "Content-Type: application/json",
+            "Authorization: Bearer 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" // Replace with your OpenAI API key
+        );
+
         // Set the data as an array
         $data = array(
             "model"=>"dall-e-3",
@@ -126,7 +127,7 @@ class QuestionController extends Controller
 
     public function getBlogByTitle($title)
     {
-        $sql = "SELECT * FROM questions WHERE title = '$title'";
+        $sql = "SELECT * FROM blogs WHERE title = '$title'";
         $stmt = $this->run_query($sql);
         $blog = $stmt->fetch_assoc();
         return $blog;
@@ -257,34 +258,12 @@ class QuestionController extends Controller
         $stmt = $this->run_query($sql);
         return $stmt;
     }
-    /*
-    public function insert($question, $answer)
+    
+    public function insert($title, $content)
     {
-        $answer = $this->connectDb()->real_escape_string($answer);
-        $question = $this->connectDb()->real_escape_string($question);
-        $sql = "INSERT INTO questions (question, answer) VALUES ('$question','$answer')";
-        $stmt = $this->run_query($sql);
-        if ($stmt) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-        */
-
-    //write a new insert function for the questions table, insert($question,$unf_answer,$answer,$deep_answer,$option,$image );
-
-    public function insert($question, $unf_answer, $answer, $deep_answer, $option, $image)
-    {
-        $answer = $this->connectDb()->real_escape_string($answer);
-        $question = $this->connectDb()->real_escape_string($question);
-        $unf_answer = $this->connectDb()->real_escape_string($unf_answer);
-        $deep_answer = $this->connectDb()->real_escape_string($deep_answer);
-        $option = $this->connectDb()->real_escape_string($option);
-        $image = $this->connectDb()->real_escape_string($image);
-
-        $sql = "INSERT INTO questions (question, unf_answer, answer, deep_answer, option, image) 
-        VALUES ('$question','$unf_answer','$answer','$deep_answer','$option','$image')";
+        $content = $this->connectDb()->real_escape_string($content);
+        $title = $this->connectDb()->real_escape_string($title);
+        $sql = "INSERT INTO blogs (title, content) VALUES ('$title', '$content')";
         $stmt = $this->run_query($sql);
         if ($stmt) {
             return true;
