@@ -251,7 +251,7 @@ class LogsController extends Controller
         $res = $result->fetch_assoc();
         if ($result->num_rows > 0) {
 
-            return $res['ui'];
+            return $res['id'];
 
         } else {
             return '';

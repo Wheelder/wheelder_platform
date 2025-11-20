@@ -104,7 +104,7 @@ if (isset($_POST['login'])) {
         // Redirect based on default app
         if ($dapp == null or $dapp == '') {
 
-          switch ($dapp) {
+          switch ($_SESSION['dapp']) {
             case 1:
               header("Location: /learn"); // Redirect to personal app  
               break;

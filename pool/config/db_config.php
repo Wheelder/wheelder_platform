@@ -11,14 +11,14 @@ class config
     private $pass_local = "";
     */
     private $servername_local = "localhost";
-    private $dbname_local = 'u946493694_wheelder';
-    private $user_local = "u946493694_wheelderu";
-    private $pass_local = "NLEg2KV&IPQbyNMY";
+    private $dbname_local = 'wheelder';
+    private $user_local = "root";
+    private $pass_local = "";
     
     private $servername = "localhost";
-    private $dbname = 'u946493694_wheelder';
-    private $user = "u946493694_wheelderu";
-    private $pass = "NLEg2KV&IPQbyNMY";
+    private $dbname = 'wheelder';
+    private $user = "root";
+    private $pass = "";
 
     //database details for testing server
     private $servername_d = "localhost";
@@ -43,29 +43,21 @@ class config
     
         // Use switch case to check the host name and return the host number
         switch ($host) {
-            /*
-            case 'localhost:3000':
-                return 1;
             case 'localhost':
-                return 2;
-            case 'regrowup.site':
-                return 3;
+            case 'localhost:80':
+            case 'localhost:8080':
+            case '127.0.0.1':
+            case '127.0.0.1:80':
+            case '127.0.0.1:8080':
+                return 1; // Use local development database
             case 'wheelder.com':
-                return 4;
+                return 3;
             default:
-                return 0;
-                */
-
-                case 'wheelder.com':
+                // For local development, default to localhost config
+                if (strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false) {
                     return 1;
-                case 'wheelder.com':
-                    return 2;
-                case 'wheelder.com':
-                    return 3;
-                case 'wheelder.com':
-                    return 4;
-                default:
-                    return 0;
+                }
+                return 0;
         }
     }
     
@@ -110,8 +102,7 @@ class config
         $dbConfig = $dbDetails[$hostNumber];
     
         // Use try and catch for mysqli connection
-        //$conn = new mysqli($dbConfig['servername'], $dbConfig['user'], $dbConfig['pass'], $dbConfig['dbname']);
-        $conn = new mysqli($this->servername_local, $this->user_local, $this->pass_local, $this->dbname_local);
+        $conn = new mysqli($dbConfig['servername'], $dbConfig['user'], $dbConfig['pass'], $dbConfig['dbname']);
         if ($conn->connect_error) {
             die("Connection failed: " . $conn->connect_error);
         }
@@ -145,10 +136,10 @@ class config
                 'pass' => $this->pass_d,
             ],
             0 => [
-                'servername' => $this->servername_d,
-                'dbname' => $this->dbname_d,
-                'user' => $this->user_d,
-                'pass' => $this->pass_d,
+                'servername' => $this->servername_local,
+                'dbname' => $this->dbname_local,
+                'user' => $this->user_local,
+                'pass' => $this->pass_local,
             ],
         ];
     
