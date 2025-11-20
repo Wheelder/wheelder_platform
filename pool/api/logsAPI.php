@@ -1,9 +1,34 @@
 <?php
-//session_start();
-$path = $_SERVER['DOCUMENT_ROOT'];
-include $path . '/pool/libs/controllers/LogsController.php';
+// Start session if not already started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Use __DIR__ to get the current file's directory and navigate relatively
+$path = dirname(__DIR__); // Goes from pool/api to pool
+include $path . '/libs/controllers/LogsController.php';
 
 $log = new LogsController();
+
+// Handle direct access (GET request without POST data)
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && empty($_POST)) {
+    // Return JSON response indicating this is an API endpoint
+    header('Content-Type: application/json');
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'This is an API endpoint. Please use POST method with appropriate parameters.',
+        'available_endpoints' => [
+            'login' => 'POST with email, password, dapp',
+            'signup' => 'POST with first_name, last_name, email, password',
+            'verify' => 'POST with otp',
+            'forgot_password' => 'POST with email',
+            'reset_pass' => 'POST with new_pass',
+            'complete_profile' => 'POST with profile data',
+            'select_topics' => 'POST with topics and user'
+        ]
+    ]);
+    exit();
+}
 
 if (isset($_POST['sw'])) {
 

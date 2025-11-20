@@ -1,7 +1,8 @@
 <?php
 //session_start();
-$path = $_SERVER['DOCUMENT_ROOT'];
-require $path . '/pool/config/database.php';
+// Use __DIR__ to get the current file's directory and navigate relatively
+$path = dirname(dirname(__DIR__)); // Goes from pool/libs/controllers to pool
+require $path . '/config/database.php';
 include 'StripeController.php';
 include 'CrudController.php';
 include 'Metadata.php';

@@ -1,7 +1,8 @@
 <?php
 //session_start();
-$path = $_SERVER['DOCUMENT_ROOT'];
-include $path . '/pool/libs/controllers/LogsController.php';
+// Use __DIR__ to get the current file's directory and navigate relatively
+$path = dirname(__DIR__); // Goes from pool/auth to pool
+include $path . '/libs/controllers/LogsController.php';
 
 $settings = new LogsController();
 //$settings->authCheck();

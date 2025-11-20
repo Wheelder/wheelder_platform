@@ -1,6 +1,6 @@
 <?php
-$path = $_SERVER['DOCUMENT_ROOT'];
-include $path . '/pool/libs/controllers/DbController.php';
+// Use __DIR__ to get the current file's directory (already in pool/libs/controllers)
+include __DIR__ . '/DbController.php';
 
 $db = new Db();
 

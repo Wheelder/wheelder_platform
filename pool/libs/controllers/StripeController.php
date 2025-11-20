@@ -1,7 +1,8 @@
 <?php
 
-$path = $_SERVER['DOCUMENT_ROOT'];
-require $path . '/pool/libs/composer/vendor/autoload.php';
+// Use __DIR__ to get the current file's directory and navigate relatively
+$path = dirname(__DIR__); // Goes from pool/libs/controllers to pool/libs
+require $path . '/composer/vendor/autoload.php';
 
 trait StripeController {
   private $stripe_secret_key = 'sk_test_51KBe3uBG6J77VsYBuVQP8Yav2DrZk3GFri8GKWJm0iv6G5CayB55YhBYZQZd7RlOFQ9JjU5vHO46gL8N1nkDqucU005pbBYCpp';

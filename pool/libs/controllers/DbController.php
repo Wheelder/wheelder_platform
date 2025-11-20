@@ -1,6 +1,7 @@
 <?php
-$path = $_SERVER['DOCUMENT_ROOT'];
-include $path . '/pool/config/database.php';
+// Use __DIR__ to get the current file's directory and navigate relatively
+$path = dirname(dirname(__DIR__)); // Goes from pool/libs/controllers to pool
+include $path . '/config/database.php';
 
 class Db extends Database
 {

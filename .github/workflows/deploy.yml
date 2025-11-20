@@ -1,0 +1,42 @@
+name: Deploy to Droplet
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Upload repo files to Droplet
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_KEY }}
+          port: 22
+          source: "."
+          target: "/var/www/wheelder"
+          overwrite: true
+          rm: true
+          strip_components: 1
+
+      - name: Run deploy commands on Droplet
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_KEY }}
+          port: 22
+          script: |
+            cd /var/www/wheelder
+            chown -R www-data:www-data /var/www/wheelder
+            find /var/www/wheelder -type f -exec chmod 644 {} \;
+            find /var/www/wheelder -type d -exec chmod 755 {} \;
+            systemctl reload apache2 || systemctl restart apache2
