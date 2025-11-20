@@ -594,7 +594,7 @@
     <div class="digital-time" id="digitalTime">
       <span id="hours">00</span><span class="time-separator">:</span><span id="minutes">00</span><span class="time-separator">:</span><span id="seconds">00</span><span class="time-period" id="period">AM</span>
     </div>
-  
+    <div class="timezone"></div>
     
     
   </div>
