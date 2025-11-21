@@ -4,8 +4,8 @@ $scriptPath = $_SERVER['SCRIPT_NAME'];       // e.g. /wheelder/index.php
 $parts = explode('/', trim($scriptPath, '/'));
 $projectDir = $parts[0];                     // "wheelder"
 
-$path = $docRoot."/".$projectDir;
-require_once $path . '/apps/edu/controllers/BlogController.php';
+//$path = $docRoot."/".$projectDir;
+require_once $docRoot."/".$projectDir . '/apps/edu/controllers/BlogController.php';
 
 $blog = new BlogController();
 
