@@ -16,9 +16,9 @@ class config
     private $pass_local = "";
     
     private $servername = "localhost";
-    private $dbname = 'whd';
+    private $dbname = 'wheelder_db';
     private $user = "root";
-    private $pass = "";
+    private $pass = "YourNewPassword123!";
 
     //database details for testing server
     private $servername_d = "localhost";
