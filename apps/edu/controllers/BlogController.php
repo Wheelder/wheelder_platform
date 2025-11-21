@@ -33,7 +33,7 @@ class BlogController extends Controller
 
     public function titles()
     {
-        $sql = "SELECT DISTINCT title FROM blogs ORDER BY id DESC";
+        $sql = "SELECT DISTINCT title FROM blogs ";
         $stmt = $this->run_query($sql);
         while ($row = $stmt->fetch_array()) {
             $titles[] = $row;
