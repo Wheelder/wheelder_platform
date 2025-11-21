@@ -1,5 +1,10 @@
 <?php
-$path = $_SERVER['DOCUMENT_ROOT'] . '/wheelder';
+$docRoot = $_SERVER['DOCUMENT_ROOT'];        // e.g. C:/xampp/htdocs
+$scriptPath = $_SERVER['SCRIPT_NAME'];       // e.g. /wheelder/index.php
+$parts = explode('/', trim($scriptPath, '/'));
+$projectDir = $parts[0];                     // "wheelder"
+
+$path = $docRoot."/".$projectDir;
 require_once $path . '/apps/edu/controllers/BlogController.php';
 
 $blog = new BlogController();
