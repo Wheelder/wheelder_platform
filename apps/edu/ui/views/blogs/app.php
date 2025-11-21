@@ -5,7 +5,7 @@ $parts = explode('/', trim($scriptPath, '/'));
 $projectDir = $parts[0];                     // "wheelder"
 
 //$path = $docRoot."/".$projectDir;
-require_once $docRoot."/".$projectDir . '/apps/edu/controllers/BlogController.php';
+require_once $docRoot. '/apps/edu/controllers/BlogController.php';
 
 $blog = new BlogController();
 
