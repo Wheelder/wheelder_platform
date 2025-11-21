@@ -1,7 +1,15 @@
 <?php
 // Enable error reporting for development (disable for production)
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+// Security: Only show errors in development, not production
+if ($_SERVER['HTTP_HOST'] === 'localhost' || strpos($_SERVER['HTTP_HOST'], '127.0.0.1') !== false || strpos($_SERVER['HTTP_HOST'], 'localhost') !== false) {
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
+} else {
+    error_reporting(E_ALL);
+    ini_set('display_errors', 0);
+    ini_set('log_errors', 1);
+    ini_set('error_log', __DIR__ . '/error.log');
+}
 
 session_start();
 

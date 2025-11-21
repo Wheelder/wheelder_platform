@@ -504,7 +504,10 @@ class Controller extends Database
 
     public function alert_redirect($message, $url)
     {
-        echo '<script>alert("' . $message . '");window.location.href = "' . $url . '";</script>';
+        // Security: Escape output to prevent XSS
+        $safeMessage = htmlspecialchars($message, ENT_QUOTES, 'UTF-8');
+        $safeUrl = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+        echo '<script>alert("' . $safeMessage . '");window.location.href = "' . $safeUrl . '";</script>';
     }
 
     public function redirect($url)
@@ -666,6 +669,43 @@ class Controller extends Database
         return $result;
     }
 
+    // Secure query method using prepared statements
+    public function run_query_prepared($sql, $params = [])
+    {
+        try {
+            $conn = $this->connectDb();
+            $stmt = $conn->prepare($sql);
+            
+            if ($stmt === false) {
+                throw new Exception("Prepare failed: " . $conn->error);
+            }
+            
+            if (!empty($params)) {
+                $types = '';
+                $values = [];
+                foreach ($params as $param) {
+                    if (is_int($param)) {
+                        $types .= 'i';
+                    } elseif (is_float($param)) {
+                        $types .= 'd';
+                    } else {
+                        $types .= 's';
+                    }
+                    $values[] = $param;
+                }
+                $stmt->bind_param($types, ...$values);
+            }
+            
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $stmt->close();
+            return $result;
+        } catch (Exception $e) {
+            error_log("Database error: " . $e->getMessage());
+            return false;
+        }
+    }
+
 
 
 
@@ -694,28 +734,59 @@ class Controller extends Database
 
     }
 
-    //Function to store files 
+    //Function to store files with security validation
 
     public function handleFileUpload($directory, $uploaderId)
     {
         if (isset($_FILES['file'])) {
             $file = $_FILES['file'];
 
-            // Extract file information
-            $fileName = $file['name'];
-            $fileTmp = $file['tmp_name'];
+            // Security: Validate file upload
+            if ($file['error'] !== UPLOAD_ERR_OK) {
+                return false;
+            }
 
+            // Security: Check file size (max 5MB)
+            $maxSize = 5 * 1024 * 1024; // 5MB
+            if ($file['size'] > $maxSize) {
+                return false;
+            }
+
+            // Security: Allowed file types (images only for now)
+            $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mimeType = finfo_file($finfo, $file['tmp_name']);
+            finfo_close($finfo);
+
+            if (!in_array($mimeType, $allowedTypes)) {
+                return false;
+            }
+
+            // Security: Sanitize filename and prevent path traversal
+            $fileName = basename($file['name']);
+            $fileName = preg_replace('/[^a-zA-Z0-9._-]/', '', $fileName);
+            
             // Generate a unique key ID for the file
             $key = uniqid();
+            
+            // Security: Use random filename to prevent conflicts
+            $extension = pathinfo($fileName, PATHINFO_EXTENSION);
+            $safeFileName = $key . '.' . $extension;
 
             // Get the document root path
             $path = $_SERVER['DOCUMENT_ROOT'];
 
+            // Security: Ensure directory exists and is safe
+            $uploadDir = $path . '/' . trim($directory, '/');
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+
             // Build the file destination path
-            $destination = $path . '/' . $directory . '/' . $fileName;
+            $destination = $uploadDir . '/' . $safeFileName;
 
             // Move the uploaded file to the destination
-            if (move_uploaded_file($fileTmp, $destination)) {
+            if (move_uploaded_file($file['tmp_name'], $destination)) {
                 // Save file information to the database
                 $this->saveFileToDatabase($destination, $key, $uploaderId);
 
@@ -724,11 +795,11 @@ class Controller extends Database
 
             } else {
                 // File upload failed
-                echo "File upload failed.";
+                return false;
             }
         } else {
             // No file was uploaded
-            echo "No file selected.";
+            return false;
         }
     }
 

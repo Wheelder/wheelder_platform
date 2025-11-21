@@ -43,10 +43,12 @@ if (isset($_POST['sw'])) {
   if ($pass) {
 
 
+    // Regenerate session ID to prevent session fixation
+    session_regenerate_id(true);
+    
     $_SESSION["vaild"] = $pass['id'];
     $_SESSION["name"] = $pass['first_name'] . "" . $pass['last_name'];
-    $_SESSION["password"] = $pass['password'];
-    $_SESSION["pwd"] = $pass['password'];
+    // REMOVED: $_SESSION["password"] and $_SESSION["pwd"] - Never store passwords in session
     $_SESSION["userid"] = $pass['id'];
     $_SESSION["id"] = $pass['id'];
     $_SESSION['user_type'] = $pass['user_type'];
@@ -100,12 +102,15 @@ if (isset($_POST['login'])) {
 
     if ($pass) {
 
-      // Set session variables
+      // Regenerate session ID to prevent session fixation
+      session_regenerate_id(true);
+      
+      // Set session variables (REMOVED password for security)
       $_SESSION = array_merge($_SESSION, $pass);
       $_SESSION['user_type'] = $pass['user_type'];
       $_SESSION['user_id'] = $pass['id'];
       $_SESSION['auth'] = $pass['id'];
-      $_SESSION['password'] = $pass['password'];
+      // REMOVED: $_SESSION['password'] - Never store passwords in session
       $_SESSION['dob'] = $pass['dob'];
       $_SESSION['country'] = $pass['country'];
       $_SESSION['profile_image'] = $pass['profile_image'];

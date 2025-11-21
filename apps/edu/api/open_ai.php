@@ -1,10 +1,17 @@
 <?php
 
+// Load environment variables
+$envPath = dirname(dirname(dirname(__DIR__))) . '/pool/config/env_loader.php';
+if (file_exists($envPath)) {
+    require_once $envPath;
+}
+
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json");
 
 define('OPENAI_API_ENDPOINT', 'https://api.openai.com/v1/chat/completions');
-define('OPENAI_API_KEY', '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');  // Replace 'YOUR_OPENAI_API_KEY' with your actual API key
+// Get API key from environment variable, fallback to old key for backward compatibility
+define('OPENAI_API_KEY', getenv('OPENAI_API_KEY') ?: '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');
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $input = json_decode(file_get_contents('php://input'), true);

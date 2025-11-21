@@ -7,9 +7,14 @@ $settings->authCheck();
 
 include $path . '/config.php';
 
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
-header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+// Security: Restrict CORS to specific origins
+$allowedOrigins = ['http://localhost', 'http://localhost:8080', 'http://127.0.0.1'];
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+if (in_array($origin, $allowedOrigins) || strpos($origin, 'localhost') !== false) {
+    header("Access-Control-Allow-Origin: $origin");
+}
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
 header("Access-Control-Allow-Credentials: true");
 
 
@@ -100,13 +105,16 @@ if(isset($_POST['complete_profile'])){
 if(isset($_POST['update_security'])){
   $user_id=$_SESSION['user_id'];
   $password=$_POST['password'];
-  $old_password=$_SESSION['password'];
-
+  
+  // Get user from database to verify current password
+  $user = $settings->user_details($user_id);
   $current_password=$_POST['current_password'];
-  if( $current_password==$old_password){
+  
+  // Verify password using password_verify
+  if($user && password_verify($current_password, $user['password'])){
       $settings->update_security($user_id,$password);
   }else{
-    echo '<script>alert("Try again ")</script>';
+    echo '<script>alert("Current password incorrect. Try again ")</script>';
   }
 
 

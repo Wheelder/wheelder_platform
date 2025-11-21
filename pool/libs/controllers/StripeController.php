@@ -4,18 +4,52 @@
 $path = dirname(__DIR__); // Goes from pool/libs/controllers to pool/libs
 require $path . '/composer/vendor/autoload.php';
 
-trait StripeController {
-  private $stripe_secret_key = 'sk_test_51KBe3uBG6J77VsYBuVQP8Yav2DrZk3GFri8GKWJm0iv6G5CayB55YhBYZQZd7RlOFQ9JjU5vHO46gL8N1nkDqucU005pbBYCpp';
-  private $stripe_publishable_key = 'sk_test_51KBe3uBG6J77VsYBuVQP8Yav2DrZk3GFri8GKWJm0iv6G5CayB55YhBYZQZd7RlOFQ9JjU5vHO46gL8N1nkDqucU005pbBYCpp';
+// Load environment variables
+$envPath = dirname(dirname(__DIR__)) . '/config/env_loader.php';
+if (file_exists($envPath)) {
+    require_once $envPath;
+}
 
-  private $stripe_secret_key_connect = 'sk_test_51KBe3uBG6J77VsYBuVQP8Yav2DrZk3GFri8GKWJm0iv6G5CayB55YhBYZQZd7RlOFQ9JjU5vHO46gL8N1nkDqucU005pbBYCpp';
-  private $stripe_publishable_key_connect = 'sk_test_51KBe3uBG6J77VsYBuVQP8Yav2DrZk3GFri8GKWJm0iv6G5CayB55YhBYZQZd7RlOFQ9JjU5vHO46gL8N1nkDqucU005pbBYCpp';
+trait StripeController {
+  // Get keys from environment variables, fallback to old keys for backward compatibility
+  // Using getter methods since traits can't have constructors
+  private function getStripeSecretKey() {
+    return getenv('STRIPE_SECRET_KEY') ?: 'sk_test_51KBe3uBG6J77VsYBuVQP8Yav2DrZk3GFri8GKWJm0iv6G5CayB55YhBYZQZd7RlOFQ9JjU5vHO46gL8N1nkDqucU005pbBYCpp';
+  }
+  
+  private function getStripePublishableKey() {
+    return getenv('STRIPE_PUBLISHABLE_KEY') ?: 'sk_test_51KBe3uBG6J77VsYBuVQP8Yav2DrZk3GFri8GKWJm0iv6G5CayB55YhBYZQZd7RlOFQ9JjU5vHO46gL8N1nkDqucU005pbBYCpp';
+  }
+  
+  private function getStripeSecretKeyConnect() {
+    return getenv('STRIPE_SECRET_KEY_CONNECT') ?: 'sk_test_51KBe3uBG6J77VsYBuVQP8Yav2DrZk3GFri8GKWJm0iv6G5CayB55YhBYZQZd7RlOFQ9JjU5vHO46gL8N1nkDqucU005pbBYCpp';
+  }
+  
+  private function getStripePublishableKeyConnect() {
+    return getenv('STRIPE_PUBLISHABLE_KEY_CONNECT') ?: 'sk_test_51KBe3uBG6J77VsYBuVQP8Yav2DrZk3GFri8GKWJm0iv6G5CayB55YhBYZQZd7RlOFQ9JjU5vHO46gL8N1nkDqucU005pbBYCpp';
+  }
+  
+  // Legacy property accessors for backward compatibility
+  private $stripe_secret_key;
+  private $stripe_publishable_key;
+  private $stripe_secret_key_connect;
+  private $stripe_publishable_key_connect;
+  
+  private function initStripeKeys() {
+    if (!isset($this->stripe_secret_key)) {
+      $this->stripe_secret_key = $this->getStripeSecretKey();
+      $this->stripe_publishable_key = $this->getStripePublishableKey();
+      $this->stripe_secret_key_connect = $this->getStripeSecretKeyConnect();
+      $this->stripe_publishable_key_connect = $this->getStripePublishableKeyConnect();
+    }
+  }
 
   public function stripe_connect_account($first_name, $last_name, $email, $country, $type,$year, $month, $day,$business_type){
-       
+    // Initialize keys if not already done
+    $this->initStripeKeys();
       
     try {
-      $stripe = new \Stripe\StripeClient($this->stripe_secret_key);
+      $stripe = new \Stripe\StripeClient($this->stripe_secret_key_connect);
       $result = $stripe->accounts->create(
         [
           'country' => $country,

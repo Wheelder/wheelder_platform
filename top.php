@@ -1,6 +1,14 @@
 <?php
 // Start the session if not already started
 if (session_status() === PHP_SESSION_NONE) {
+    // Secure session configuration
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.use_strict_mode', 1);
+    // Only use secure cookies if HTTPS is enabled
+    if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+        ini_set('session.cookie_secure', 1);
+    }
+    ini_set('session.cookie_samesite', 'Strict');
     session_start();
 }
 

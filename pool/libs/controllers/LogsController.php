@@ -14,25 +14,29 @@ class LogsController extends Controller
 
     public function profile_checkup($user_id)
     {
-        $sql = "SELECT * FROM profiles WHERE user_id='$user_id'";
-        $results = $this->run_query($sql);
-        $pro = $results->fetch_assoc();
-        $status = $pro['profile_status'];
-
-
-        if ($status == 0) {
-            return false;
-        } else {
-            return true;
+        $sql = "SELECT * FROM profiles WHERE user_id=?";
+        $results = $this->run_query_prepared($sql, [$user_id]);
+        if ($results && $results->num_rows > 0) {
+            $pro = $results->fetch_assoc();
+            $status = $pro['profile_status'];
+            if ($status == 0) {
+                return false;
+            } else {
+                return true;
+            }
         }
+        return false;
     }
 
     public function user_details($uid)
     {
-        $sql = "SELECT * FROM users WHERE id='$uid'";
-        $result = $this->run_query($sql);
-        $row = $result->fetch_assoc();
-        return $row;
+        $sql = "SELECT * FROM users WHERE id=?";
+        $result = $this->run_query_prepared($sql, [$uid]);
+        if ($result && $result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            return $row;
+        }
+        return false;
     }
 
 
@@ -61,11 +65,13 @@ class LogsController extends Controller
         $profile_status = 1;
 
 
-        $sql = "UPDATE users SET first_name='$first_name',last_name='$last_name',country='$country',dob='$dob',phone='$phone',email='$email',
-        state='$state',city='$city',zip_code='$zip_code',role='$role',sub_role='$sub_role',bio='$bio',currency='$currency',address='$address',time_zone='$time_zone',
-        profile_image='$profile_image',profile_status='$profile_status' WHERE id='$user_id'";
+        $sql = "UPDATE users SET first_name=?,last_name=?,country=?,dob=?,phone=?,email=?,
+        state=?,city=?,zip_code=?,role=?,sub_role=?,bio=?,currency=?,address=?,time_zone=?,
+        profile_image=?,profile_status=? WHERE id=?";
 
-        $results = $this->run_query($sql);
+        $results = $this->run_query_prepared($sql, [$first_name, $last_name, $country, $dob, $phone, $email,
+        $state, $city, $zip_code, $role, $sub_role, $bio, $currency, $address, $time_zone,
+        $profile_image, $profile_status, $user_id]);
 
         return $results;
 
@@ -78,21 +84,14 @@ class LogsController extends Controller
     
         // Convert the array to a comma-separated string for storing in the database
         $topics = implode(',', $selected_topics);
-
-        //encode to json
-        //$topics = json_encode($selected_topics);
     
-        // Escape the user_id and topics_string to prevent SQL injection
-        //$escaped_user_id = mysqli_real_escape_string($this->connectDb, $user_id);
-        //$escaped_topics_string = mysqli_real_escape_string($this->connection, $topics_string);
-    
-        // SQL query to update the user's selected topics
-        $sql = "UPDATE users SET selected_topics = '$topics' WHERE id = '$user_id'";
+        // SQL query to update the user's selected topics using prepared statement
+        $sql = "UPDATE users SET selected_topics = ? WHERE id = ?";
     
         // Execute the query and return results
-        $results = $this->run_query($sql);
+        $results = $this->run_query_prepared($sql, [$topics, $user_id]);
     
-        if($results){
+        if($results !== false){
             return true;
         }else{
             return false;
@@ -126,11 +125,13 @@ class LogsController extends Controller
 
     public function store($first_name, $last_name, $email, $ref, $password, $profile_status, $default_app)
     {
-
+        // Hash password before storing
+        $hashed_password = password_hash($password, PASSWORD_BCRYPT);
+        
         $sql = "INSERT INTO users (first_name,last_name,email,referral_code,password,profile_status,default_app) 
-        VALUES ('$first_name','$last_name','$email','$ref','$password','$profile_status','$default_app')";
-        $results = $this->run_query($sql);
-        if ($results) {
+        VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $results = $this->run_query_prepared($sql, [$first_name, $last_name, $email, $ref, $hashed_password, $profile_status, $default_app]);
+        if ($results !== false) {
             return true;
         } else {
             return false;
@@ -140,11 +141,13 @@ class LogsController extends Controller
 
     public function ref_signup($first_name, $last_name, $role, $email, $ref, $password, $profile_status, $default_app)
     {
-
+        // Hash password before storing
+        $hashed_password = password_hash($password, PASSWORD_BCRYPT);
+        
         $sql = "INSERT INTO users (first_name,last_name,role,email,referral_code,password,profile_status,default_app) 
-        VALUES ('$first_name','$last_name','$role','$email','$ref','$password','$profile_status','$default_app')";
-        $results = $this->run_query($sql);
-        if ($results) {
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        $results = $this->run_query_prepared($sql, [$first_name, $last_name, $role, $email, $ref, $hashed_password, $profile_status, $default_app]);
+        if ($results !== false) {
             return true;
         } else {
             return false;
@@ -162,9 +165,9 @@ class LogsController extends Controller
     public function verify($email)
     {
         $otp = $this->otp();
-        $sql = "UPDATE users SET otp='$otp' WHERE email='$email'";
-        $res = $this->run_query($sql);
-        if ($res) {
+        $sql = "UPDATE users SET otp=? WHERE email=?";
+        $res = $this->run_query_prepared($sql, [$otp, $email]);
+        if ($res !== false) {
             $this->otp_email($email, $otp);
             return true;
         } else {
@@ -210,10 +213,10 @@ class LogsController extends Controller
 
     public function get_otp($email)
     {
-        $sql = "SELECT * FROM users WHERE email='$email'";
-        $res = $this->run_query($sql);
-        $res = $res->fetch_assoc();
-        if ($res) {
+        $sql = "SELECT * FROM users WHERE email=?";
+        $result = $this->run_query_prepared($sql, [$email]);
+        if ($result && $result->num_rows > 0) {
+            $res = $result->fetch_assoc();
             return $res['otp'];
         } else {
             return false;
@@ -222,9 +225,9 @@ class LogsController extends Controller
 
     public function email_verified($email)
     {
-        $sql = "UPDATE users SET email_verified='1' WHERE email='$email'";
-        $res = $this->run_query($sql);
-        if ($res) {
+        $sql = "UPDATE users SET email_verified='1' WHERE email=?";
+        $res = $this->run_query_prepared($sql, [$email]);
+        if ($res !== false) {
             return true;
         } else {
             return false;
@@ -233,9 +236,11 @@ class LogsController extends Controller
 
     public function reset_password($email, $password)
     {
-        $sql = "UPDATE users SET password='$password' WHERE email='$email'";
-        $res = $this->run_query($sql);
-        if ($res) {
+        // Hash password before storing
+        $hashed_password = password_hash($password, PASSWORD_BCRYPT);
+        $sql = "UPDATE users SET password=? WHERE email=?";
+        $res = $this->run_query_prepared($sql, [$hashed_password, $email]);
+        if ($res !== false) {
             return true;
         } else {
             return false;
@@ -246,13 +251,11 @@ class LogsController extends Controller
 
     public function check_user($email)
     {
-        $sql = "SELECT * FROM  users WHERE email='$email'";
-        $result = $this->run_query($sql);
-        $res = $result->fetch_assoc();
-        if ($result->num_rows > 0) {
-
+        $sql = "SELECT * FROM users WHERE email=?";
+        $result = $this->run_query_prepared($sql, [$email]);
+        if ($result && $result->num_rows > 0) {
+            $res = $result->fetch_assoc();
             return $res['id'];
-
         } else {
             return '';
         }
@@ -284,25 +287,26 @@ class LogsController extends Controller
     }
     public function update($id, $name, $username, $password)
     {
-        $sql = "UPDATE users SET name='$name',username='$username',password='$password' WHERE id='$id'";
-        $results = $this->run_query($sql);
-        echo json_encode($results);
+        // Hash password before storing
+        $hashed_password = password_hash($password, PASSWORD_BCRYPT);
+        $sql = "UPDATE users SET name=?,username=?,password=? WHERE id=?";
+        $results = $this->run_query_prepared($sql, [$name, $username, $hashed_password, $id]);
+        echo json_encode($results !== false);
     }
 
     public function secure_login($uid)
     {
-        $sql = "SELECT * FROM  users WHERE id='$uid'";
-        $result = $this->run_query($sql);
+        $sql = "SELECT * FROM users WHERE id=?";
+        $result = $this->run_query_prepared($sql, [$uid]);
         return $result;
     }
 
 
     public function update_role($id, $role)
     {
-
-        $sql = "UPDATE users SET role='$role' WHERE id='$id'";
-        $result = $this->run_query($sql);
-        if ($result) {
+        $sql = "UPDATE users SET role=? WHERE id=?";
+        $result = $this->run_query_prepared($sql, [$role, $id]);
+        if ($result !== false) {
             return true;
         } else {
             return false;
@@ -332,20 +336,40 @@ class LogsController extends Controller
     }
     public function login($email, $password)
     {
-        $sql = "SELECT * FROM users WHERE email='$email' AND password='$password'";
-        $result = $this->run_query($sql);
-        return $result;
+        $sql = "SELECT * FROM users WHERE email=?";
+        $result = $this->run_query_prepared($sql, [$email]);
+        
+        if ($result && $result->num_rows > 0) {
+            $user = $result->fetch_assoc();
+            // Verify password using password_verify
+            if (password_verify($password, $user['password'])) {
+                // Return result object for compatibility
+                $conn = $this->connectDb();
+                $sql2 = "SELECT * FROM users WHERE email=?";
+                $stmt = $conn->prepare($sql2);
+                $stmt->bind_param("s", $email);
+                $stmt->execute();
+                return $stmt->get_result();
+            } else {
+                // Password doesn't match - return empty result
+                return false;
+            }
+        }
+        return false;
 
     }
 
     public function email_verification_checkup($email)
     {
-        $sql = "SELECT * FROM users WHERE email='$email' ";
-        $result = $this->run_query($sql);
-        $res = $result->fetch_assoc();
-        if ($res['email_verified'] == 1) {
-            return true;
-
+        $sql = "SELECT * FROM users WHERE email=?";
+        $result = $this->run_query_prepared($sql, [$email]);
+        if ($result && $result->num_rows > 0) {
+            $res = $result->fetch_assoc();
+            if ($res['email_verified'] == 1) {
+                return true;
+            } else {
+                return false;
+            }
         } else {
             return false;
         }
@@ -354,11 +378,10 @@ class LogsController extends Controller
 
     public function fp_check($email)
     {
-
-        $sql = "SELECT * FROM financial_profile WHERE email='$email'";
-        $result = $this->run_query($sql);
-        $res = $result->fetch_assoc();
-        if ($res) {
+        $sql = "SELECT * FROM financial_profile WHERE email=?";
+        $result = $this->run_query_prepared($sql, [$email]);
+        if ($result && $result->num_rows > 0) {
+            $res = $result->fetch_assoc();
             return $res['id'];
         } else {
             return false;
@@ -368,8 +391,8 @@ class LogsController extends Controller
 
     public function checkUp($email)
     {
-        $sql = "SELECT * FROM users WHERE email='$email'";
-        $result = $this->run_query($sql);
+        $sql = "SELECT * FROM users WHERE email=?";
+        $result = $this->run_query_prepared($sql, [$email]);
         return $result;
 
     }
