@@ -5,7 +5,7 @@ require_once $path . '/apps/edu/ui/views/learn/LearnController.php';
 
 $learn = new LearnController();
 // Temporarily comment out authentication for testing
-// $learn->checkAuth();
+$learn->checkAuth();
 
 // Generate CSRF token
 $csrfToken = $learn->generateCSRFToken();

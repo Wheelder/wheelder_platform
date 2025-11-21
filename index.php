@@ -117,7 +117,9 @@ $router->route('/blog', function() {
 $router->route('/blog/cms', function() {
     require 'apps/edu/ui/views/blogs/cms/list.php';
 });
-
+$router->route('/blog/cms_new', function() {
+    require 'apps/edu/ui/views/blogs/cms-new/list.php';
+});
 $router->route('/blog/cms/create', function() {
     require 'apps/edu/ui/views/blogs/cms/create.php';
 });
@@ -128,6 +130,31 @@ $router->route('/blog/cms/edit', function() {
 
 $router->route('/blog/cms/delete', function() {
     require 'apps/edu/ui/views/blogs/cms/delete.php';
+});
+
+// Advanced CMS routes
+$router->route('/blog/cms-new', function() {
+    require 'apps/edu/ui/views/blogs/cms-new/list.php';
+});
+
+$router->route('/blog/cms-new/list', function() {
+    require 'apps/edu/ui/views/blogs/cms-new/list.php';
+});
+
+$router->route('/blog/cms-new/create', function() {
+    require 'apps/edu/ui/views/blogs/cms-new/create.php';
+});
+
+$router->route('/blog/cms-new/edit', function() {
+    require 'apps/edu/ui/views/blogs/cms-new/edit.php';
+});
+
+$router->route('/blog/cms-new/view', function() {
+    require 'apps/edu/ui/views/blogs/cms-new/view.php';
+});
+
+$router->route('/blog/cms-new/delete', function() {
+    require 'apps/edu/ui/views/blogs/cms-new/delete.php';
 });
 
 $router->route('/issues', function() {

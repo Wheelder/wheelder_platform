@@ -214,4 +214,55 @@ class BlogController extends Controller
             return false;
         }
     }
+
+    public function insert_advanced($title, $content, $file_name = null, $file_mime = null, $file_data = null)
+    {
+        $conn = $this->connectDb();
+        
+        if ($file_name && $file_data) {
+            $stmt = $conn->prepare("INSERT INTO blogs (title, content, file_name, file_mime, file_data) VALUES (?, ?, ?, ?, ?)");
+            $null = null;
+            $stmt->bind_param("ssssb", $title, $content, $file_name, $file_mime, $null);
+            $stmt->send_long_data(4, $file_data);
+        } else {
+            $stmt = $conn->prepare("INSERT INTO blogs (title, content) VALUES (?, ?)");
+            $stmt->bind_param("ss", $title, $content);
+        }
+        
+        $result = $stmt->execute();
+        $stmt->close();
+        $conn->close();
+        
+        return $result;
+    }
+
+    public function update_advanced($id, $title, $content, $file_name = null, $file_mime = null, $file_data = null)
+    {
+        $conn = $this->connectDb();
+        
+        if ($file_name && $file_data) {
+            $stmt = $conn->prepare("UPDATE blogs SET title=?, content=?, file_name=?, file_mime=?, file_data=? WHERE id=?");
+            $null = null;
+            $stmt->bind_param("ssssbi", $title, $content, $file_name, $file_mime, $null, $id);
+            $stmt->send_long_data(4, $file_data);
+        } else {
+            $stmt = $conn->prepare("UPDATE blogs SET title=?, content=? WHERE id=?");
+            $stmt->bind_param("ssi", $title, $content, $id);
+        }
+        
+        $result = $stmt->execute();
+        $stmt->close();
+        $conn->close();
+        
+        return $result;
+    }
+
+    public function get_image_by_id($id)
+    {
+        $id = $this->connectDb()->real_escape_string($id);
+        $sql = "SELECT file_name, file_mime, file_data FROM blogs WHERE id = '$id'";
+        $stmt = $this->run_query($sql);
+        $result = $stmt->fetch_assoc();
+        return $result;
+    }
 }
