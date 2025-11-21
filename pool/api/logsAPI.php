@@ -94,7 +94,7 @@ if (isset($_POST['login'])) {
   $result = $log->login($email, $password);
   $verified = $log->email_verification_checkup($email);
 
-  if ($verified) {
+  //if ($verified) {
 
     $pass = $result->fetch_assoc();
 
@@ -176,11 +176,12 @@ if (isset($_POST['login'])) {
       exit();
 
 
-
+    /*
     } else {
       $otp = $log->verify($_SESSION['email_temp']);
       $log->alert_redirect("Please verify your email, new code is sent", "/verification");
     }
+    */
 
   } else {
     // Handle users without an account
@@ -242,13 +243,16 @@ if (isset($_POST['signup'])) {
     $profile_status = 0;
     $signup = $log->store($first_name, $last_name, $email, $referringCode, $password, $profile_status, $default_app);
     if ($signup) {
-      $verify = $log->verify($email);
+      $log->alert_redirect("Login Now", "/login");
+      //$verify = $log->verify($email);
+      /*
       $_SESSION['email'] = $email;
       if ($verify) {
         $log->alert_redirect("Please verify your email, OTP code is sent", "/verification");
       } else {
         $log->alert_redirect("Something went wrong, try again", "/signup");
       }
+        */
     } else {
       $log->alert_redirect("Something went wrong, try again later", "/signup");
     }

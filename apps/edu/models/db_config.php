@@ -4,14 +4,14 @@
 class config
 {
     private $servername_local = "localhost";
-    private $dbname_local = 'wheelder';
+    private $dbname_local = "whd";
     private $user_local = "root";
     private $pass_local = ""; // XAMPP default is empty password
     
     private $servername = "localhost";
-    private $dbname = 'u946493694_edu_platform';
-    private $user = "u946493694_edu_u";
-    private $pass = "M+oNc88e";
+    private $dbname = 'whd';
+    private $user = "root";
+    private $pass = "";
 
     //database details for testing server
     private $servername_d = "localhost";
@@ -59,7 +59,7 @@ class config
         // TEMPORARY: Force local database connection for XAMPP debugging
         $dbConfig = [
             'servername' => 'localhost',
-            'dbname' => 'wheelder',
+            'dbname' => 'whd',
             'user' => 'root',
             'pass' => ''
         ];

@@ -1,6 +1,7 @@
 <?php
-$path = $_SERVER['DOCUMENT_ROOT'];
-include $path . '/apps/edu/controllers/BlogController.php';
+$path = $_SERVER['DOCUMENT_ROOT'] . '/wheelder';
+require_once $path . '/apps/edu/controllers/BlogController.php';
+
 $blog = new BlogController();
 
 $blog->check_auth();
@@ -10,7 +11,7 @@ $notes = $blog->list_blogs(); // Assuming this returns an array of notes
 $stopics= $blog->list_suggestions(); // Assuming this returns an array of suggested topics
 
 //include the nav
-include $path.'/apps/edu/ui/layouts/nav.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/wheelder'.'/apps/edu/ui/layouts/nav.php';
 ?>
 
 <body>
@@ -43,4 +44,4 @@ include $path.'/apps/edu/ui/layouts/nav.php';
         </table>
     
     </div>
-<?php include $path.'/apps/edu/ui/layouts/footer.php'; ?>
+<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/wheelder'.'/apps/edu/ui/layouts/footer.php'; ?>

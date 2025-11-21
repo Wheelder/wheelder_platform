@@ -1,6 +1,5 @@
 <?php
 $path = $_SERVER['DOCUMENT_ROOT'];
-
 require_once $path . '/wheelder/apps/edu/controllers/Controller.php';
 
 class BlogController extends Controller
@@ -12,7 +11,7 @@ class BlogController extends Controller
 
     public function getBlogByTitle($title)
     {
-        $sql = "SELECT * FROM blogs WHERE title = '$title'";
+        $sql = "SELECT * FROM questions WHERE question = '$title'";
         $stmt = $this->run_query($sql);
         $blog = $stmt->fetch_assoc();
         return $blog;
@@ -33,24 +32,24 @@ class BlogController extends Controller
 
     public function titles()
     {
-        $sql = "SELECT DISTINCT title FROM blogs ORDER BY id DESC";
+        $sql = "SELECT DISTINCT question FROM questions ORDER BY id DESC";
         $stmt = $this->run_query($sql);
         while ($row = $stmt->fetch_array()) {
             $titles[] = $row;
             
-            $title = $row["title"];
+            $title = $row["question"];
             //make to lower case and use _ inplace of + to
             $title = str_replace(" ", "_", strtolower($title));
             //encode the url and
             
-            if ($row["title"] != "Home" ) {
+            if ($row["question"] != "Home" ) {
                 //convert the title to short encrpted code 
                 echo
                     '<div class="toc">
                 <li class="nav-item">
                 <a class="nav-link active" aria-current="page" href="?t=' .urldecode($title) . '">
                     <span data-feather="home" class="align-text-bottom"></span>' .
-                    $row["title"] . '
+                    $row["question"] . '
                 </a>
             </li>
             </div>';
@@ -84,7 +83,7 @@ class BlogController extends Controller
 
     public function get_blog_edit($id)
     {
-        $sql = "SELECT * FROM blogs WHERE id = '$id'";
+        $sql = "SELECT * FROM questions WHERE id = '$id'";
         $stmt = $this->run_query($sql);
         $blog = $stmt->fetch_assoc();
         return $blog;
@@ -101,11 +100,11 @@ class BlogController extends Controller
         //camel case the title
         $title = ucwords($title);
 
-        $sql = "SELECT * FROM blogs WHERE title = '$title'";
+        $sql = "SELECT * FROM questions WHERE question = '$title'";
         $stmt = $this->run_query($sql);
         while ($row = $stmt->fetch_assoc()) {
             $blog[] = $row;
-            $content = $row['content'];
+            $content = $row['answer'];
             $content=str_replace("*", "", $content);
             $content=str_replace("`", "", $content);
             $content=str_replace("~", "", $content);
@@ -114,11 +113,11 @@ class BlogController extends Controller
             $content=str_replace("`", "", $content);
             $content=str_replace("**", "", $content);
             $content=str_replace("Certainly!", "", $content);
-            //$image = $row['filepath'];
+            $image = $row['filepath'];
             $content = trim($content);
 
             echo "<div class='content' id='contentDiv'>";
-            echo "<h4>{$row['title']}</h4><br>";
+            echo "<h4>{$row['question']}</h4><br>";
             echo "{$content}";
             echo "&nbsp;";
             //echo "<img src='$image' alt='Image' style='width: 100%; height: auto;'>";
@@ -144,7 +143,7 @@ class BlogController extends Controller
 
     public function list_suggestions()
     {
-        $sql = "SELECT * FROM blogs ORDER BY id DESC LIMIT 5";
+        $sql = "SELECT * FROM questions ORDER BY id DESC LIMIT 5";
         $stmt = $this->run_query($sql);
         return $stmt;
     }
@@ -152,7 +151,7 @@ class BlogController extends Controller
 
     public function list_blogs()
     {
-        $sql = "SELECT * FROM blogs ORDER BY id DESC";
+        $sql = "SELECT * FROM questions ORDER BY id DESC";
         $stmt = $this->run_query($sql);
         return $stmt;
     }

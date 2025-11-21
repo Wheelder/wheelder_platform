@@ -1,8 +1,12 @@
 <?php
-    $dapp= $_GET['dp'] ?? Null OR '';
-    if($dapp == ''){
-        $dapp = 'main';
-    }
+// Include top.php to get base path functions
+$path = dirname(dirname(__DIR__)); // Goes from pool/auth to project root
+require_once $path . '/top.php';
+
+$dapp= $_GET['dp'] ?? Null OR '';
+if($dapp == ''){
+    $dapp = 'main';
+}
 ?>
 
 <!DOCTYPE html>
@@ -54,7 +58,7 @@
                         <div class="or-separator mb-3"></div>
                         <hr>
 
-                        <form method="POST" action="/log_api">
+                        <form method="POST" action="<?php echo url('/log_api'); ?>">
                             <input type="hidden" name="dapp" value="<?php echo $dapp; ?>" />   
                             <div class="mb-3">
                                 
@@ -76,13 +80,13 @@
                                 <label class="form-check-label" for="rememberMe">Remember Me</label>
                             </div>
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <a href="/forgot_pass" class="text-primary">Forgot Password?</a>
+                                <a href="<?php echo url('/forgot_pass'); ?>" class="text-primary">Forgot Password?</a>
                                 <button class="btn btn-primary " type="submit" name="login">Login</button>
                             </div>
                             
                         </form>
                         <div class="text-center">
-                            <p class="mb-0">Don't have an account? <a href="/signup" class="text-primary">Sign Up</a></p>
+                            <p class="mb-0">Don't have an account? <a href="<?php echo url('/signup'); ?>" class="text-primary">Sign Up</a></p>
                         </div>
                     </div>
                 </div>

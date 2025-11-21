@@ -1,5 +1,9 @@
 <?php
 //session_start();
+// Include top.php to get base path functions
+$rootPath = dirname(dirname(__DIR__)); // Goes from pool/auth to project root
+require_once $rootPath . '/top.php';
+
 // Use __DIR__ to get the current file's directory and navigate relatively
 $path = dirname(__DIR__); // Goes from pool/auth to pool
 include $path . '/libs/controllers/LogsController.php';
@@ -40,7 +44,7 @@ include $path . '/pool/assets/layouts/style.php';
                             <h5 class="card-title mb-0">Profile Setup</h5>
                         </div>
                         <div class="card-body">
-                            <form action="/log_api" method="POST" enctype="multipart/form-data">
+                            <form action="<?php echo url('/log_api'); ?>" method="POST" enctype="multipart/form-data">
                                 <input type="hidden" name="user" value="<?php echo $_SESSION['user_id'];?>">
                                 <div class="row">
                                     <div class="col-md-12">

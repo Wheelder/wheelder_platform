@@ -1,13 +1,27 @@
 <?php
-$path = $_SERVER['DOCUMENT_ROOT'];
-include_once $path . '/wheelder/apps/edu/models/database.php';
+// Use __DIR__ to get the current file's directory and navigate relatively
+$path = dirname(__DIR__); // Goes from apps/edu/controllers to apps/edu
+include_once $path . '/models/database.php';
 
 class Db extends Database
 {
 
     public function profiles_table($table = "users")
     {
-        $this->deleteTable($table);
+        // Check if table exists first
+        $conn = $this->connectDb();
+        $checkSql = "SHOW TABLES LIKE '$table'";
+        $result = $conn->query($checkSql);
+        
+        if ($result && $result->num_rows > 0) {
+            // Table exists, don't recreate it
+            echo "Table $table already exists, skipping creation</br>";
+            $conn->close();
+            return;
+        }
+        
+        // Table doesn't exist, create it
+        $conn->close();
         $this->createTable(
             $table,
             '

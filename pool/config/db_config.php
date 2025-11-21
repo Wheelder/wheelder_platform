@@ -11,12 +11,12 @@ class config
     private $pass_local = "";
     */
     private $servername_local = "localhost";
-    private $dbname_local = 'wheelder';
+    private $dbname_local = 'whd';
     private $user_local = "root";
     private $pass_local = "";
     
     private $servername = "localhost";
-    private $dbname = 'wheelder';
+    private $dbname = 'whd';
     private $user = "root";
     private $pass = "";
 

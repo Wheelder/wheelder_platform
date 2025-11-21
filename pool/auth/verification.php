@@ -1,3 +1,8 @@
+<?php
+// Include top.php to get base path functions
+$path = dirname(dirname(__DIR__)); // Goes from pool/auth to project root
+require_once $path . '/top.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,7 +22,7 @@
                     <div class="card-body">
                         
                     
-                        <form method="POST" action="/log_api" class="needs-validation" >
+                        <form method="POST" action="<?php echo url('/log_api'); ?>" class="needs-validation" >
                         
                             <div class="mb-3">
                                 <label for="email" class="form-label">OTP Code (Check your email):</label>

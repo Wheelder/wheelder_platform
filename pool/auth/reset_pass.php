@@ -1,3 +1,8 @@
+<?php
+// Include top.php to get base path functions
+$path = dirname(dirname(__DIR__)); // Goes from pool/auth to project root
+require_once $path . '/top.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,7 +22,7 @@
                     <div class="card-body">
                         
                         <h3 class="text-center mb-4">Forgot Password</h3>
-                        <form method="POST" action="/log_api" >
+                        <form method="POST" action="<?php echo url('/log_api'); ?>" >
                             
                             <div class="mb-3">
                                 <label for="email" class="form-label">Reset your password:</label>

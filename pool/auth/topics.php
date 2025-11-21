@@ -1,4 +1,7 @@
 <?php
+// Include top.php to get base path functions
+$rootPath = dirname(dirname(__DIR__)); // Goes from pool/auth to project root
+require_once $rootPath . '/top.php';
 
 // Use __DIR__ to get the current file's directory and navigate relatively
 $path = dirname(__DIR__); // Goes from pool/auth to pool
@@ -24,7 +27,7 @@ include $path . '/pool/assets/layouts/style.php';
                             <h5 class="card-title mb-0">Select Topics</h5>
                         </div>
                         <div class="card-body">
-                            <form action="/log_api" method="POST">
+                            <form action="<?php echo url('/log_api'); ?>" method="POST">
                                 <input type="hidden" name="user" value="<?php echo $uid; ?>">
 
                                 <div class="row">

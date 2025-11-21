@@ -1,8 +1,11 @@
 <?php
+$path = $_SERVER['DOCUMENT_ROOT'] . '/wheelder';
+require_once $path . '/apps/edu/controllers/BlogController.php';
 
-$path = $_SERVER['DOCUMENT_ROOT'];
-include $path . '/apps/edu/controllers/BlogController.php';
 $blog = new BlogController();
+
+
+
 
 $blog->check_auth();
 
@@ -21,7 +24,7 @@ $longitude = isset($data['loc']) ? explode(',', $data['loc'])[1] : "";
 $timezone = isset($data['timezone']) ? $data['timezone'] : "";
 $date = date("Y-m-d H:i:s");
 
-$blog->store_website_traffic($ip, $country, $city, $latitude, $longitude, $timezone);
+//$blog->store_website_traffic($ip, $country, $city, $latitude, $longitude, $timezone);
 
 
 ?>

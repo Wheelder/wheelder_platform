@@ -1,3 +1,8 @@
+<?php
+// Include top.php to get base path functions
+$path = dirname(dirname(__DIR__)); // Goes from pool/auth to project root
+require_once $path . '/top.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -32,7 +37,7 @@
                             <a href="/signup/microsoft" class="btn btn-outline-primary btn-sm">Microsoft</a>
                         </div>-->
 
-                        <form method="POST" action="/log_api">
+                        <form method="POST" action="<?php echo url('/log_api'); ?>">
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     
@@ -58,12 +63,12 @@
                             <div class="mb-3 form-check">
                                 <input type="checkbox" class="form-check-input" id="termsAndConditions" name="termsAndConditions" required>
                                 <label class="form-check-label" for="termsAndConditions">
-                                    I agree to the <a href="/terms" target="_blank">Terms and Conditions</a> and <a href="/privacy" target="_blank">Privacy Policy</a>
+                                    I agree to the <a href="<?php echo url('/terms'); ?>" target="_blank">Terms and Conditions</a> and <a href="<?php echo url('/privacy'); ?>" target="_blank">Privacy Policy</a>
                                 </label>
                             </div>
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <button class="btn btn-primary" onclick="return checkpassword();" type="submit" name="signup">Sign up</button>
-                                <a href="/login" class="btn btn-secondary">Login</a>
+                                <a href="<?php echo url('/login'); ?>" class="btn btn-secondary">Login</a>
                             </div>
                         </form>
                     </div>

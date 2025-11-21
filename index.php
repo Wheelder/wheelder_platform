@@ -13,14 +13,7 @@ include_once 'top.php';
 
 // --- Define routes cleanly using inline functions ---
 
-$router->route('/', function() use ($dApp) {
-    if (isset($_SESSION['isLoggedIn']) && $_SESSION['isLoggedIn'] === true && !empty($dApp)) {
-        header("Location: /$dApp");
-        exit();
-    } else {
-        require 'default.php';
-    }
-});
+
 $router->route('/', function() {
     require 'landing.php';
 });
