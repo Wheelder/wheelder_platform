@@ -1,6 +1,8 @@
 <?php
-$path = $_SERVER['DOCUMENT_ROOT'] ;
-require_once $path . '/apps/edu/controllers/BlogController.php';
+$path = $_SERVER['DOCUMENT_ROOT'];
+include $path . '/apps/edu/controllers/BlogController.php';
+
+
 
 $blog = new BlogController();
 
@@ -44,4 +46,4 @@ require_once $_SERVER['DOCUMENT_ROOT'] . '/apps/edu/ui/layouts/nav.php';
         </table>
     
     </div>
-<?php require_once $_SERVER['DOCUMENT_ROOT'] . '/wheelder'.'/apps/edu/ui/layouts/footer.php'; ?>
+<?php require_once $_SERVER['DOCUMENT_ROOT'] .'/apps/edu/ui/layouts/footer.php'; ?>

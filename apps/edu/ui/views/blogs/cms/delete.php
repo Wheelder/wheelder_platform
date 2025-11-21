@@ -1,9 +1,5 @@
 <?php
-$docRoot = $_SERVER['DOCUMENT_ROOT'];        // e.g. C:/xampp/htdocs
-$scriptPath = $_SERVER['SCRIPT_NAME'];       // e.g. /wheelder/index.php
-$parts = explode('/', trim($scriptPath, '/'));
-$projectDir = $parts[0];      
-$path = $docRoot."/".$projectDir;               // "wheelder"
+$path = $_SERVER['DOCUMENT_ROOT'];
 include $path . '/apps/edu/controllers/BlogController.php';
 $blog = new BlogController();
 $blog->check_auth();

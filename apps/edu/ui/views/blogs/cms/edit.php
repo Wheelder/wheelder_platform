@@ -1,18 +1,13 @@
 <?php
-$docRoot = $_SERVER['DOCUMENT_ROOT'];        // e.g. C:/xampp/htdocs
-$scriptPath = $_SERVER['SCRIPT_NAME'];       // e.g. /wheelder/index.php
-$parts = explode('/', trim($scriptPath, '/'));
-$projectDir = $parts[0];                     // "wheelder"
+$path = $_SERVER['DOCUMENT_ROOT'];
+include $path . '/apps/edu/controllers/BlogController.php';
 
-$path = $docRoot."/".$projectDir;
-
-require $path . '/apps/edu/controllers/BlogController.php';
 $blog = new BlogController();
 $blog->check_auth();
 
 $note = $blog-> get_blog_edit($_GET['id']);
 
-include $docRoot."/".$projectDir . '/apps/edu/ui/layouts/nav.php';
+include $path . '/apps/edu/ui/layouts/nav.php';
 ?>
 
 <section class="bg-light py-1">
@@ -46,7 +41,7 @@ include $docRoot."/".$projectDir . '/apps/edu/ui/layouts/nav.php';
 
 
 <?php
-include $docRoot."/".$projectDir . '/apps/edu/ui/layouts/footer.php';
+include $path . '/apps/edu/ui/layouts/footer.php';
 ?>
 
 

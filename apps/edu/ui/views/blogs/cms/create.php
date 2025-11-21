@@ -39,7 +39,7 @@ include $_SERVER['DOCUMENT_ROOT'].'/apps/edu/ui/layouts/nav.php';
 </section>
 
 <?php
-include $_SERVER['DOCUMENT_ROOT'].'/wheelder' . '/apps/edu/ui/layouts/footer.php';
+include $_SERVER['DOCUMENT_ROOT']. '/apps/edu/ui/layouts/footer.php';
 ?>
 
 
