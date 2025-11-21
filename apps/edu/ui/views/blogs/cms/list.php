@@ -1,5 +1,5 @@
 <?php
-$path = $_SERVER['DOCUMENT_ROOT'] . '/wheelder';
+$path = $_SERVER['DOCUMENT_ROOT'] ;
 require_once $path . '/apps/edu/controllers/BlogController.php';
 
 $blog = new BlogController();

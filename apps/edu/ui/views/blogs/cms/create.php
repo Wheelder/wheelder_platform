@@ -1,10 +1,10 @@
 <?php
-$path = $_SERVER['DOCUMENT_ROOT'].'/wheelder';
+$path = $_SERVER['DOCUMENT_ROOT'];
 include $path . '/apps/edu/controllers/BlogController.php';
 $blog = new BlogController();
 $blog->check_auth();
 
-include $_SERVER['DOCUMENT_ROOT'].'/wheelder'. '/apps/edu/ui/layouts/nav.php';
+include $_SERVER['DOCUMENT_ROOT'].'/apps/edu/ui/layouts/nav.php';
 ?>
 
 
@@ -16,7 +16,7 @@ include $_SERVER['DOCUMENT_ROOT'].'/wheelder'. '/apps/edu/ui/layouts/nav.php';
                 <div class="card shadow">
                     <div class="card-body">
                         <h2 class="card-title mb-4 fs-3">Post Note</h2>
-                        <form action="/wheelder/edu_blog" method="post">
+                        <form action="/edu_blog" method="post">
                         
                             <div class="mb-3">
                                 <label for="title" class="form-label">Title of Note</label>
