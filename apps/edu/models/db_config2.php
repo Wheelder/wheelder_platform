@@ -3,17 +3,10 @@
 
 class config
 {
-
-    /*
     private $servername_local = "localhost";
-    private $dbname_local = 'wheelder';
+    private $dbname_local = "whd";
     private $user_local = "root";
-    private $pass_local = "";
-    */
-    private $servername_local = "localhost";
-    private $dbname_local = 'whd';
-    private $user_local = "root";
-    private $pass_local = "";
+    private $pass_local = ""; // XAMPP default is empty password
     
     private $servername = "localhost";
     private $dbname = 'whd';
@@ -39,71 +32,42 @@ class config
     }
 
     public function checkHost() {
-        $host = $_SERVER['HTTP_HOST'];
+        $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
+        
+        // For XAMPP local development, always use local database
+        // Check common XAMPP scenarios
+        if (empty($host) || 
+            strpos($host, 'localhost') !== false || 
+            strpos($host, '127.0.0.1') !== false || 
+            $host === 'localhost' ||
+            isset($_SERVER['SERVER_NAME']) && $_SERVER['SERVER_NAME'] === 'localhost') {
+            return 1;
+        }
     
         // Use switch case to check the host name and return the host number
         switch ($host) {
-            case 'localhost':
-            case 'localhost:80':
-            case 'localhost:8080':
-            case '127.0.0.1':
-            case '127.0.0.1:80':
-            case '127.0.0.1:8080':
-                return 1; // Use local development database
+            case 'regrowup.site':
+                return 2;
             case 'wheelder.com':
                 return 3;
             default:
-                // For local development, default to localhost config
-                if (strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false) {
-                    return 1;
-                }
                 return 0;
         }
     }
     
     public function connectDb() {
-        $hostNumber = $this->checkHost();
-    
-        // Define an array with database details for different hosts
-        $dbDetails = [
-            1=>[
-                'servername' => $this->servername_local,
-                'dbname' => $this->dbname_local,
-                'user' => $this->user_local,
-                'pass' => $this->pass_local,
-            ],
-            2 => [
-                'servername' => $this->servername_local,
-                'dbname' => $this->dbname_local,
-                'user' => $this->user_local,
-                'pass' => $this->pass_local,
-            ],
-            3 => [
-                'servername' => $this->servername,
-                'dbname' => $this->dbname,
-                'user' => $this->user,
-                'pass' => $this->pass,
-            ],
-            4 => [
-                'servername' => $this->servername_d,
-                'dbname' => $this->dbname_d,
-                'user' => $this->user_d,
-                'pass' => $this->pass_d,
-            ],
-            0 => [
-                'servername' => $this->servername,
-                'dbname' => $this->dbname,
-                'user' => $this->user,
-                'pass' => $this->pass,
-            ],
+        // TEMPORARY: Force local database connection for XAMPP debugging
+        $dbConfig = [
+            'servername' => 'localhost',
+            'dbname' => 'whd',
+            'user' => 'root',
+            'pass' => ''
         ];
-    
-        // Get the database details based on the host number
-        $dbConfig = $dbDetails[$hostNumber];
-    
+        
+        error_log("DEBUG: Using forced local config: " . print_r($dbConfig, true));
+
         // Use try and catch for mysqli connection
-        $conn = new mysqli($dbConfig['servername'], $dbConfig['user'], $dbConfig['pass'], $dbConfig['dbname']);
-        if ($conn->connect_error) {
+        $conn = new mysqli($dbConfig['servername'], $dbConfig['user'], $dbConfig['pass'], $dbConfig['dbname']);        if ($conn->connect_error) {
             die("Connection failed: " . $conn->connect_error);
         }
     
@@ -136,10 +100,10 @@ class config
                 'pass' => $this->pass_d,
             ],
             0 => [
-                'servername' => $this->servername_local,
-                'dbname' => $this->dbname_local,
-                'user' => $this->user_local,
-                'pass' => $this->pass_local,
+                'servername' => $this->servername_d,
+                'dbname' => $this->dbname_d,
+                'user' => $this->user_d,
+                'pass' => $this->pass_d,
             ],
         ];
     
