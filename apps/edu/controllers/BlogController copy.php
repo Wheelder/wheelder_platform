@@ -1,6 +1,6 @@
 <?php
 $path = $_SERVER['DOCUMENT_ROOT'];
-require_once $path . '/wheelder/apps/edu/controllers/Controller.php';
+require_once $path . '/apps/edu/controllers/Controller.php';
 
 class BlogController extends Controller
 {
