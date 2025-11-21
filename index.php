@@ -105,7 +105,7 @@ $router->route('/verification', function() {
 
 // --- LAB and Blog sections ---
 $router->route('/learn', function() {
-    require 'apps/edu/ui/views/learn/app_main.php';
+    require 'apps/edu/ui/views/blogs/app.php';
 });
 
 
