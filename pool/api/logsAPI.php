@@ -6,7 +6,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Use __DIR__ to get the current file's directory and navigate relatively
 $path = $_SERVER['DOCUMENT_ROOT'];   // Goes from pool/api to pool
-include $path . '/libs/controllers/LogsController.php';
+include $path . '/pool/libs/controllers/LogsController.php';
 
 $log = new LogsController();
 
