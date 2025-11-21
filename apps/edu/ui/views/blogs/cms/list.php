@@ -11,7 +11,7 @@ $notes = $blog->list_blogs(); // Assuming this returns an array of notes
 $stopics= $blog->list_suggestions(); // Assuming this returns an array of suggested topics
 
 //include the nav
-require_once $_SERVER['DOCUMENT_ROOT'] . '/wheelder'.'/apps/edu/ui/layouts/nav.php';
+require_once $_SERVER['DOCUMENT_ROOT'] . '/apps/edu/ui/layouts/nav.php';
 ?>
 
 <body>
