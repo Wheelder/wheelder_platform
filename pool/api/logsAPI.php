@@ -131,19 +131,19 @@ if (isset($_POST['login'])) {
 
           switch ($_SESSION['dapp']) {
             case 1:
-              header("Location: /learn"); // Redirect to personal app  
+              header("Location: /blog"); // Redirect to personal app  
               break;
             case 2:
-              header("Location: /learn"); // Redirect to education app
+              header("Location: /blog"); // Redirect to education app
               break;
             case 3:
-              header("Location: /learn"); // Redirect to work app
+              header("Location: /blog"); // Redirect to work app
               break;
             case 4:
               header("Location: /learn"); // Redirect to work app
               break;
             default:
-              header("Location: /learn"); // Redirect to home page if default app is not set
+              header("Location: /blog"); // Redirect to home page if default app is not set
               break;
           }
 
