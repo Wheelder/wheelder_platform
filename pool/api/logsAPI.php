@@ -145,7 +145,7 @@ if (isset($_POST['login'])) {
               header("Location: /blog"); // Redirect to work app
               break;
             case 4:
-              header("Location: /learn"); // Redirect to work app
+              header("Location: /blog"); // Redirect to work app
               break;
             default:
               header("Location: /blog"); // Redirect to home page if default app is not set
