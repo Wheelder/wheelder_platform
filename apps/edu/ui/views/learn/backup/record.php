@@ -4,6 +4,9 @@ include 'AppController.php';
 
 $note = new AppController();
 
+ 
+$blog = $note;
+
 //$note->check_auth();
 ?>
 
@@ -118,6 +121,7 @@ $note = new AppController();
             <?php 
             
             $note->getAllData();
+            include "app_src.php";
             
             ?>
 

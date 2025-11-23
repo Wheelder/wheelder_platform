@@ -1,11 +1,20 @@
 <?php
-session_start();
+//session_start();
 $path = $_SERVER['DOCUMENT_ROOT'];
-require_once $path . '/apps/edu/ui/views/learn/LearnController.php';
+$host = $_SERVER['HTTP_HOST'];
+
+if ($host === "localhost") {
+    $dir = '/wheelder';
+    
+    require_once $path . $dir . '/apps/edu/ui/views/learn/LearnController.php';
+} else {
+    require_once $path . '/apps/edu/ui/views/learn/LearnController.php';
+}
+
 
 $learn = new LearnController();
 // Temporarily comment out authentication for testing
-$learn->checkAuth();
+//$learn->checkAuth();
 
 // Generate CSRF token
 $csrfToken = $learn->generateCSRFToken();

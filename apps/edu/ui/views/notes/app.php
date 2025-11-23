@@ -1,9 +1,18 @@
 <?php
 $path = $_SERVER['DOCUMENT_ROOT'];
-include $path . '/apps/edu/controllers/NoteController.php';
+$host = $_SERVER['HTTP_HOST'];
+
+if ($host === "localhost") {
+    $dir = '/wheelder';
+    
+    include $path . $dir . '/apps/edu/controllers/NoteController.php';
+} else {
+    include $path . '/apps/edu/controllers/NoteController.php';
+}
+
 $note = new NoteController();
 
-$note->check_auth();
+//$note->check_auth();
 
 $ip = $_SERVER['REMOTE_ADDR'];
 

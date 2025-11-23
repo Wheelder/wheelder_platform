@@ -1,11 +1,20 @@
 <?php
 //find the root path in a different way that can include the file even in local development environments
 //$path = dirname(__FILE__);
+$path = $_SERVER['DOCUMENT_ROOT'];
+$host = $_SERVER['HTTP_HOST'];
 
-//include $path . '/apps/edu/controllers/BlogController.php';
-//include $path . '/apps/edu/controllers/QuestionController.php';
-require_once __DIR__ . '/../../../controllers/BlogController.php';
-require_once __DIR__ . '/../../../controllers/QuestionController.php';
+if ($host === "localhost") {
+    $dir = '/wheelder';
+    include $path . $dir . '/apps/edu/controllers/BlogController.php';
+    include $path . $dir . '/apps/edu/controllers/QuestionController.php';
+} else {
+    include $path . '/apps/edu/controllers/BlogController.php';
+    include $path . '/apps/edu/controllers/QuestionController.php';
+}
+
+//require_once __DIR__ . '/../../../controllers/BlogController.php';
+//require_once __DIR__ . '/../../../controllers/QuestionController.php';
 // Router.php is not in the controllers directory - removing this include for now
 // require_once __DIR__ . '/../../../controllers/Router.php';
 
@@ -13,7 +22,7 @@ require_once __DIR__ . '/../../../controllers/QuestionController.php';
 //$note = new QuestionController();
 $blog = new QuestionController();
 
-$blog->check_auth();
+//$blog->check_auth();
 
 $ip = $_SERVER['REMOTE_ADDR'];
 
@@ -629,23 +638,9 @@ $note=$blog;
     <div class="container-fluid">
         <div class="row">
 
-            <nav id="sidebarMenu" class="col-md-2 col-lg-2 d-md-block sidebar collapse">
-                <div class="position-sticky pt-3 sidebar-sticky">
+        
 
-
-                    <ul class="nav flex-column">
-
-                        <?php
-                       // $blog->titles();
-                        ?>
-
-                    </ul>
-                </div>
-
-
-            </nav>
-
-            <main class="col-md-10 ms-sm-auto col-lg-10 px-md-4">
+            <main class="col-md-10 ms-sm-auto col-lg-12 px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 ">
 
 

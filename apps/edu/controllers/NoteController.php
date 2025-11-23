@@ -1,16 +1,25 @@
 <?php
 $path = $_SERVER['DOCUMENT_ROOT'];
-include $path . '/pool/libs/controllers/Controller.php';
+$host = $_SERVER['HTTP_HOST'];
+
+if ($host === "localhost") {
+    $dir = '/wheelder';
+    
+    include $path . $dir . '/pool/libs/controllers/Controller.php';
+} else {
+    include $path . '/pool/libs/controllers/Controller.php';
+}
+
 
 
 define('OPENAI_API_ENDPOINT', 'https://api.openai.com/v1/chat/completions');
-define('OPENAI_API_KEY', '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'); // Replace 'YOUR_OPENAI_API_KEY' with your actual API key
+define('OPENAI_API_KEY', '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'); // Replace 'YOUR_OPENAI_API_KEY' with your actual API key
 
 
 
 class NoteController extends Controller
 {
-    private $open_ai = "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";
+    private $open_ai = "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";
 
     public function __construct()
     {

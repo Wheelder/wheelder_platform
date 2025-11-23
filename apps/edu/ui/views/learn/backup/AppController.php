@@ -1,6 +1,16 @@
 <?php
 $path = $_SERVER['DOCUMENT_ROOT'];
-include $path . '/pool/libs/controllers/Controller.php';
+$host = $_SERVER['HTTP_HOST'];
+
+if ($host === "localhost") {
+    $dir = '/wheelder';
+    
+    require_once $path . $dir . '/pool/libs/controllers/Controller.php';
+    
+} else {
+    include $path . '/pool/libs/controllers/Controller.php';
+}
+
 define('OPENAI_API_ENDPOINT', 'https://api.openai.com/v1/chat/completions');
 define('OPENAI_API_KEY', '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'); // Replace 'YOUR_OPENAI_API_KEY' with your actual API key
 

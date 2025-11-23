@@ -1,10 +1,19 @@
 <?php
 $path = $_SERVER['DOCUMENT_ROOT'];
-include $path . '/apps/edu/controllers/NoteController.php';
+$host = $_SERVER['HTTP_HOST'];
+
+if ($host === "localhost") {
+    $dir = '/wheelder';
+    
+    include $path . $dir . '/apps/edu/controllers/NoteController.php';
+} else {
+    include $path . '/apps/edu/controllers/NoteController.php';
+}
+
 
 $note = new NoteController();
 
-$note->check_auth();
+//$note->check_auth();
 
 
 ?>
@@ -646,7 +655,7 @@ $note->check_auth();
 <body>
     <header class="navbar navbar-dark sticky-top bg-dark  flex-md-nowrap p-0 shadow">
 
-        <a class="navbar-brand col-md-2 col-lg-2 me-0 px-3 fs-6" href="/blog">Wheeleder</a>
+        <a class="navbar-brand col-md-2 col-lg-2 me-0 px-3 fs-6" href="/blog">Wheelder</a>
 
         <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse"
             data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false"

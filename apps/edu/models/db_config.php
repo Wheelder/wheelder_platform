@@ -16,9 +16,9 @@ class config
     private $pass_local = "";
     
     private $servername = "localhost";
-    private $dbname = 'wheelder_db';
-    private $user = "wheelder_user";
-    private $pass = "StrongPass123!";
+    private $dbname = 'whd';
+    private $user = "root";
+    private $pass = "";
 
     //database details for testing server
     private $servername_d = "localhost";
@@ -44,6 +44,7 @@ class config
         // Use switch case to check the host name and return the host number
         switch ($host) {
             case 'localhost':
+            case 'localhost/wheelder/':
             case 'localhost:80':
             case 'localhost:8080':
             case '127.0.0.1':

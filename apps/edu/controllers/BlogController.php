@@ -1,7 +1,14 @@
 <?php
 $path = $_SERVER['DOCUMENT_ROOT'];
+$host = $_SERVER['HTTP_HOST'];
 
-require_once $path . '/apps/edu/controllers/Controller.php';
+if ($host === "localhost") {
+    $dir = '/wheelder';
+    require_once $path . $dir. '/apps/edu/controllers/Controller.php';
+} else {
+    require_once $path . '/apps/edu/controllers/Controller.php';
+}
+
 
 class BlogController extends Controller
 {

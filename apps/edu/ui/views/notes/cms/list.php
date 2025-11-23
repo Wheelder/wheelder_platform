@@ -1,9 +1,18 @@
 <?php
 $path = $_SERVER['DOCUMENT_ROOT'];
-include $path.'/apps/edu/controllers/NoteController.php';
+$host = $_SERVER['HTTP_HOST'];
+
+if ($host === "localhost") {
+    $dir = '/wheelder';
+    
+    include $path . $dir . '/apps/edu/controllers/NoteController.php';
+} else {
+    include $path.'/apps/edu/controllers/NoteController.php';
+}
+
 $noteController = new NoteController();
 
-$noteController->check_auth();
+//$noteController->check_auth();
 
 $notes = $noteController->list_notes(); // Assuming this returns an array of notes
 

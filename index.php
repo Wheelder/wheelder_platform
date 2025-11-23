@@ -17,7 +17,7 @@ require_once 'Router.php';
 
 $router = new Router(); // Now auto-detects base path
 
-include_once 'top.php';
+//include_once 'top.php';
 
 // --- Define routes cleanly using inline functions ---
 
@@ -34,15 +34,11 @@ $router->route('/signup', function() {
     require 'pool/auth/signup.php';
 });
 
-$router->route('/profile', function() {
-    require 'apps/lib/ui/views/profile/profile.php';
-});
 
 // --- Profile setup page ---
 $router->route('/profile_setup', function() {
     require 'pool/auth/profile.php';
 });
-
 
 $router->route('/log_api', function() {
     require 'pool/api/logsAPI.php';
@@ -54,10 +50,6 @@ $router->route('/forgot_pass', function() {
 
 $router->route('/reset_pass', function() {
     require 'pool/auth/reset_pass.php';
-});
-
-$router->route('/invite', function() {
-    require 'pool/auth/invite.php';
 });
 
 $router->route('/logout', function() {
@@ -101,15 +93,36 @@ $router->route('/verification', function() {
     require 'pool/auth/verification.php';
 });
 
-
-
 // --- LAB and Blog sections ---
+/*
 $router->route('/learn', function() {
-    require 'apps/edu/ui/views/blogs/app.php';
+    require 'apps/edu/ui/views/learn/backup/app.php';
+});
+*/
+
+$router->route('/note', function() {
+    require 'apps/edu/ui/views/notes/app.php';
 });
 
+$router->route('/note/cms', function() {
+    require 'apps/edu/ui/views/notes/cms/list.php';
+});
 
+$router->route('/note/cms/learn', function() {
+    require 'apps/edu/ui/views/notes/cms/note_g.php';
+});
 
+$router->route('/search', function() {
+    require 'apps/edu/ui/views/search/search.php';
+});
+
+$router->route('/la', function() {
+    require 'apps/edu/ui/views/learn/app_main.php';
+});
+
+$router->route('/chat', function() {
+    require 'apps/edu/ui/views/learn/backup/record.php';
+});
 $router->route('/blog', function() {
     require 'apps/edu/ui/views/blogs/app.php';
 });
@@ -156,15 +169,6 @@ $router->route('/blog/cms-new/view', function() {
 $router->route('/blog/cms-new/delete', function() {
     require 'apps/edu/ui/views/blogs/cms-new/delete.php';
 });
-
-$router->route('/issues', function() {
-    require 'apps/edu/ui/views/blogs/app.php';
-});
-
-$router->route('/pricing', function() {
-    require 'apps/edu/ui/views/subscription/pricing.php';
-});
-
 // --- APIs for Education App ---
 $router->route('/edu_assets', function() {
     require 'apps/edu/ui/assets';

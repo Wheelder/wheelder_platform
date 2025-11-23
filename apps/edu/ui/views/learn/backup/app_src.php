@@ -99,7 +99,7 @@
                 //$note->insert_data($title, $image, $category, $content, $status);
                 //$note->storeData( $q,$content,$image);
                // insert($question,$unf_answer,$answer,$deep_answer,$options,$filepath)
-                $blog->insert($question,$unf_answer,$answer,$deep_answer,$option,$image );
+                //$blog->insert($question,$unf_answer,$answer,$deep_answer,$option,$image );
                 
                 echo '<div class="col-md-6 ">
         <div class="content" id="answerDiv" class="content draggable" draggable="true"> 
