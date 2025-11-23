@@ -98,7 +98,7 @@ $router->route('/verification', function() {
 $router->route('/learn', function() {
     require 'apps/edu/ui/views/learn/backup/app.php';
 });
-*/
+
 
 $router->route('/note', function() {
     require 'apps/edu/ui/views/notes/app.php';
@@ -123,6 +123,7 @@ $router->route('/la', function() {
 $router->route('/chat', function() {
     require 'apps/edu/ui/views/learn/backup/record.php';
 });
+*/
 $router->route('/blog', function() {
     require 'apps/edu/ui/views/blogs/app.php';
 });
