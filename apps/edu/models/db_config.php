@@ -17,9 +17,9 @@ $dbname = "wheelder_db";
 
     */
     private $servername_local = "localhost";
-    private $dbname_local = 'whd';
-    private $user_local = "root";
-    private $pass_local = "";
+    private $dbname_local = 'wheelder_db';
+    private $user_local = "wheelder_user";
+    private $pass_local = "NewWheelderPass2025!";
     
     private $servername = "localhost";
     private $dbname = "wheelder_db";
