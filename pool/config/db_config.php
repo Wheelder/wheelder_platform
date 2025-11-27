@@ -16,7 +16,7 @@ class config
     private $pass_local = "";
     
     private $servername = "localhost";
-    private $dbname = 'wheelder_db';
+    private $dbname = "wheelder_db";
     private $user = "wheelder_user";
     private $pass = "NewWheelderPass2025!";
 
