@@ -1,11 +1,14 @@
 <?php
-$docRoot = $_SERVER['DOCUMENT_ROOT'];        // e.g. C:/xampp/htdocs
-$scriptPath = $_SERVER['SCRIPT_NAME'];       // e.g. /wheelder/index.php
-$parts = explode('/', trim($scriptPath, '/'));
-$projectDir = $parts[0];                     // "wheelder"
+$path = $_SERVER['DOCUMENT_ROOT'];
+$host = $_SERVER['HTTP_HOST'];
 
-//$path = $docRoot."/".$projectDir;
-require_once $docRoot. '/apps/edu/controllers/BlogController.php';
+if ($host === "localhost") {
+    $dir = '/wheelder';
+    require_once $path . $dir. '/apps/edu/controllers/BlogController.php';
+} else {
+    include $path . '/apps/edu/controllers/BlogController.php';
+}
+
 
 $blog = new BlogController();
 

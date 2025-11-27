@@ -1,12 +1,14 @@
 <?php
-// Start session if not already started
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+$path = $_SERVER['DOCUMENT_ROOT'];
+$host = $_SERVER['HTTP_HOST'];
+
+if ($host === "localhost") {
+    $dir = '/wheelder';
+    require_once $path . $dir. '/pool/libs/controllers/LogsController.php';
+} else {
+    include $path . '/pool/libs/controllers/LogsController.php';
 }
 
-// Use __DIR__ to get the current file's directory and navigate relatively
-$path = $_SERVER['DOCUMENT_ROOT'];   // Goes from pool/api to pool
-include $path . '/pool/libs/controllers/LogsController.php';
 
 $log = new LogsController();
 
