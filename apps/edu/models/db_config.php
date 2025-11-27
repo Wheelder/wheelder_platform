@@ -9,6 +9,12 @@ class config
     private $dbname_local = 'wheelder';
     private $user_local = "root";
     private $pass_local = "";
+
+    $host = "localhost";
+$user = "wheelder_user";
+$pass = "NewWheelderPass2025!";
+$dbname = "wheelder_db";
+
     */
     private $servername_local = "localhost";
     private $dbname_local = 'whd';
@@ -16,9 +22,9 @@ class config
     private $pass_local = "";
     
     private $servername = "localhost";
-    private $dbname = 'whd';
-    private $user = "root";
-    private $pass = "";
+    private $dbname = 'wheelder_db';
+    private $user = "wheelder_user";
+    private $pass = "NewWheelderPass2025!";
 
     //database details for testing server
     private $servername_d = "localhost";
