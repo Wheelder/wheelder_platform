@@ -105,7 +105,7 @@ if (isset($_POST['login'])) {
     if ($pass) {
 
       // Regenerate session ID to prevent session fixation
-      session_regenerate_id(true);
+      //session_regenerate_id(true);
       
       // Set session variables (REMOVED password for security)
       $_SESSION = array_merge($_SESSION, $pass);
