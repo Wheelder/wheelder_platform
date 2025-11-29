@@ -1,4 +1,13 @@
+<?php
+// Include top.php to get base path functions
+$path = dirname(dirname(__DIR__)); // Goes from pool/auth to project root
+require_once $path . '/top.php';
 
+$dapp= $_GET['dp'] ?? Null OR '';
+if($dapp == ''){
+    $dapp = 'main';
+}
+?>
 
 <!DOCTYPE html>
 <html lang="en">
