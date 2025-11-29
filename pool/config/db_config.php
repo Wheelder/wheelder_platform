@@ -13,8 +13,7 @@ class config
     private $dbname_local = 'whd';
     private $user_local = "root";
     private $pass_local = "";
-    */
-    private $servername_local = "localhost";
+       private $servername_local = "localhost";
     private $dbname_local = 'wheelder_db';
     private $user_local = "wheelder_user";
     private $pass_local = "NewWheelderPass2025!";
@@ -23,6 +22,13 @@ class config
     private $dbname = "wheelder_db";
     private $user = "wheelder_user";
     private $pass = "NewWheelderPass2025!";
+    */
+  
+    
+    private $servername = "app-8a072523-8600-4b87-acdc-50263bf2fa69-do-user-27455385-0.g.db.ondigitalocean.com";
+    private $dbname = "dev-db-879680";
+    private $user = "dev-db-879680";
+    private $pass = "AVNS_A3ZucK-iOR20_3xl3aY";
 
     //database details for testing server
     private $servername_d = "localhost";
