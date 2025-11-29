@@ -47,37 +47,49 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
+    // Set timeouts to prevent execution time limit issues
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10); // 10 seconds to connect
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);        // 30 seconds for the whole request
+
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
     if (curl_errno($ch)) {
+        $error_msg = curl_error($ch);
+        $error_no = curl_errno($ch);
         curl_close($ch);
-        echo json_encode(['error' => 'Connection error: ' . curl_error($ch)]);
+
+        // Check for timeout error codes
+        if ($error_no == 28) { // CURLE_OPERATION_TIMEDOUT
+            echo json_encode(['error' => 'Request timed out. The AI service is taking too long to respond.']);
+        } else {
+            echo json_encode(['error' => 'Connection error: ' . $error_msg]);
+        }
         exit();
     }
 
     curl_close($ch);
-    
+
     // Decode the response to check for errors
     $decodedResponse = json_decode($response, true);
-    
+
     if (json_last_error() !== JSON_ERROR_NONE) {
         echo json_encode(['error' => 'Invalid JSON response from API']);
         exit();
     }
-    
+
     // Check for OpenAI API errors
     if (isset($decodedResponse['error'])) {
         echo json_encode(['error' => 'OpenAI API Error: ' . $decodedResponse['error']['message']]);
         exit();
     }
-    
+
     // Check HTTP status code
     if ($httpCode !== 200) {
         echo json_encode(['error' => "HTTP Error: $httpCode"]);
         exit();
     }
-    
+
     // Return the response
     echo $response;
 }
