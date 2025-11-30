@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from flask import request
 
 templates = Jinja2Templates(directory="ui/views")
 
