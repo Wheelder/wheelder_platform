@@ -1,0 +1,14 @@
+name: wheelder-platform
+services:
+	- name: web
+		environment_slug: python
+		run_command: uvicorn main:app --host 0.0.0.0 --port $PORT
+		http_port: 8080
+		instance_count: 1
+		instance_size_slug: basic-xxs
+		routes:
+			- path: /
+				source_dir: /
+		envs:
+			- key: PORT
+				value: "8080"
