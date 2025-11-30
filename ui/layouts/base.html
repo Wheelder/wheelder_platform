@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>{{ title if title else "Wheelder Platform" }}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body> {% include 'layouts/header.html' %} <main style="padding: 20px;"> {% block content %}{% endblock %} </main> {%
+    include 'layouts/footer.html' %} </body>
+
+</html>
