@@ -1,14 +1,7 @@
 <?php
+//session_start();
 $path = $_SERVER['DOCUMENT_ROOT'];
-$host = $_SERVER['HTTP_HOST'];
-
-if ($host === "localhost") {
-    $dir = '/wheelder';
-    require_once $path . $dir. '/apps/edu/models/database.php';
-} else {
-    require_once $path . '/apps/edu/models/database.php';
-}
-
+require_once $path . '/wheelder/apps/edu/models/database.php';
 
 
 class Controller extends Database

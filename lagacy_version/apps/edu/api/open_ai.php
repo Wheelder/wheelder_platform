@@ -1,17 +1,10 @@
 <?php
 
-// Load environment variables
-$envPath = dirname(dirname(dirname(__DIR__))) . '/pool/config/env_loader.php';
-if (file_exists($envPath)) {
-    require_once $envPath;
-}
-
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json");
 
 define('OPENAI_API_ENDPOINT', 'https://api.openai.com/v1/chat/completions');
-// Get API key from environment variable, fallback to old key for backward compatibility
-define('OPENAI_API_KEY', getenv('OPENAI_API_KEY') ?: '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');
+define('OPENAI_API_KEY', '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');  // Replace 'YOUR_OPENAI_API_KEY' with your actual API key
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $input = json_decode(file_get_contents('php://input'), true);
@@ -47,49 +40,37 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
-    // Set timeouts to prevent execution time limit issues
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10); // 10 seconds to connect
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);        // 30 seconds for the whole request
-
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
     if (curl_errno($ch)) {
-        $error_msg = curl_error($ch);
-        $error_no = curl_errno($ch);
         curl_close($ch);
-
-        // Check for timeout error codes
-        if ($error_no == 28) { // CURLE_OPERATION_TIMEDOUT
-            echo json_encode(['error' => 'Request timed out. The AI service is taking too long to respond.']);
-        } else {
-            echo json_encode(['error' => 'Connection error: ' . $error_msg]);
-        }
+        echo json_encode(['error' => 'Connection error: ' . curl_error($ch)]);
         exit();
     }
 
     curl_close($ch);
-
+    
     // Decode the response to check for errors
     $decodedResponse = json_decode($response, true);
-
+    
     if (json_last_error() !== JSON_ERROR_NONE) {
         echo json_encode(['error' => 'Invalid JSON response from API']);
         exit();
     }
-
+    
     // Check for OpenAI API errors
     if (isset($decodedResponse['error'])) {
         echo json_encode(['error' => 'OpenAI API Error: ' . $decodedResponse['error']['message']]);
         exit();
     }
-
+    
     // Check HTTP status code
     if ($httpCode !== 200) {
         echo json_encode(['error' => "HTTP Error: $httpCode"]);
         exit();
     }
-
+    
     // Return the response
     echo $response;
 }
