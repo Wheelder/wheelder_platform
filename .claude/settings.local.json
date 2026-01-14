@@ -6,7 +6,15 @@
       "Bash(robocopy:*)",
       "Bash(python:*)",
       "Bash(pip install:*)",
-      "Bash(pip show:*)"
+      "Bash(pip show:*)",
+      "Bash(test:*)",
+      "Bash(gh:*)",
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial commit: Wheelder AI Platform\n\n- FastAPI application setup\n- Configuration and controllers\n- UI templates and assets\n- Added comprehensive .gitignore\n- Added README documentation\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)",
+      "Bash(git branch:*)"
     ],
     "deny": [],
     "ask": []
