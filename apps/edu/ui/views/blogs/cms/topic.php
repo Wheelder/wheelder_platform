@@ -1,6 +1,7 @@
 <?php
-$path = $_SERVER['DOCUMENT_ROOT'];
-include $path . '/apps/edu/controllers/NoteController.php';
+// Use __DIR__ for reliable paths regardless of DOCUMENT_ROOT (works on XAMPP and production)
+$path = __DIR__;
+include $path . '/../../../../controllers/NoteController.php';
 $noteController = new NoteController();
 
 $noteController->check_auth();
@@ -505,7 +506,7 @@ $noteController->store_website_traffic($ip, $country, $city, $latitude, $longitu
 
     <header class="navbar navbar-dark sticky-top bg-dark  flex-md-nowrap p-0 shadow">
 
-        <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6" href="/blog">Wheeleder</a>
+        <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6" href="<?php echo url('/blog'); ?>">Wheeleder</a>
         
         <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse"
             data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false"
@@ -559,7 +560,7 @@ $noteController->store_website_traffic($ip, $country, $city, $latitude, $longitu
 
 
       <div class="modal-body">
-        <form action="/edu_note" method="POST">
+        <form action="<?php echo url('/edu_note'); ?>" method="POST">
          <div class="mb-3">
             <label for="message-text" class="col-form-label">Topic:</label>
             <textarea class="form-control" id="message-text" name="content" rows="5" placeholder="Suggested topic's details here..." ></textarea>

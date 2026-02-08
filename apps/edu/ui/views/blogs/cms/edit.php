@@ -1,13 +1,13 @@
 <?php
-$path = $_SERVER['DOCUMENT_ROOT'];
-include $path . '/apps/edu/controllers/BlogController.php';
+// Use __DIR__ for reliable paths regardless of DOCUMENT_ROOT (works on XAMPP and production)
+include __DIR__ . '/../../../../controllers/BlogController.php';
 
 $blog = new BlogController();
 $blog->check_auth();
 
 $note = $blog-> get_blog_edit($_GET['id']);
 
-include $path . '/apps/edu/ui/layouts/nav.php';
+include __DIR__ . '/../../../layouts/nav.php';
 ?>
 
 <section class="bg-light py-1">
@@ -17,7 +17,7 @@ include $path . '/apps/edu/ui/layouts/nav.php';
                 <div class="card shadow">
                     <div class="card-body">
                         <h2 class="card-title mb-4 fs-3">Edit Note</h2>
-                        <form action="/wheelder/apps/edu/api/blogAPI.php" method="post">
+                        <form action="<?php echo url('/apps/edu/api/blogAPI.php'); ?>" method="post">
                             <input type="hidden" id="id" name="id" value="<?php echo $note['id']; ?>">
                             <div class="mb-3">
                                 <label for="title" class="form-label">Title</label>
@@ -41,7 +41,7 @@ include $path . '/apps/edu/ui/layouts/nav.php';
 
 
 <?php
-include $path . '/apps/edu/ui/layouts/footer.php';
+include __DIR__ . '/../../../layouts/footer.php';
 ?>
 
 

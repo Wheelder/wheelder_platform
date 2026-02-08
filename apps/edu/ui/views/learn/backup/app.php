@@ -1,23 +1,7 @@
 <?php
-//find the root path in a different way that can include the file even in local development environments
-//$path = dirname(__FILE__);
-$path = $_SERVER['DOCUMENT_ROOT'];
-$host = $_SERVER['HTTP_HOST'];
-
-if ($host === "localhost") {
-    $dir = '/wheelder';
-    include $path . $dir . '/apps/edu/controllers/BlogController.php';
-    include $path . $dir . '/apps/edu/controllers/QuestionController.php';
-} else {
-    include $path . '/apps/edu/controllers/BlogController.php';
-    include $path . '/apps/edu/controllers/QuestionController.php';
-}
-
-//require_once __DIR__ . '/../../../controllers/BlogController.php';
-//require_once __DIR__ . '/../../../controllers/QuestionController.php';
-// Router.php is not in the controllers directory - removing this include for now
-// require_once __DIR__ . '/../../../controllers/Router.php';
-
+// Use __DIR__ for reliable paths regardless of DOCUMENT_ROOT (works on XAMPP and production)
+include __DIR__ . '/../../../../controllers/BlogController.php';
+include __DIR__ . '/../../../../controllers/QuestionController.php';
 
 //$note = new QuestionController();
 $blog = new QuestionController();
@@ -651,7 +635,8 @@ $note=$blog;
                         $blog->getBlog($title);
                     } else {
 
-                        include "app_main.php";
+                        // app_main.php is one directory up from backup/
+                        include __DIR__ . '/../app_main.php';
                     }
 
 

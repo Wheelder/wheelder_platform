@@ -3,6 +3,8 @@
 // Use __DIR__ to get the current file's directory and navigate relatively
 $path = dirname(dirname(__DIR__)); // Goes from pool/libs/controllers to pool
 require $path . '/config/database.php';
+// Include top.php for centralized url() helper that detects project base path
+require_once dirname($path) . '/top.php';
 include 'StripeController.php';
 include 'CrudController.php';
 include 'Metadata.php';
@@ -506,16 +508,16 @@ class Controller extends Database
     {
         // Security: Escape output to prevent XSS
         $safeMessage = htmlspecialchars($message, ENT_QUOTES, 'UTF-8');
-        $safeUrl = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+        // Use centralized url() to prepend base path (e.g. /wheelder on XAMPP)
+        $safeUrl = htmlspecialchars(url($url), ENT_QUOTES, 'UTF-8');
         echo '<script>alert("' . $safeMessage . '");window.location.href = "' . $safeUrl . '";</script>';
     }
 
     public function redirect($url)
     {
-        echo '<script>window.location.href = "' . $url . '";</script>';
+        // Use centralized url() to prepend base path (e.g. /wheelder on XAMPP)
+        echo '<script>window.location.href = "' . htmlspecialchars(url($url), ENT_QUOTES, 'UTF-8') . '";</script>';
     }
-
-
 
     public function authCheck()
     {
@@ -651,6 +653,7 @@ class Controller extends Database
     {
         $result = null;
         try {
+            $sql = sqlite_rewrite_sql($sql);
             $stmt = $this->connectDbPDO()->prepare($sql);
             $result = $stmt->execute($params);
             return $result;
@@ -662,6 +665,7 @@ class Controller extends Database
     public function run_query($sql)
     {
         try {
+            $sql = sqlite_rewrite_sql($sql);
             $result = $this->connectDb()->query($sql);
         } catch (PDOException $e) {
             echo $e->getMessage();
@@ -674,6 +678,7 @@ class Controller extends Database
     {
         try {
             $conn = $this->connectDb();
+            $sql = sqlite_rewrite_sql($sql);
             $stmt = $conn->prepare($sql);
             
             if ($stmt === false) {
@@ -705,10 +710,6 @@ class Controller extends Database
             return false;
         }
     }
-
-
-
-
 
     function getData()
     {

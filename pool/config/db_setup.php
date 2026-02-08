@@ -1,6 +1,5 @@
 <?php
-$path = $_SERVER['DOCUMENT_ROOT'];
-include $path . '/pool/config/database.php';
+include __DIR__ . '/database.php';
 
 
 

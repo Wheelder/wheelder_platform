@@ -1,127 +1,13 @@
 <?php
+/**
+ * Edu App Database Configuration
+ * 
+ * Points to the central SQLite config in pool/config/ so that
+ * both the auth system and edu app share the same database.
+ */
 
+// Include the central config class (which uses SQLite)
+require_once dirname(dirname(dirname(__DIR__))) . '/pool/config/db_config.php';
 
-class config
-{
-    private $servername_local = "localhost";
-    private $dbname_local = 'wheelder';
-    private $user_local = "root";
-    private $pass_local = ""; // XAMPP default is empty password
-    
-    private $servername = "localhost";
-    private $dbname = 'u946493694_edu_platform';
-    private $user = "u946493694_edu_u";
-    private $pass = "M+oNc88e";
-
-    //database details for testing server
-    private $servername_d = "localhost";
-    private $dbname_d = 'u559678163_wh_dev';
-    private $user_d = "u559678163_wdu";
-    private $pass_d = "passOfwh_dev!@#123";
-
-
-    private $charset = 'utf8mb4';
-
-    //write these these database detials with out varialbe scope like private or public
-
-    
-
-
-    public function __construct() {
-        $this->connectDb();
-    }
-
-    public function checkHost() {
-        $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
-        
-        // For XAMPP local development, always use local database
-        // Check common XAMPP scenarios
-        if (empty($host) || 
-            strpos($host, 'localhost') !== false || 
-            strpos($host, '127.0.0.1') !== false || 
-            $host === 'localhost' ||
-            isset($_SERVER['SERVER_NAME']) && $_SERVER['SERVER_NAME'] === 'localhost') {
-            return 1;
-        }
-    
-        // Use switch case to check the host name and return the host number
-        switch ($host) {
-            case 'regrowup.site':
-                return 2;
-            case 'wheelder.com':
-                return 3;
-            default:
-                return 0;
-        }
-    }
-    
-    public function connectDb() {
-        // TEMPORARY: Force local database connection for XAMPP debugging
-        $dbConfig = [
-            'servername' => 'localhost',
-            'dbname' => 'wheelder',
-            'user' => 'root',
-            'pass' => ''
-        ];
-        
-        error_log("DEBUG: Using forced local config: " . print_r($dbConfig, true));
-
-        // Use try and catch for mysqli connection
-        $conn = new mysqli($dbConfig['servername'], $dbConfig['user'], $dbConfig['pass'], $dbConfig['dbname']);        if ($conn->connect_error) {
-            die("Connection failed: " . $conn->connect_error);
-        }
-    
-        return $conn;
-    }
-    
-    
-        public function connectDbPDO() {
-            
-            $hostNumber = $this->checkHost();
-    
-        // Define an array with database details for different hosts
-        $dbDetails = [
-            1 => [
-                'servername' => $this->servername_local,
-                'dbname' => $this->dbname_local,
-                'user' => $this->user_local,
-                'pass' => $this->pass_local,
-            ],
-            2 => [
-                'servername' => $this->servername,
-                'dbname' => $this->dbname,
-                'user' => $this->user,
-                'pass' => $this->pass,
-            ],
-            3 => [
-                'servername' => $this->servername_d,
-                'dbname' => $this->dbname_d,
-                'user' => $this->user_d,
-                'pass' => $this->pass_d,
-            ],
-            0 => [
-                'servername' => $this->servername_d,
-                'dbname' => $this->dbname_d,
-                'user' => $this->user_d,
-                'pass' => $this->pass_d,
-            ],
-        ];
-    
-        // Get the database details based on the host number
-        $dbConfig = $dbDetails[$hostNumber];
-    
-            //pdo connection
-            $dsn = "mysql:host={$dbConfig['servername']};dbname={$dbConfig['dbname']};charset={$this->charset}";
-
-            try {
-                $pdo = new PDO($dsn, $dbConfig['user'], $dbConfig['pass']);
-                $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                return $pdo;
-            } catch (PDOException $e) {
-                echo "Connection failed: " . $e->getMessage();
-            }
-        
-        }
-        
-
-}
+// The config class is now available from pool/config/db_config.php
+// No separate class needed here — edu models extend the same config → Database chain

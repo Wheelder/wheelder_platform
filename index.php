@@ -72,6 +72,10 @@ $router->route('/setup', function() {
     require 'pool/config/db_setup.php';
 });
 
+$router->route('/sqlite_setup', function() {
+    require 'pool/config/sqlite_setup.php';
+});
+
 $router->route('/edu_db_setup', function() {
     require 'apps/edu/api/dbAPI.php';
 });
@@ -93,10 +97,25 @@ $router->route('/verification', function() {
     require 'pool/auth/verification.php';
 });
 
+// --- Dashboard — generate shareable access links for the Learn app ---
+$router->route('/dashboard', function() {
+    require 'apps/edu/ui/views/learn/backup/dashboard.php';
+});
+
 // --- LAB and Blog sections ---
-/*
+
 $router->route('/learn', function() {
-    require 'apps/edu/ui/views/learn/backup/app.php';
+    require 'apps/edu/ui/views/learn/backup/record.php';
+});
+
+// AJAX endpoint for the /learn page — handles Ask and Deepen requests without page reload
+$router->route('/learn/ajax', function() {
+    require 'apps/edu/ui/views/learn/backup/ajax_handler.php';
+});
+
+// TTS endpoint — converts text to natural speech using Edge TTS neural voices
+$router->route('/learn/tts', function() {
+    require 'apps/edu/ui/views/learn/backup/tts_proxy.php';
 });
 
 
@@ -123,7 +142,7 @@ $router->route('/la', function() {
 $router->route('/chat', function() {
     require 'apps/edu/ui/views/learn/backup/record.php';
 });
-*/
+
 $router->route('/blog', function() {
     require 'apps/edu/ui/views/blogs/app.php';
 });

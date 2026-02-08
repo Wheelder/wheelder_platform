@@ -1,6 +1,6 @@
 <?php
-$path = $_SERVER['DOCUMENT_ROOT'];
-include $path . '/apps/edu/controllers/BlogController.php';
+// Use __DIR__ for reliable paths regardless of DOCUMENT_ROOT (works on XAMPP and production)
+include __DIR__ . '/../../../../controllers/BlogController.php';
 $blog = new BlogController();
 $blog->check_auth();
 // Initialize NoteController

@@ -11,7 +11,7 @@ class BlogController extends Controller
 
     public function getBlogByTitle($title)
     {
-        $sql = "SELECT * FROM questions WHERE question = '$title'";
+        $sql = "SELECT * FROM blogs WHERE title = '$title'";
         $stmt = $this->run_query($sql);
         $blog = $stmt->fetch_assoc();
         return $blog;
@@ -32,24 +32,24 @@ class BlogController extends Controller
 
     public function titles()
     {
-        $sql = "SELECT DISTINCT question FROM questions ORDER BY id DESC";
+        $sql = "SELECT DISTINCT title FROM blogs ORDER BY id DESC";
         $stmt = $this->run_query($sql);
         while ($row = $stmt->fetch_array()) {
             $titles[] = $row;
             
-            $title = $row["question"];
+            $title = $row["title"];
             //make to lower case and use _ inplace of + to
             $title = str_replace(" ", "_", strtolower($title));
             //encode the url and
             
-            if ($row["question"] != "Home" ) {
+            if ($row["title"] != "Home" ) {
                 //convert the title to short encrpted code 
                 echo
                     '<div class="toc">
                 <li class="nav-item">
                 <a class="nav-link active" aria-current="page" href="?t=' .urldecode($title) . '">
                     <span data-feather="home" class="align-text-bottom"></span>' .
-                    $row["question"] . '
+                    $row["title"] . '
                 </a>
             </li>
             </div>';
@@ -60,13 +60,18 @@ class BlogController extends Controller
 
     }
 
-    public function get_default_blog($title)
+    public function get_default_blog($title = null)
     {
-        $sql = "SELECT * FROM questions WHERE question = '$title'";
+        // When no title provided, show the latest blog post
+        if ($title === null) {
+            $sql = "SELECT * FROM blogs ORDER BY id DESC LIMIT 1";
+        } else {
+            $sql = "SELECT * FROM blogs WHERE title = '$title'";
+        }
         $stmt = $this->run_query($sql);
         while ($row = $stmt->fetch_assoc()) {
             $notes[] = $row;
-            $content = $row['answer'];
+            $content = $row['content'];
             //$content = preg_replace('/(\S+\s*){10}/', '$0<br/>', $content);
 
             echo "<div class='content' id='contentDiv'>";
@@ -83,7 +88,7 @@ class BlogController extends Controller
 
     public function get_blog_edit($id)
     {
-        $sql = "SELECT * FROM questions WHERE id = '$id'";
+        $sql = "SELECT * FROM blogs WHERE id = '$id'";
         $stmt = $this->run_query($sql);
         $blog = $stmt->fetch_assoc();
         return $blog;
@@ -100,11 +105,11 @@ class BlogController extends Controller
         //camel case the title
         $title = ucwords($title);
 
-        $sql = "SELECT * FROM questions WHERE question = '$title'";
+        $sql = "SELECT * FROM blogs WHERE title = '$title'";
         $stmt = $this->run_query($sql);
         while ($row = $stmt->fetch_assoc()) {
             $blog[] = $row;
-            $content = $row['answer'];
+            $content = $row['content'];
             $content=str_replace("*", "", $content);
             $content=str_replace("`", "", $content);
             $content=str_replace("~", "", $content);
@@ -113,14 +118,12 @@ class BlogController extends Controller
             $content=str_replace("`", "", $content);
             $content=str_replace("**", "", $content);
             $content=str_replace("Certainly!", "", $content);
-            $image = $row['filepath'];
             $content = trim($content);
 
             echo "<div class='content' id='contentDiv'>";
-            echo "<h4>{$row['question']}</h4><br>";
+            echo "<h4>{$row['title']}</h4><br>";
             echo "{$content}";
             echo "&nbsp;";
-            //echo "<img src='$image' alt='Image' style='width: 100%; height: auto;'>";
             echo "<br>";
             echo "</div>";
         }
@@ -131,10 +134,10 @@ class BlogController extends Controller
     {
         $title = $this->connectDb()->real_escape_string($title);
 
-        $sql = "SELECT * FROM questions WHERE question = '$title'";
+        $sql = "SELECT * FROM blogs WHERE title = '$title'";
         $stmt = $this->run_query($sql);
         while ($row = $stmt->fetch_assoc()) {
-            $image = $row['filepath'];
+            $image = $row['file_name'];
             echo "<img src='.$image.' alt='Image' style='width: 100%; height: auto;'>";
         }
     }
@@ -143,7 +146,7 @@ class BlogController extends Controller
 
     public function list_suggestions()
     {
-        $sql = "SELECT * FROM questions ORDER BY id DESC LIMIT 5";
+        $sql = "SELECT * FROM blogs ORDER BY id DESC LIMIT 5";
         $stmt = $this->run_query($sql);
         return $stmt;
     }
@@ -151,9 +154,16 @@ class BlogController extends Controller
 
     public function list_blogs()
     {
-        $sql = "SELECT * FROM questions ORDER BY id DESC";
+        $sql = "SELECT * FROM blogs ORDER BY id DESC";
         $stmt = $this->run_query($sql);
-        return $stmt;
+        // Convert result to array so callers can foreach over it
+        $blogs = [];
+        if ($stmt) {
+            while ($row = $stmt->fetch_assoc()) {
+                $blogs[] = $row;
+            }
+        }
+        return $blogs;
     }
     
     public function insert($title, $content)

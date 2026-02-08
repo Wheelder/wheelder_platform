@@ -1,15 +1,7 @@
 <?php
 //session_start();
-$path = $_SERVER['DOCUMENT_ROOT'];
-$host = $_SERVER['HTTP_HOST'];
-
-if ($host === "localhost") {
-    $dir = '/wheelder';
-    
-    require_once $path . $dir . '/apps/edu/ui/views/learn/LearnController.php';
-} else {
-    require_once $path . '/apps/edu/ui/views/learn/LearnController.php';
-}
+// Use __DIR__ for reliable paths regardless of DOCUMENT_ROOT (works on XAMPP and production)
+require_once __DIR__ . '/LearnController.php';
 
 
 $learn = new LearnController();

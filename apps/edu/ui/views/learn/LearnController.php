@@ -1,14 +1,6 @@
 <?php
-$path = $_SERVER['DOCUMENT_ROOT'];
-$host = $_SERVER['HTTP_HOST'];
-
-if ($host === "localhost") {
-    $dir = '/wheelder';
-    
-    require_once $path . $dir . '/apps/edu/controllers/Controller.php';
-} else {
-    require_once $path . '/apps/edu/controllers/Controller.php';
-}
+// Use __DIR__ for reliable paths regardless of DOCUMENT_ROOT (works on XAMPP and production)
+require_once __DIR__ . '/../../../controllers/Controller.php';
 
 require_once __DIR__ . '/config.php';
 

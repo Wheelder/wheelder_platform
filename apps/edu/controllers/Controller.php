@@ -2,7 +2,8 @@
 //session_start();
 $path = $_SERVER['DOCUMENT_ROOT'];
 require_once $path . '/wheelder/apps/edu/models/database.php';
-
+// Include top.php for centralized url() helper that detects project base path
+require_once $path . '/wheelder/top.php';
 
 class Controller extends Database
 {
@@ -500,12 +501,17 @@ class Controller extends Database
 
     public function alert_redirect($message, $url)
     {
-        echo '<script>alert("' . $message . '");window.location.href = "' . $url . '";</script>';
+        // Security: Escape output to prevent XSS
+        $safeMessage = htmlspecialchars($message, ENT_QUOTES, 'UTF-8');
+        // Use centralized url() to prepend base path (e.g. /wheelder on XAMPP)
+        $safeUrl = htmlspecialchars(url($url), ENT_QUOTES, 'UTF-8');
+        echo '<script>alert("' . $safeMessage . '");window.location.href = "' . $safeUrl . '";</script>';
     }
 
     public function redirect($url)
     {
-        echo '<script>window.location.href = "' . $url . '";</script>';
+        // Use centralized url() to prepend base path (e.g. /wheelder on XAMPP)
+        echo '<script>window.location.href = "' . htmlspecialchars(url($url), ENT_QUOTES, 'UTF-8') . '";</script>';
     }
 
 
@@ -644,6 +650,7 @@ class Controller extends Database
     {
         $result = null;
         try {
+            $sql = sqlite_rewrite_sql($sql);
             $stmt = $this->connectDbPDO()->prepare($sql);
             $result = $stmt->execute($params);
             return $result;
@@ -655,6 +662,7 @@ class Controller extends Database
     public function run_query($sql)
     {
         try {
+            $sql = sqlite_rewrite_sql($sql);
             $result = $this->connectDb()->query($sql);
         } catch (PDOException $e) {
             echo $e->getMessage();

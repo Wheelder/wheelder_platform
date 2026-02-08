@@ -1,673 +1,414 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wheelder</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Arial', sans-serif;
-      background: #000;
-      color: #fff;
-      overflow: hidden;
-      height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-    }
-
-    /* Starfield background */
-    body::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: 
-        radial-gradient(2px 2px at 20px 30px, #eee, transparent),
-        radial-gradient(2px 2px at 40px 70px, #ddd, transparent),
-        radial-gradient(1px 1px at 50px 160px, #fff, transparent),
-        radial-gradient(1px 1px at 130px 40px, #eee, transparent),
-        radial-gradient(2px 2px at 180px 200px, #ddd, transparent);
-      background-size: 200px 200px;
-      animation: stars 300s linear infinite;
-      z-index: -2;
-    }
-
-    @keyframes stars {
-      from { transform: translateY(0); }
-      to { transform: translateY(-200px); }
-    }
-
-    /* Main container */
-    .container {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-
-    /* Logo/Title */
-    .logo {
-      position: absolute;
-      top: 40px;
-      font-size: 2.5rem;
-      font-weight: 300;
-      letter-spacing: 8px;
-      color: #fff;
-      text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
-      opacity: 0;
-      animation: fadeIn 2s ease-out 0.5s forwards;
-    }
-
-    /* Solar system container */
-    .solar-system {
-      position: relative;
-      width: 600px;
-      height: 600px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    /* Sun at center */
-    .sun {
-      position: absolute;
-      width: 120px;
-      height: 120px;
-      background: radial-gradient(circle at 30% 30%, #fff8dc 0%, #ffd700 30%, #ff8c00 70%, #ff4500 100%);
-      border-radius: 50%;
-      box-shadow: 
-        0 0 80px #ff8c00,
-        0 0 120px #ff6347,
-        0 0 200px #ff4500,
-        inset 0 0 40px #ff6347;
-      animation: sunPulse 4s ease-in-out infinite;
-      z-index: 10;
-    }
-
-    /* Sun corona effect */
-    .sun::before {
-      content: '';
-      position: absolute;
-      top: -20px;
-      left: -20px;
-      right: -20px;
-      bottom: -20px;
-      background: radial-gradient(circle at center, transparent 40%, rgba(255, 140, 0, 0.1) 100%);
-      border-radius: 50%;
-      animation: coronaRotate 60s linear infinite;
-    }
-
-    @keyframes sunPulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-    }
-
-    @keyframes coronaRotate {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-
-    /* Orbital paths */
-    .orbit {
-      position: absolute;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 50%;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-    }
-
-    .orbit-earth {
-      width: 300px;
-      height: 300px;
-      border-color: rgba(65, 105, 225, 0.3);
-    }
-
-    .orbit-species-1 {
-      width: 200px;
-      height: 200px;
-      border-color: rgba(144, 238, 144, 0.3);
-    }
-
-    .orbit-species-2 {
-      width: 250px;
-      height: 250px;
-      border-color: rgba(135, 206, 235, 0.3);
-    }
-
-    .orbit-species-3 {
-      width: 350px;
-      height: 350px;
-      border-color: rgba(222, 184, 135, 0.3);
-    }
-
-    .orbit-species-4 {
-      width: 400px;
-      height: 400px;
-      border-color: rgba(255, 218, 185, 0.3);
-    }
-
-    .orbit-species-5 {
-      width: 450px;
-      height: 450px;
-      border-color: rgba(221, 160, 221, 0.3);
-    }
-
-    /* Planets and species */
-    .celestial-body {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 0;
-      height: 0;
-      transform: translate(-50%, -50%);
-    }
-
-    /* Earth */
-    .earth-container {
-      animation: orbit 60s linear infinite;
-    }
-
-    .earth {
-      position: absolute;
-      width: 40px;
-      height: 40px;
-      background: 
-        radial-gradient(circle at 30% 30%, #4169e1 0%, #191970 50%, #000080 100%);
-      border-radius: 50%;
-      top: -150px;
-      left: 50%;
-      transform: translateX(-50%);
-      box-shadow: 
-        0 0 20px #4169e1,
-        inset -5px -5px 10px rgba(0, 0, 0, 0.5);
-      animation: planetRotate 10s linear infinite;
-    }
-
-    /* Earth continents */
-    .earth::before {
-      content: '';
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      background: 
-        radial-gradient(circle at 20% 50%, #228b22 0%, transparent 30%),
-        radial-gradient(circle at 60% 30%, #228b22 0%, transparent 25%),
-        radial-gradient(circle at 50% 70%, #228b22 0%, transparent 20%);
-      border-radius: 50%;
-      opacity: 0.8;
-    }
-
-    /* Species representations */
-    .species {
-      position: absolute;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
-    }
-
-    .species-1-container {
-      animation: orbit 40s linear infinite reverse;
-    }
-
-    .species-1 {
-      width: 30px;
-      height: 30px;
-      background: radial-gradient(circle at 30% 30%, #90ee90 0%, #228b22 100%);
-      top: -100px;
-      left: 50%;
-      transform: translateX(-50%);
-      box-shadow: 0 0 15px #90ee90;
-    }
-
-    .species-1::after {
-      content: '🌿';
-      font-size: 1.2rem;
-    }
-
-    .species-2-container {
-      animation: orbit 50s linear infinite;
-    }
-
-    .species-2 {
-      width: 35px;
-      height: 35px;
-      background: radial-gradient(circle at 30% 30%, #87ceeb 0%, #4682b4 100%);
-      top: -125px;
-      left: 50%;
-      transform: translateX(-50%);
-      box-shadow: 0 0 15px #87ceeb;
-    }
-
-    .species-2::after {
-      content: '🐟';
-      font-size: 1.3rem;
-    }
-
-    .species-3-container {
-      animation: orbit 70s linear infinite reverse;
-    }
-
-    .species-3 {
-      width: 30px;
-      height: 30px;
-      background: radial-gradient(circle at 30% 30%, #deb887 0%, #8b4513 100%);
-      top: -175px;
-      left: 50%;
-      transform: translateX(-50%);
-      box-shadow: 0 0 15px #deb887;
-    }
-
-    .species-3::after {
-      content: '🦎';
-      font-size: 1.2rem;
-    }
-
-    .species-4-container {
-      animation: orbit 80s linear infinite;
-    }
-
-    .species-4 {
-      width: 35px;
-      height: 35px;
-      background: radial-gradient(circle at 30% 30%, #ffdab9 0%, #ff6347 100%);
-      top: -200px;
-      left: 50%;
-      transform: translateX(-50%);
-      box-shadow: 0 0 15px #ffdab9;
-    }
-
-    .species-4::after {
-      content: '🦅';
-      font-size: 1.3rem;
-    }
-
-    .species-5-container {
-      animation: orbit 90s linear infinite reverse;
-    }
-
-    .species-5 {
-      width: 40px;
-      height: 40px;
-      background: radial-gradient(circle at 30% 30%, #dda0dd 0%, #8b008b 100%);
-      top: -225px;
-      left: 50%;
-      transform: translateX(-50%);
-      box-shadow: 0 0 20px #dda0dd;
-    }
-
-    .species-5::after {
-      content: '🧬';
-      font-size: 1.5rem;
-    }
-
-    /* Orbit animation */
-    @keyframes orbit {
-      from { transform: translate(-50%, -50%) rotate(0deg); }
-      to { transform: translate(-50%, -50%) rotate(360deg); }
-    }
-
-    @keyframes planetRotate {
-      from { transform: translateX(-50%) rotate(0deg); }
-      to { transform: translateX(-50%) rotate(360deg); }
-    }
-
-    /* Clock integrated in sun */
-    .sun-clock {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .clock-number {
-      position: absolute;
-      width: 100px;
-      height: 100px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.7rem;
-      font-weight: 600;
-      color: #fff;
-      text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
-      z-index: 15;
-    }
-
-    .number {
-      position: absolute;
-      transform-origin: center;
-      width: 20px;
-      text-align: center;
-    }
-
-    /* Clock hands */
-    .clock-hands {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 20;
-    }
-
-    .hand {
-      position: absolute;
-      background: rgba(255, 255, 255, 0.9);
-      transform-origin: bottom center;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-    }
-
-    .hour-hand {
-      width: 3px;
-      height: 35px;
-      bottom: 50%;
-      border-radius: 1.5px;
-    }
-
-    .minute-hand {
-      width: 2px;
-      height: 45px;
-      bottom: 50%;
-      border-radius: 1px;
-    }
-
-    .second-hand {
-      width: 1px;
-      height: 50px;
-      bottom: 50%;
-      background: #ff0000;
-      border-radius: 0.5px;
-      box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
-    }
-
-    .center-dot {
-      position: absolute;
-      width: 8px;
-      height: 8px;
-      background: #fff;
-      border-radius: 50%;
-      box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
-      z-index: 21;
-    }
-
-    /* Digital time display */
-    .digital-time {
-      position: absolute;
-      bottom: 80px;
-      font-size: 3rem;
-      font-weight: 100;
-      letter-spacing: 4px;
-      color: #fff;
-      text-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
-      opacity: 0;
-      animation: fadeIn 2s ease-out 1s forwards;
-    }
-
-    .time-separator {
-      animation: blink 1s ease-in-out infinite;
-    }
-
-    .time-period {
-      font-size: 1.5rem;
-      margin-left: 10px;
-      opacity: 0.8;
-    }
-
-    .timezone {
-      position: absolute;
-      bottom: 40px;
-      font-size: 1rem;
-      letter-spacing: 2px;
-      color: #fff;
-      opacity: 0.6;
-      animation: fadeIn 2s ease-out 1.5s forwards;
-    }
-
-    /* Animations */
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
-    }
-
-    /* Evolution info */
-    .evolution-info {
-      position: absolute;
-      top: 100px;
-      right: 40px;
-      max-width: 200px;
-      font-size: 0.8rem;
-      opacity: 0.7;
-      text-align: right;
-    }
-
-    .evolution-info h3 {
-      font-size: 1rem;
-      margin-bottom: 10px;
-      color: #ffd700;
-    }
-
-    .evolution-info p {
-      margin: 5px 0;
-      line-height: 1.4;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-      .solar-system {
-        width: 400px;
-        height: 400px;
-      }
-
-      .sun {
-        width: 80px;
-        height: 80px;
-      }
-
-      .orbit-earth { width: 200px; height: 200px; }
-      .orbit-species-1 { width: 140px; height: 140px; }
-      .orbit-species-2 { width: 170px; height: 170px; }
-      .orbit-species-3 { width: 230px; height: 230px; }
-      .orbit-species-4 { width: 270px; height: 270px; }
-      .orbit-species-5 { width: 310px; height: 310px; }
-
-      .earth { width: 30px; height: 30px; top: -100px; }
-      .species-1 { width: 25px; height: 25px; top: -70px; }
-      .species-2 { width: 28px; height: 28px; top: -85px; }
-      .species-3 { width: 25px; height: 25px; top: -115px; }
-      .species-4 { width: 28px; height: 28px; top: -135px; }
-      .species-5 { width: 32px; height: 32px; top: -155px; }
-
-      .clock-number {
-        width: 70px;
-        height: 70px;
-        font-size: 0.6rem;
-      }
-
-      .hour-hand { height: 25px; }
-      .minute-hand { height: 32px; }
-      .second-hand { height: 35px; }
-
-      .digital-time { font-size: 2rem; }
-      .evolution-info { display: none; }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wheelder</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #0a0a0a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .scene {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+            position: relative;
+        }
+        
+        /* Scanlines */
+        .scanlines {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(255, 255, 255, 0.03) 2px,
+                rgba(255, 255, 255, 0.03) 4px
+            );
+            pointer-events: none;
+            z-index: 100;
+        }
+        
+        /* Vignette */
+        .vignette {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.8) 100%);
+            pointer-events: none;
+            z-index: 99;
+        }
+        
+        /* Central wheel container */
+        .wheel-container {
+            position: relative;
+            width: 500px;
+            height: 500px;
+            transform-style: preserve-3d;
+            animation: tiltScene 10s ease-in-out infinite;
+        }
+        
+        @keyframes tiltScene {
+            0%, 100% { transform: rotateX(10deg) rotateY(0deg); }
+            50% { transform: rotateX(10deg) rotateY(360deg); }
+        }
+        
+        /* Main holographic wheel */
+        .holo-wheel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 350px;
+            height: 350px;
+            border-radius: 50%;
+            border: 3px solid #ffffff;
+            box-shadow: 
+                0 0 30px #ffffff,
+                0 0 60px #ffffff,
+                0 0 100px rgba(255, 255, 255, 0.5),
+                inset 0 0 50px rgba(255, 255, 255, 0.3);
+            animation: wheelPulse 3s ease-in-out infinite;
+        }
+        
+        @keyframes wheelPulse {
+            0%, 100% { box-shadow: 0 0 30px #ffffff, 0 0 60px #ffffff, 0 0 100px rgba(255, 255, 255, 0.5), inset 0 0 50px rgba(255, 255, 255, 0.3); }
+            50% { box-shadow: 0 0 50px #ffffff, 0 0 100px #ffffff, 0 0 150px rgba(255, 255, 255, 0.7), inset 0 0 80px rgba(255, 255, 255, 0.5); }
+        }
+        
+        /* Wheel spokes */
+        .spoke {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 3px;
+            height: 175px;
+            background: linear-gradient(to bottom, #ffffff, transparent);
+            transform-origin: top center;
+            box-shadow: 0 0 10px #ffffff;
+        }
+        
+        /* Inner rings */
+        .inner-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 2px solid;
+            animation: ringRotate linear infinite;
+        }
+        
+        .ring-1 {
+            width: 280px;
+            height: 280px;
+            border-color: rgba(255, 255, 255, 0.6);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+            animation-duration: 20s;
+        }
+        
+        .ring-2 {
+            width: 200px;
+            height: 200px;
+            border-color: rgba(255, 255, 255, 0.6);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+            animation-duration: 15s;
+            animation-direction: reverse;
+        }
+        
+        .ring-3 {
+            width: 120px;
+            height: 120px;
+            border-color: rgba(255, 255, 255, 0.6);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+            animation-duration: 10s;
+        }
+        
+        @keyframes ringRotate {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        
+        /* Center hub */
+        .hub {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ffffff 0%, #a0a0a0 100%);
+            box-shadow: 
+                0 0 30px #ffffff,
+                0 0 60px rgba(255, 255, 255, 0.5);
+            animation: hubGlow 2s ease-in-out infinite;
+        }
+        
+        @keyframes hubGlow {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+        }
+        
+        /* Data stream circles */
+        .data-orbit {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 1px dashed rgba(255, 255, 255, 0.3);
+        }
+        
+        .orbit-1 { width: 400px; height: 400px; animation: orbitSpin 30s linear infinite; }
+        .orbit-2 { width: 450px; height: 450px; animation: orbitSpin 40s linear infinite reverse; }
+        
+        @keyframes orbitSpin {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        
+        .data-point {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 0 15px #ffffff;
+        }
+        
+        /* Text elements */
+        .brand {
+            position: absolute;
+            bottom: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 50;
+        }
+        
+        .title {
+            font-size: 5rem;
+            font-weight: 100;
+            letter-spacing: 25px;
+            color: transparent;
+            background: linear-gradient(90deg, #ffffff, #00c8ff, #ff0080, #ffffff);
+            background-size: 300% 100%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            animation: gradientShift 5s linear infinite;
+            text-transform: uppercase;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 300% 50%; }
+        }
+        
+        .subtitle {
+            font-size: 0.9rem;
+            letter-spacing: 8px;
+            color: #ffffff;
+            opacity: 0.7;
+            margin-top: 15px;
+            text-transform: uppercase;
+        }
+        
+        /* Glitch effect on title */
+        .title::before,
+        .title::after {
+            content: 'WHEELDER';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            background: transparent;
+        }
+        
+        .title::before {
+            animation: glitch1 2s infinite linear alternate-reverse;
+            color: #ff0080;
+            z-index: -1;
+        }
+        
+        .title::after {
+            animation: glitch2 3s infinite linear alternate-reverse;
+            color: #00c8ff;
+            z-index: -2;
+        }
+        
+        @keyframes glitch1 {
+            0%, 90%, 100% { transform: translate(0); opacity: 0; }
+            92%, 94%, 96%, 98% { transform: translate(-3px, 2px); opacity: 0.8; }
+        }
+        
+        @keyframes glitch2 {
+            0%, 90%, 100% { transform: translate(0); opacity: 0; }
+            91%, 93%, 95%, 97%, 99% { transform: translate(3px, -2px); opacity: 0.8; }
+        }
+        
+        /* Floating hex particles */
+        .hex {
+            position: absolute;
+            width: 20px;
+            height: 23px;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            animation: hexFloat linear infinite;
+            opacity: 0.5;
+        }
+        
+        @keyframes hexFloat {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.5; }
+            90% { opacity: 0.5; }
+            100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+        }
+        
+        /* Corner decorations */
+        .corner {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            z-index: 50;
+        }
+        
+        .corner-tl { top: 30px; left: 30px; border-right: none; border-bottom: none; }
+        .corner-tr { top: 30px; right: 30px; border-left: none; border-bottom: none; }
+        .corner-bl { bottom: 30px; left: 30px; border-right: none; border-top: none; }
+        .corner-br { bottom: 30px; right: 30px; border-left: none; border-top: none; }
+        
+        /* Status text */
+        .status {
+            position: absolute;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7rem;
+            letter-spacing: 3px;
+            color: rgba(255, 255, 255, 0.5);
+            z-index: 50;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .wheel-container { transform: scale(0.6); }
+            .title { font-size: 3rem; letter-spacing: 15px; }
+            .brand { bottom: 20%; }
+        }
+        
+        @media (max-width: 480px) {
+            .wheel-container { transform: scale(0.45); }
+            .title { font-size: 2rem; letter-spacing: 10px; }
+            .subtitle { font-size: 0.7rem; letter-spacing: 4px; }
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1 class="logo">WHEELDER</h1>
-    
-    <div class="solar-system">
-      <!-- Orbital paths -->
-      <div class="orbit orbit-species-1"></div>
-      <div class="orbit orbit-species-2"></div>
-      <div class="orbit orbit-earth"></div>
-      <div class="orbit orbit-species-3"></div>
-      <div class="orbit orbit-species-4"></div>
-      <div class="orbit orbit-species-5"></div>
-      
-      <!-- Sun with clock -->
-      <div class="sun">
-        <div class="sun-clock">
-          <!-- Clock numbers -->
-          <div class="clock-number">
-            <div class="number" style="top: 5px; left: 50%; transform: translateX(-50%);">12</div>
-            <div class="number" style="top: 8px; right: 20px;">1</div>
-            <div class="number" style="top: 25px; right: 8px;">2</div>
-            <div class="number" style="top: 50%; right: 5px; transform: translateY(-50%);">3</div>
-            <div class="number" style="bottom: 25px; right: 8px;">4</div>
-            <div class="number" style="bottom: 8px; right: 20px;">5</div>
-            <div class="number" style="bottom: 5px; left: 50%; transform: translateX(-50%);">6</div>
-            <div class="number" style="bottom: 8px; left: 20px;">7</div>
-            <div class="number" style="bottom: 25px; left: 8px;">8</div>
-            <div class="number" style="top: 50%; left: 5px; transform: translateY(-50%);">9</div>
-            <div class="number" style="top: 25px; left: 8px;">10</div>
-            <div class="number" style="top: 8px; left: 20px;">11</div>
-          </div>
-          
-          <!-- Clock hands -->
-          <div class="clock-hands">
-            <div class="hand hour-hand" id="hourHand"></div>
-            <div class="hand minute-hand" id="minuteHand"></div>
-            <div class="hand second-hand" id="secondHand"></div>
-            <div class="center-dot"></div>
-          </div>
+    <div class="scene">
+        <div class="scanlines"></div>
+        <div class="vignette"></div>
+        
+        <div class="corner corner-tl"></div>
+        <div class="corner corner-tr"></div>
+        <div class="corner corner-bl"></div>
+        <div class="corner corner-br"></div>
+        
+        
+        <div class="wheel-container">
+            <!-- Data orbits -->
+            <div class="data-orbit orbit-1"></div>
+            <div class="data-orbit orbit-2"></div>
+            
+            <!-- Main wheel -->
+            <div class="holo-wheel" id="holoWheel"></div>
+            
+            <!-- Inner rings -->
+            <div class="inner-ring ring-1"></div>
+            <div class="inner-ring ring-2"></div>
+            <div class="inner-ring ring-3"></div>
+            
+            <!-- Hub -->
+            <div class="hub"></div>
         </div>
-      </div>
-      
-      <!-- Orbiting bodies -->
-      <div class="celestial-body species-1-container">
-        <div class="species species-1"></div>
-      </div>
-      
-      <div class="celestial-body species-2-container">
-        <div class="species species-2"></div>
-      </div>
-      
-      <div class="celestial-body earth-container">
-        <div class="earth"></div>
-      </div>
-      
-      <div class="celestial-body species-3-container">
-        <div class="species species-3"></div>
-      </div>
-      
-      <div class="celestial-body species-4-container">
-        <div class="species species-4"></div>
-      </div>
-      
-      <div class="celestial-body species-5-container">
-        <div class="species species-5"></div>
-      </div>
     </div>
     
-    <!-- Digital time display -->
-    <div class="digital-time" id="digitalTime">
-      <span id="hours">00</span><span class="time-separator">:</span><span id="minutes">00</span><span class="time-separator">:</span><span id="seconds">00</span><span class="time-period" id="period">AM</span>
-    </div>
- 
-    
-    
-  </div>
-
-  <script>
-    function updateClock() {
-      const now = new Date();
-      
-      // Get PST/PDT time properly
-      const pstString = now.toLocaleString("en-US", {
-        timeZone: "America/Los_Angeles",
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-      });
-      
-      // Parse the PST string to get components
-      const [datePart, timePart] = pstString.split(', ');
-      const [month, day, year] = datePart.split('/');
-      const [hours, minutes, seconds] = timePart.split(':').map(num => parseInt(num));
-      
-      // For milliseconds, we'll use the current milliseconds
-      const milliseconds = now.getMilliseconds();
-      
-      // Calculate angles
-      const secondAngle = (seconds + milliseconds / 1000) * 6; // 360/60
-      const minuteAngle = (minutes + seconds / 60) * 6; // 360/60
-      const hourAngle = ((hours % 12) + minutes / 60) * 30; // 360/12
-      
-      // Update analog clock hands
-      document.getElementById('secondHand').style.transform = `rotate(${secondAngle}deg)`;
-      document.getElementById('minuteHand').style.transform = `rotate(${minuteAngle}deg)`;
-      document.getElementById('hourHand').style.transform = `rotate(${hourAngle}deg)`;
-      
-      // Convert to 12-hour format
-      const period = hours >= 12 ? 'PM' : 'AM';
-      const displayHours = hours % 12 || 12; // Convert 0 to 12 for midnight
-      
-      // Update digital time
-      document.getElementById('hours').textContent = displayHours.toString().padStart(2, '0');
-      document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
-      document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
-      document.getElementById('period').textContent = period;
-    }
-    
-    // Update clock immediately and then every 10ms for smooth second hand movement
-    updateClock();
-    setInterval(updateClock, 10);
-    
-    // Create additional wave on hour change
-    let lastHour = null;
-    setInterval(() => {
-      const now = new Date();
-      const pstHour = parseInt(now.toLocaleString("en-US", {
-        timeZone: "America/Los_Angeles",
-        hour: '2-digit',
-        hour12: false
-      }));
-      
-      if (lastHour !== null && pstHour !== lastHour) {
-        // Create special effect for hour change
-        const sun = document.querySelector('.sun');
-        sun.style.animation = 'none';
-        setTimeout(() => {
-          sun.style.animation = 'sunPulse 4s ease-in-out infinite';
-        }, 100);
-      }
-      lastHour = pstHour;
-    }, 1000);
-  </script>
+    <script>
+        // Create wheel spokes
+        const wheel = document.getElementById('holoWheel');
+        for (let i = 0; i < 12; i++) {
+            const spoke = document.createElement('div');
+            spoke.className = 'spoke';
+            spoke.style.transform = `rotate(${i * 30}deg)`;
+            wheel.appendChild(spoke);
+        }
+        
+        // Create data points on orbits
+        document.querySelectorAll('.data-orbit').forEach((orbit, orbitIndex) => {
+            const numPoints = 4 + orbitIndex * 2;
+            const radius = orbit.offsetWidth / 2;
+            
+            for (let i = 0; i < numPoints; i++) {
+                const point = document.createElement('div');
+                point.className = 'data-point';
+                const angle = (i / numPoints) * 360;
+                point.style.left = `calc(50% + ${Math.cos(angle * Math.PI / 180) * radius}px - 4px)`;
+                point.style.top = `calc(50% + ${Math.sin(angle * Math.PI / 180) * radius}px - 4px)`;
+                orbit.appendChild(point);
+            }
+        });
+        
+        // Create floating hexagons
+        const scene = document.querySelector('.scene');
+        for (let i = 0; i < 20; i++) {
+            const hex = document.createElement('div');
+            hex.className = 'hex';
+            
+            const size = Math.random() * 15 + 10;
+            const x = Math.random() * 100;
+            const duration = Math.random() * 20 + 15;
+            const delay = Math.random() * 20;
+            
+            hex.style.width = size + 'px';
+            hex.style.height = (size * 1.15) + 'px';
+            hex.style.left = x + '%';
+            hex.style.animationDuration = duration + 's';
+            hex.style.animationDelay = delay + 's';
+            
+            if (Math.random() > 0.7) {
+                hex.style.borderColor = 'rgba(255, 0, 128, 0.3)';
+            } else if (Math.random() > 0.5) {
+                hex.style.borderColor = 'rgba(0, 200, 255, 0.3)';
+            }
+            
+            scene.appendChild(hex);
+        }
+        
+        // Interactive tilt on mouse move
+        const container = document.querySelector('.wheel-container');
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth - 0.5) * 20;
+            const y = (e.clientY / window.innerHeight - 0.5) * 20;
+            container.style.transform = `rotateX(${10 - y}deg) rotateY(${x}deg)`;
+        });
+    </script>
 </body>
 </html>

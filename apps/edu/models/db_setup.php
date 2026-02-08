@@ -1,6 +1,5 @@
 <?php
-$path = $_SERVER['DOCUMENT_ROOT'];
-include $path . '/pool/config/database.php';
+include dirname(dirname(dirname(__DIR__))) . '/pool/config/database.php';
 
 
 
@@ -10,8 +9,7 @@ class Migration extends Database
 
 
 
-   public function profiles_table($table = "users")
-    {
+   public function profiles_table($table = "users"){
         // Check if table exists first
         $conn = $this->connectDb();
         $checkSql = "SHOW TABLES LIKE '$table'";

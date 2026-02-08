@@ -55,6 +55,9 @@ if (!file_exists($controllerPath)) {
 
 require_once $controllerPath;
 
+// Include top.php for centralized url() helper that detects project base path
+require_once dirname(dirname(__DIR__)) . '/top.php';
+
 try {
     $log = new LogsController();
 } catch (Exception $e) {
@@ -127,16 +130,16 @@ if (isset($_POST['sw']) && isset($_POST['role']) && isset($_POST['ud'])) {
                 $defaultApp = intval($_SESSION["default_app"]);
                 switch ($defaultApp) {
                     case 1:
-                        header("Location: /edu");
+                        header("Location: " . url('/edu'));
                         break;
                     case 2:
-                        header("Location: /work");
+                        header("Location: " . url('/work'));
                         break;
                     case 3:
-                        header("Location: /personal");
+                        header("Location: " . url('/personal'));
                         break;
                     default:
-                        header("Location: /");
+                        header("Location: " . url('/'));
                         break;
                 }
                 ob_end_flush();
@@ -211,14 +214,14 @@ if (isset($_POST['login'])) {
                         case 2:
                         case 3:
                         case 4:
-                            header("Location: /blog");
+                            header("Location: " . url('/dashboard'));
                             break;
                         default:
-                            header("Location: /blog");
+                            header("Location: " . url('/dashboard'));
                             break;
                     }
                 } else {
-                    header("Location: /blog");
+                    header("Location: " . url('/dashboard'));
                 }
                 
                 ob_end_flush();
@@ -272,11 +275,14 @@ if (isset($_POST['ref_signup'])) {
             $_SESSION['email'] = $email;
             if ($verify) {
                 $log->alert_redirect("Please verify your email, OTP code is sent", "/verification");
+                exit(); // Stop execution after redirect to prevent fall-through
             } else {
                 $log->alert_redirect("Something went wrong, try again", "/signup");
+                exit();
             }
         } else {
             $log->alert_redirect("Something went wrong, try again later", "/signup");
+            exit();
         }
     } catch (Exception $e) {
         error_log("Ref signup error: " . $e->getMessage());
@@ -317,8 +323,10 @@ if (isset($_POST['signup'])) {
         
         if ($signup) {
             $log->alert_redirect("Login Now", "/login");
+            exit(); // Stop execution after redirect to prevent fall-through
         } else {
             $log->alert_redirect("Something went wrong, try again later", "/signup");
+            exit();
         }
     } catch (Exception $e) {
         error_log("Signup error: " . $e->getMessage());
@@ -346,11 +354,14 @@ if (isset($_POST['forgot_password'])) {
             
             if ($verify) {
                 $log->redirect("/forgot_pass?u=$check");
+                exit(); // Stop execution after redirect to prevent fall-through
             } else {
                 $log->alert_redirect("Failed to send verification code. Please try again.", "/forgot_pass");
+                exit();
             }
         } else {
             $log->alert_redirect("You don't have an account with this email", "/signup");
+            exit();
         }
     } catch (Exception $e) {
         error_log("Forgot password error: " . $e->getMessage());
@@ -377,8 +388,10 @@ if (isset($_POST["reset_pass"])) {
         
         if ($log->reset_password($email, $new_pass)) {
             $log->alert_redirect("Password Reset Successfully", "/login");
+            exit(); // Stop execution after redirect to prevent fall-through
         } else {
             $log->alert_redirect("Something went wrong, try again", "/forgot_pass");
+            exit();
         }
     } catch (Exception $e) {
         error_log("Reset password error: " . $e->getMessage());
@@ -404,15 +417,15 @@ if (isset($_POST['act'])) {
     $act = $_POST['act'] ?? '';
     if ($act == "logout") {
         session_destroy();
-        header("Location: /");
+        header("Location: " . url('/'));
         ob_end_flush();
         exit();
     } else if ($act == "login") {
-        header("Location: /login");
+        header("Location: " . url('/login'));
         ob_end_flush();
         exit();
     } else if ($act == "signup") {
-        header("Location: /signup");
+        header("Location: " . url('/signup'));
         ob_end_flush();
         exit();
     }
@@ -439,8 +452,10 @@ if (isset($_POST['verify'])) {
         if ($otp == $stored_otp) {
             $log->email_verified($email);
             $log->alert_redirect("Successfully Verified", "/login");
+            exit(); // Stop execution after redirect to prevent fall-through
         } else {
             $log->alert_redirect("Invalid Code Try again", "/verification");
+            exit();
         }
     } catch (Exception $e) {
         error_log("Verification error: " . $e->getMessage());
@@ -464,8 +479,10 @@ if (isset($_POST['resend'])) {
         
         if ($verify) {
             $log->alert_redirect("A New Code is Sent", "/verification");
+            exit(); // Stop execution after redirect to prevent fall-through
         } else {
             $log->alert_redirect("Failed to send code. Please try again.", "/verification");
+            exit();
         }
     } catch (Exception $e) {
         error_log("Resend OTP error: " . $e->getMessage());
@@ -532,8 +549,10 @@ if (isset($_POST['complete_profile'])) {
                 $settings->re_log($user_id);
             }
             $log->alert_redirect("Profile Completed Successfully", "/blog");
+            exit(); // Stop execution after redirect to prevent fall-through
         } else {
             $log->alert_redirect("Failed, Try again", "/profile_setup");
+            exit();
         }
     } catch (Exception $e) {
         error_log("Complete profile error: " . $e->getMessage());
@@ -560,8 +579,10 @@ if (isset($_POST['select_topics'])) {
         
         if ($log->update_selected_topics($uid, $selected_topics)) {
             $log->alert_redirect("Topics Saved Successfully", "/blog");
+            exit(); // Stop execution after redirect to prevent fall-through
         } else {
             $log->alert_redirect("Failed. Try Again", "/topics");
+            exit();
         }
     } catch (Exception $e) {
         error_log("Select topics error: " . $e->getMessage());

@@ -1,5 +1,6 @@
-# Environment variables
+# Environment variables and local config (contains API keys)
 .env
+config.local.php
 
 # Error logs
 error.log
@@ -20,6 +21,20 @@ Thumbs.db
 *.tmp
 *.temp
 tmpclaude-*
+
+# SQLite databases
+*.db
+*.sqlite
+pool/config/wheelder.db
+
+# Composer dependencies (install via composer install on server)
+vendor/
+
+# Backup and temp files
+landing_old_backup.php
+server_landing_backup.html
+Note.png
+note_screenshot.png
 
 # Separate repositories
 apps/ai_platform/

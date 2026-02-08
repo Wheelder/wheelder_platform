@@ -78,7 +78,16 @@ require_once $path . '/top.php';
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Include your existing scripts -->
+    <script>
+        function checkpassword() {
+            var password = document.getElementById('password').value;
+            if (password.length < 6) {
+                alert('Password must be at least 6 characters long.');
+                return false;
+            }
+            return true;
+        }
+    </script>
 
 </body>
 </html>

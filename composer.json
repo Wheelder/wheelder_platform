@@ -1,0 +1,5 @@
+{
+    "require": {
+        "afaya/edge-tts": "^1.7"
+    }
+}

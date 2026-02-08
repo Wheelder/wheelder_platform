@@ -1,57 +1,36 @@
 <?php
+/**
+ * Central Database Configuration — SQLite
+ * 
+ * Uses a single SQLite file as the database for both the auth system
+ * and the edu app. The SQLiteConnection wrapper mimics the mysqli 
+ * interface so existing code works without changes.
+ */
 
+require_once __DIR__ . '/sqlite_wrapper.php';
 
 class config
 {
+    // Singleton connection to avoid opening multiple handles
+    private static $connection = null;
 
-    /*
-    private $servername_local = "localhost";
-    private $dbname_local = 'wheelder';
-    private $user_local = "root";
-    private $pass_local = "";
-    private $servername_local = "localhost";
-    private $dbname_local = 'whd';
-    private $user_local = "root";
-    private $pass_local = "";
-       private $servername_local = "localhost";
-    private $dbname_local = 'wheelder_db';
-    private $user_local = "wheelder_user";
-    private $pass_local = "NewWheelderPass2025!";
-    
-    private $servername = "localhost";
-    private $dbname = "wheelder_db";
-    private $user = "wheelder_user";
-    private $pass = "NewWheelderPass2025!";
-    */
-  
-    
-    private $servername = "app-8a072523-8600-4b87-acdc-50263bf2fa69-do-user-27455385-0.g.db.ondigitalocean.com";
-    private $dbname = "dev-db-879680";
-    private $user = "dev-db-879680";
-    private $pass = "AVNS_A3ZucK-iOR20_3xl3aY";
+    // Static DB path — resolved once, works regardless of constructor order
+    private static $dbPath = null;
 
-    //database details for testing server
-    private $servername_d = "localhost";
-    private $dbname_d = 'u559678163_wh_dev';
-    private $user_d = "u559678163_wdu";
-    private $pass_d = "passOfwh_dev!@#123";
-
-
-    private $charset = 'utf8mb4';
-
-    //write these these database detials with out varialbe scope like private or public
-
-    
-
+    private static function getDbPath() {
+        if (self::$dbPath === null) {
+            self::$dbPath = __DIR__ . '/wheelder.db';
+        }
+        return self::$dbPath;
+    }
 
     public function __construct() {
         $this->connectDb();
     }
 
     public function checkHost() {
-        $host = $_SERVER['HTTP_HOST'];
-    
-        // Use switch case to check the host name and return the host number
+        $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
+
         switch ($host) {
             case 'localhost':
             case 'localhost:80':
@@ -59,115 +38,34 @@ class config
             case '127.0.0.1':
             case '127.0.0.1:80':
             case '127.0.0.1:8080':
-                return 1; // Use local development database
+                return 1;
             case 'wheelder.com':
                 return 3;
             default:
-                // For local development, default to localhost config
                 if (strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false) {
                     return 1;
                 }
                 return 0;
         }
     }
-    
+
     public function connectDb() {
-        $hostNumber = $this->checkHost();
-    
-        // Define an array with database details for different hosts
-        $dbDetails = [
-            1=>[
-                'servername' => $this->servername_local,
-                'dbname' => $this->dbname_local,
-                'user' => $this->user_local,
-                'pass' => $this->pass_local,
-            ],
-            2 => [
-                'servername' => $this->servername_local,
-                'dbname' => $this->dbname_local,
-                'user' => $this->user_local,
-                'pass' => $this->pass_local,
-            ],
-            3 => [
-                'servername' => $this->servername,
-                'dbname' => $this->dbname,
-                'user' => $this->user,
-                'pass' => $this->pass,
-            ],
-            4 => [
-                'servername' => $this->servername_d,
-                'dbname' => $this->dbname_d,
-                'user' => $this->user_d,
-                'pass' => $this->pass_d,
-            ],
-            0 => [
-                'servername' => $this->servername,
-                'dbname' => $this->dbname,
-                'user' => $this->user,
-                'pass' => $this->pass,
-            ],
-        ];
-    
-        // Get the database details based on the host number
-        $dbConfig = $dbDetails[$hostNumber];
-    
-        // Use try and catch for mysqli connection
-        $conn = new mysqli($dbConfig['servername'], $dbConfig['user'], $dbConfig['pass'], $dbConfig['dbname']);
-        if ($conn->connect_error) {
-            die("Connection failed: " . $conn->connect_error);
+        if (self::$connection !== null) {
+            return self::$connection;
         }
-    
+
+        $conn = new SQLiteConnection(self::getDbPath());
+        if ($conn->connect_error) {
+            die("SQLite connection failed: " . $conn->connect_error);
+        }
+
+        self::$connection = $conn;
         return $conn;
     }
-    
-    
-        public function connectDbPDO() {
-            
-            $hostNumber = $this->checkHost();
-    
-        // Define an array with database details for different hosts
-        $dbDetails = [
-            1 => [
-                'servername' => $this->servername_local,
-                'dbname' => $this->dbname_local,
-                'user' => $this->user_local,
-                'pass' => $this->pass_local,
-            ],
-            2 => [
-                'servername' => $this->servername,
-                'dbname' => $this->dbname,
-                'user' => $this->user,
-                'pass' => $this->pass,
-            ],
-            3 => [
-                'servername' => $this->servername_d,
-                'dbname' => $this->dbname_d,
-                'user' => $this->user_d,
-                'pass' => $this->pass_d,
-            ],
-            0 => [
-                'servername' => $this->servername_local,
-                'dbname' => $this->dbname_local,
-                'user' => $this->user_local,
-                'pass' => $this->pass_local,
-            ],
-        ];
-    
-        // Get the database details based on the host number
-        $dbConfig = $dbDetails[$hostNumber];
-    
-            //pdo connection
-            $dsn = "mysql:host={$dbConfig['servername']};dbname={$dbConfig['dbname']};charset={$this->charset}";
 
-            try {
-                $pdo = new PDO($dsn, $dbConfig['user'], $dbConfig['pass']);
-                $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                return $pdo;
-            } catch (PDOException $e) {
-                echo "Connection failed: " . $e->getMessage();
-            }
-        
-        }
-        
-
+    public function connectDbPDO() {
+        // Return the underlying PDO from the SQLite wrapper
+        $conn = $this->connectDb();
+        return $conn->getPdo();
+    }
 }
