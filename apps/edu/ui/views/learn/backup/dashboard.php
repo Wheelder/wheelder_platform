@@ -10,6 +10,18 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// --- Authentication gate ---
+// Dashboard is admin-only; require a logged-in user (same check as AppController::check_auth).
+// Without this, anyone with the URL could generate or revoke access codes.
+if (empty($_SESSION['user_id'])) {
+    // Remember where the user was trying to go so login can redirect back
+    $_SESSION['redirect_url'] = $_SERVER['REQUEST_URI'];
+    // Derive base path so the redirect works on both localhost/wheelder and production root
+    $basePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+    header('Location: ' . $basePath . '/login');
+    exit;
+}
+
 // --- CSRF token for form submissions ---
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
