@@ -1,10 +1,35 @@
 <?php
 
-header("Access-Control-Allow-Origin: *");
+// No CORS wildcard — only same-origin requests allowed (prevents external abuse)
 header("Content-Type: application/json");
 
+// Session required — block unauthenticated AI requests (prevents cost abuse)
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+if (empty($_SESSION['user_id'])) {
+    http_response_code(403);
+    echo json_encode(['error' => 'Authentication required']);
+    exit();
+}
+
+// Load API key from config file — never hardcode secrets in source code
+$_configPath = __DIR__ . '/../ui/views/learn/backup/config.local.php';
+if (!file_exists($_configPath)) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Missing config.local.php']);
+    exit();
+}
+$_config = require $_configPath;
+
 define('OPENAI_API_ENDPOINT', 'https://api.openai.com/v1/chat/completions');
-define('OPENAI_API_KEY', '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');  // Replace 'YOUR_OPENAI_API_KEY' with your actual API key
+define('OPENAI_API_KEY', $_config['OPENAI_API_KEY'] ?? '');
+
+if (empty(OPENAI_API_KEY)) {
+    http_response_code(500);
+    echo json_encode(['error' => 'OPENAI_API_KEY not configured']);
+    exit();
+}
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $input = json_decode(file_get_contents('php://input'), true);

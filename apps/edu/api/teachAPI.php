@@ -1,4 +1,15 @@
 <?php
+// Auth gate — block unauthenticated access to AI teaching API (prevents cost abuse)
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+if (empty($_SESSION['user_id'])) {
+    http_response_code(403);
+    header('Content-Type: application/json');
+    echo json_encode(['error' => 'Authentication required']);
+    exit();
+}
+
 $path = $_SERVER['DOCUMENT_ROOT'];
 include $path . '/wheelder/apps/edu/controllers/NoteController.php';
 

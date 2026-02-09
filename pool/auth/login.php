@@ -7,6 +7,14 @@ $dapp= $_GET['dp'] ?? Null OR '';
 if($dapp == ''){
     $dapp = 'main';
 }
+
+// Generate CSRF token — prevents cross-site request forgery on login form
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 ?>
 
 <!DOCTYPE html>
@@ -59,6 +67,7 @@ if($dapp == ''){
                         <hr>
 
                         <form method="POST" action="<?php echo url('/log_api'); ?>">
+                            <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>" />
                             <input type="hidden" name="dapp" value="<?php echo $dapp; ?>" />   
                             <div class="mb-3">
                                 

@@ -1,0 +1,56 @@
+server {
+    listen 80;
+    server_name wheelder.com www.wheelder.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name wheelder.com www.wheelder.com;
+    root /var/www/environments/production/wheelder.com;
+    index index.php index.html;
+
+    ssl_certificate /etc/letsencrypt/live/wheelder.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/wheelder.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    # Security headers — prevent clickjacking, MIME sniffing, and XSS
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # Block access to error.log — contains stack traces and file paths
+    location = /error.log {
+        deny all;
+        return 404;
+    }
+
+    # Block access to .db files — SQLite database must not be downloadable
+    location ~* \.db$ {
+        deny all;
+        return 404;
+    }
+
+    # Block access to hidden files (except .well-known for Let's Encrypt)
+    location ~ /\.(?!well-known) {
+        deny all;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+
+    # Cache static assets
+    location ~* \.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
+        expires 7d;
+        add_header Cache-Control public;
+    }
+}

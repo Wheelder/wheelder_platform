@@ -71,28 +71,41 @@ try {
     exit();
 }
 
-// Handle direct access (GET request without POST data)
+// Block GET requests — don't leak endpoint documentation to attackers
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && empty($_POST)) {
+    http_response_code(405);
     header('Content-Type: application/json');
     echo json_encode([
         'status' => 'error',
-        'message' => 'This is an API endpoint. Please use POST method with appropriate parameters.',
-        'available_endpoints' => [
-            'login' => 'POST with email, password, dapp',
-            'signup' => 'POST with first_name, last_name, email, password',
-            'verify' => 'POST with otp',
-            'forgot_password' => 'POST with email',
-            'reset_pass' => 'POST with new_pass',
-            'complete_profile' => 'POST with profile data',
-            'select_topics' => 'POST with topics and user'
-        ]
+        'message' => 'Method not allowed.'
     ]);
     ob_end_flush();
     exit();
 }
 
+// --- CSRF protection — validate token on all POST requests ---
+// Prevents cross-site request forgery (attacker crafting forms on other sites)
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $csrf_token = $_POST['csrf_token'] ?? '';
+    $session_token = $_SESSION['csrf_token'] ?? '';
+    
+    // Skip CSRF check for the auth-check endpoint (used by AJAX, returns YES/NO)
+    if (!isset($_POST['check'])) {
+        if (empty($session_token) || !hash_equals($session_token, $csrf_token)) {
+            error_log("CSRF validation failed from IP: " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
+            $log->alert_redirect("Invalid request. Please try again.", "/login");
+            exit();
+        }
+    }
+}
+
 // Handle role update and secure login
+// Auth required — prevents unauthenticated privilege escalation
 if (isset($_POST['sw']) && isset($_POST['role']) && isset($_POST['ud'])) {
+    if (empty($_SESSION['user_id'])) {
+        $log->alert_redirect("Authentication required", "/login");
+        exit();
+    }
     try {
         $sw = $_POST['role'];
         $ud = intval($_POST['ud']);
@@ -183,8 +196,10 @@ if (isset($_POST['login'])) {
             $pass = $result->fetch_assoc();
             
             if ($pass) {
-                // Set session variables
-                $_SESSION = array_merge($_SESSION, $pass);
+                // Regenerate session ID — prevents session fixation attacks
+                session_regenerate_id(true);
+                
+                // Set only needed session variables — never merge full row (leaks password hash)
                 $_SESSION['user_type'] = $pass['user_type'] ?? null;
                 $_SESSION['user_id'] = $pass['id'];
                 $_SESSION['auth'] = $pass['id'];
@@ -248,69 +263,18 @@ if (isset($_POST['ref_signup']) || isset($_POST['signup'])) {
     exit();
 }
 
-// Handle forgot password
+// --- Forgot password disabled: single-user system, no self-service password reset ---
 if (isset($_POST['forgot_password'])) {
-    try {
-        $email = strtolower(trim($_POST['email'] ?? ''));
-        
-        if (empty($email)) {
-            $log->alert_redirect("Email is required", "/forgot_pass");
-            exit();
-        }
-        
-        $check = $log->check_user($email);
-        
-        // Fixed logic: use && instead of or, and proper empty check
-        if (!empty($check) && $check !== null && $check !== '') {
-            $verify = $log->verify($email);
-            $_SESSION['email'] = $email;
-            
-            if ($verify) {
-                $log->redirect("/forgot_pass?u=$check");
-                exit(); // Stop execution after redirect to prevent fall-through
-            } else {
-                $log->alert_redirect("Failed to send verification code. Please try again.", "/forgot_pass");
-                exit();
-            }
-        } else {
-            $log->alert_redirect("You don't have an account with this email", "/signup");
-            exit();
-        }
-    } catch (Exception $e) {
-        error_log("Forgot password error: " . $e->getMessage());
-        $log->alert_redirect("An error occurred. Please try again.", "/forgot_pass");
-        exit();
-    }
+    error_log("Blocked forgot_password attempt from IP: " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
+    $log->alert_redirect("Password reset is disabled.", "/login");
+    exit();
 }
 
-// Handle reset password
+// --- Reset password disabled: single-user system, no self-service password reset ---
 if (isset($_POST["reset_pass"])) {
-    try {
-        $new_pass = $_POST['new_pass'] ?? '';
-        $email = $_SESSION['email'] ?? '';
-        
-        if (empty($new_pass)) {
-            $log->alert_redirect("New password is required", "/forgot_pass");
-            exit();
-        }
-        
-        if (empty($email)) {
-            $log->alert_redirect("Session expired. Please try again.", "/forgot_pass");
-            exit();
-        }
-        
-        if ($log->reset_password($email, $new_pass)) {
-            $log->alert_redirect("Password Reset Successfully", "/login");
-            exit(); // Stop execution after redirect to prevent fall-through
-        } else {
-            $log->alert_redirect("Something went wrong, try again", "/forgot_pass");
-            exit();
-        }
-    } catch (Exception $e) {
-        error_log("Reset password error: " . $e->getMessage());
-        $log->alert_redirect("An error occurred. Please try again.", "/forgot_pass");
-        exit();
-    }
+    error_log("Blocked reset_pass attempt from IP: " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
+    $log->alert_redirect("Password reset is disabled.", "/login");
+    exit();
 }
 
 // Handle auth check
@@ -362,7 +326,8 @@ if (isset($_POST['verify'])) {
         
         $stored_otp = $log->get_otp($email);
         
-        if ($otp == $stored_otp) {
+        // Timing-safe comparison — prevents type juggling and timing attacks
+        if (hash_equals((string)$stored_otp, (string)$otp)) {
             $log->email_verified($email);
             $log->alert_redirect("Successfully Verified", "/login");
             exit(); // Stop execution after redirect to prevent fall-through

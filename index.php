@@ -40,6 +40,11 @@ $router->route('/signup', function() {
 
 // --- Profile setup page ---
 $router->route('/profile_setup', function() {
+    if (empty($_SESSION['user_id'])) {
+        http_response_code(404);
+        echo '<h1>404 Not Found</h1>';
+        exit;
+    }
     require 'pool/auth/profile.php';
 });
 
@@ -76,24 +81,50 @@ $router->route('/privacy', function() {
     require 'pool/auth/privacy.php';
 });
 
+// --- Admin routes — auth required to prevent unauthorized DB manipulation ---
 $router->route('/setup', function() {
+    if (empty($_SESSION['user_id'])) {
+        http_response_code(404);
+        echo '<h1>404 Not Found</h1>';
+        exit;
+    }
     require 'pool/config/db_setup.php';
 });
 
 $router->route('/sqlite_setup', function() {
+    if (empty($_SESSION['user_id'])) {
+        http_response_code(404);
+        echo '<h1>404 Not Found</h1>';
+        exit;
+    }
     require 'pool/config/sqlite_setup.php';
 });
 
 $router->route('/edu_db_setup', function() {
+    if (empty($_SESSION['user_id'])) {
+        http_response_code(404);
+        echo '<h1>404 Not Found</h1>';
+        exit;
+    }
     require 'apps/edu/api/dbAPI.php';
 });
 
 
 $router->route('/dev', function() {
+    if (empty($_SESSION['user_id'])) {
+        http_response_code(404);
+        echo '<h1>404 Not Found</h1>';
+        exit;
+    }
     require 'pool/dev/vackup/versions.php';
 });
 
 $router->route('/backup', function() {
+    if (empty($_SESSION['user_id'])) {
+        http_response_code(404);
+        echo '<h1>404 Not Found</h1>';
+        exit;
+    }
     require 'pool/config/backup.php';
 });
 
@@ -101,7 +132,13 @@ $router->route('/main', function() {
     require 'default.php';
 });
 
+// Verification page — requires active email session to prevent abuse
 $router->route('/verification', function() {
+    if (empty($_SESSION['email'])) {
+        http_response_code(404);
+        echo '<h1>404 Not Found</h1>';
+        exit;
+    }
     require 'pool/auth/verification.php';
 });
 
