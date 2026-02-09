@@ -229,7 +229,8 @@ if (isset($_POST['login'])) {
             }
         } else {
             // Handle users without an account or invalid credentials
-            $log->alert_redirect("Invalid email or password. Make sure you have an account here.", "/signup");
+            // Redirect to login (not signup) — signup is disabled in this single-user system
+            $log->alert_redirect("Invalid email or password.", "/login");
             exit();
         }
     } catch (Exception $e) {
@@ -239,100 +240,12 @@ if (isset($_POST['login'])) {
     }
 }
 
-// Handle referral signup
-if (isset($_POST['ref_signup'])) {
-    try {
-        $email = strtolower(trim($_POST['email'] ?? ''));
-        $ref = $_POST['ref'] ?? null;
-        
-        if (empty($email)) {
-            $log->alert_redirect("Email is required", "/signup");
-            exit();
-        }
-        
-        if ($log->check_user($email)) {
-            $log->alert_redirect("Use another email, already exists", "/signup");
-            exit();
-        }
-        
-        $first_name = $_POST['first_name'] ?? '';
-        $last_name = $_POST['last_name'] ?? '';
-        $default_app = intval($_POST['default_app'] ?? 2);
-        $password = $_POST['password'] ?? '';
-        
-        if (empty($first_name) || empty($last_name) || empty($password)) {
-            $log->alert_redirect("All fields are required", "/signup");
-            exit();
-        }
-        
-        $referringCode = $ref;
-        $profile_status = 0;
-        
-        $signup = $log->store($first_name, $last_name, $email, $referringCode, $password, $profile_status, $default_app);
-        
-        if ($signup) {
-            $verify = $log->verify($email);
-            $_SESSION['email'] = $email;
-            if ($verify) {
-                $log->alert_redirect("Please verify your email, OTP code is sent", "/verification");
-                exit(); // Stop execution after redirect to prevent fall-through
-            } else {
-                $log->alert_redirect("Something went wrong, try again", "/signup");
-                exit();
-            }
-        } else {
-            $log->alert_redirect("Something went wrong, try again later", "/signup");
-            exit();
-        }
-    } catch (Exception $e) {
-        error_log("Ref signup error: " . $e->getMessage());
-        $log->alert_redirect("An error occurred. Please try again.", "/signup");
-        exit();
-    }
-}
-
-// Handle regular signup
-if (isset($_POST['signup'])) {
-    try {
-        $email = strtolower(trim($_POST['email'] ?? ''));
-        
-        if (empty($email)) {
-            $log->alert_redirect("Email is required", "/signup");
-            exit();
-        }
-        
-        if ($log->check_user($email)) {
-            $log->alert_redirect("Use another email, already exists", "/signup");
-            exit();
-        }
-        
-        $first_name = $_POST['first_name'] ?? '';
-        $last_name = $_POST['last_name'] ?? '';
-        $default_app = 2;
-        $password = $_POST['password'] ?? '';
-        
-        if (empty($first_name) || empty($last_name) || empty($password)) {
-            $log->alert_redirect("All fields are required", "/signup");
-            exit();
-        }
-        
-        $referringCode = null;
-        $profile_status = 0;
-        
-        $signup = $log->store($first_name, $last_name, $email, $referringCode, $password, $profile_status, $default_app);
-        
-        if ($signup) {
-            $log->alert_redirect("Login Now", "/login");
-            exit(); // Stop execution after redirect to prevent fall-through
-        } else {
-            $log->alert_redirect("Something went wrong, try again later", "/signup");
-            exit();
-        }
-    } catch (Exception $e) {
-        error_log("Signup error: " . $e->getMessage());
-        $log->alert_redirect("An error occurred. Please try again.", "/signup");
-        exit();
-    }
+// --- Signup disabled: single-user system, accounts created by code only ---
+// Both ref_signup and signup POST handlers are blocked to prevent unauthorized registration.
+if (isset($_POST['ref_signup']) || isset($_POST['signup'])) {
+    error_log("Blocked signup attempt from IP: " . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
+    $log->alert_redirect("Registration is disabled.", "/login");
+    exit();
 }
 
 // Handle forgot password

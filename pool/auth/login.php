@@ -79,15 +79,11 @@ if($dapp == ''){
                                 <input type="checkbox" class="form-check-input" id="rememberMe" name="rememberMe">
                                 <label class="form-check-label" for="rememberMe">Remember Me</label>
                             </div>
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <a href="<?php echo url('/forgot_pass'); ?>" class="text-primary">Forgot Password?</a>
+                            <div class="d-flex justify-content-end align-items-center mb-3">
                                 <button class="btn btn-primary " type="submit" name="login">Login</button>
                             </div>
                             
                         </form>
-                        <div class="text-center">
-                            <p class="mb-0">Don't have an account? <a href="<?php echo url('/signup'); ?>" class="text-primary">Sign Up</a></p>
-                        </div>
                     </div>
                 </div>
             </div>

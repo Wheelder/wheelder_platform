@@ -30,8 +30,11 @@ $router->route('/login', function() {
     require 'pool/auth/login.php';
 });
 
+// --- Signup disabled: single-user system, accounts created by code only ---
 $router->route('/signup', function() {
-    require 'pool/auth/signup.php';
+    http_response_code(404);
+    echo '<h1>404 Not Found</h1>';
+    exit;
 });
 
 
@@ -44,12 +47,17 @@ $router->route('/log_api', function() {
     require 'pool/api/logsAPI.php';
 });
 
+// --- Password reset disabled: single-user system, no self-service password reset ---
 $router->route('/forgot_pass', function() {
-    require 'pool/auth/forgot_password.php';
+    http_response_code(404);
+    echo '<h1>404 Not Found</h1>';
+    exit;
 });
 
 $router->route('/reset_pass', function() {
-    require 'pool/auth/reset_pass.php';
+    http_response_code(404);
+    echo '<h1>404 Not Found</h1>';
+    exit;
 });
 
 $router->route('/logout', function() {
