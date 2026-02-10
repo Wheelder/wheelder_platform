@@ -3,7 +3,7 @@
 include __DIR__ . '/AppController.php';
 
 // Include top.php for url() helper — ensures AJAX URLs work on both localhost and production
-require_once dirname(dirname(dirname(dirname(dirname(__DIR__))))) . '/top.php';
+require_once dirname(dirname(dirname(dirname(dirname(dirname(__DIR__)))))) . '/top.php';
 
 $note = new AppController();
 
