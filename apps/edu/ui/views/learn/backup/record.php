@@ -760,6 +760,7 @@ if (empty($_SESSION['csrf_token'])) {
                 <div class="row justify-content-center">
                     <div class="col-md-8">
                         <textarea class="form-control mb-3" id="queryInput" rows="2"
+                            style="overflow-y:hidden; resize:none; min-height:60px; max-height:240px;"
                             placeholder="Type your question here..."><?php
                             // Pre-fill from viewed conversation so the user sees what was asked
                             if (!empty($viewConversation)) {
@@ -887,6 +888,7 @@ if (empty($_SESSION['csrf_token'])) {
         <?php endif; ?>
 
         // --- DOM references (cached once so we don't query the DOM repeatedly) ---
+        var sidebarNav     = document.querySelector('#sidebarMenu .nav.flex-column');
         var askBtn         = document.getElementById('askBtn');
         var deepenBtn      = document.getElementById('deepenBtn');
         var clearBtn       = document.getElementById('clearBtn');
@@ -976,6 +978,78 @@ if (empty($_SESSION['csrf_token'])) {
         <?php endif; ?>
 
         // ===========================================
+        // Auto-expand textarea — grows/shrinks as the user types
+        // Resets to auto first so shrinking works, then sets to scrollHeight.
+        // ===========================================
+        function autoResizeTextarea() {
+            queryInput.style.height = 'auto';
+            // Clamp to max-height so the page doesn't grow unbounded
+            queryInput.style.height = Math.min(queryInput.scrollHeight, 240) + 'px';
+        }
+        queryInput.addEventListener('input', autoResizeTextarea);
+        // Run once on load in case the textarea is pre-filled (viewing past conversation)
+        autoResizeTextarea();
+
+        // ===========================================
+        // addSidebarThread — inserts a new conversation into the sidebar immediately
+        // so the user doesn't have to refresh to see it.
+        // Only called for brand-new threads (not follow-ups in existing threads).
+        // ===========================================
+        function addSidebarThread(sessionId, questionText) {
+            if (!sidebarNav) return;
+
+            // Truncate label to 30 chars to match the PHP sidebar rendering
+            var label = questionText.length > 30 ? questionText.substring(0, 30) + '...' : questionText;
+
+            // Build the same HTML structure as the PHP loop generates
+            var li = document.createElement('li');
+            li.className = 'nav-item d-flex align-items-center';
+            li.setAttribute('data-session', sessionId);
+
+            // Escape HTML in label to prevent XSS from user input
+            var safeLabel = label.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+            var safeTitle = questionText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+            var safeSession = sessionId.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+            // Build the key param for the URL (same logic as PHP $keyParam)
+            var keyParam = '';
+            var urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('key')) {
+                keyParam = '&key=' + encodeURIComponent(urlParams.get('key'));
+            }
+
+            // Format today's date as YYYY-MM-DD to match the PHP conv-date display
+            var today = new Date();
+            var dateStr = today.getFullYear() + '-' +
+                String(today.getMonth() + 1).padStart(2, '0') + '-' +
+                String(today.getDate()).padStart(2, '0');
+
+            li.innerHTML =
+                '<a href="' + '<?php echo url("/learn"); ?>?view=' + encodeURIComponent(sessionId) + keyParam + '"' +
+                '   class="nav-link flex-grow-1 active" title="' + safeTitle + '">' +
+                    safeLabel +
+                    '<span class="conv-date">' + dateStr + '</span>' +
+                '</a>' +
+                '<span class="conv-actions">' +
+                    '<i class="fas fa-box-archive conv-archive" title="Archive this research" data-session="' + safeSession + '"></i>' +
+                    '<i class="fas fa-trash conv-delete" title="Delete this research" data-session="' + safeSession + '"></i>' +
+                '</span>';
+
+            // Remove 'active' class from all other sidebar links so only the new one is highlighted
+            sidebarNav.querySelectorAll('.nav-link').forEach(function (link) {
+                link.classList.remove('active');
+            });
+
+            // Insert after the "+ New Research" item (first <li>)
+            var firstItem = sidebarNav.querySelector('li.nav-item');
+            if (firstItem && firstItem.nextSibling) {
+                sidebarNav.insertBefore(li, firstItem.nextSibling);
+            } else {
+                sidebarNav.appendChild(li);
+            }
+        }
+
+        // ===========================================
         // sendAjax — core function that POSTs to ajax_handler.php and renders the result
         // ===========================================
         function sendAjax(formData, questionText) {
@@ -1038,6 +1112,13 @@ if (empty($_SESSION['csrf_token'])) {
                         '<img src="' + data.image + '" alt="Generated image"/>';
                 }
 
+                // --- Add new thread to sidebar instantly (only for brand-new conversations) ---
+                // Must check BEFORE updating ajaxState, because once sessionId is set
+                // follow-up asks within the same thread should NOT create duplicate entries.
+                if (!ajaxState.sessionId && data.session_id) {
+                    addSidebarThread(data.session_id, data.original_question || questionText);
+                }
+
                 // --- Update AJAX state so the next deepen call chains correctly ---
                 ajaxState.sessionId        = data.session_id;
                 ajaxState.originalQuestion = data.original_question;
@@ -1085,8 +1166,9 @@ if (empty($_SESSION['csrf_token'])) {
                 return;
             }
 
-            // Clear the textarea after sending
+            // Clear the textarea after sending and reset its height
             queryInput.value = '';
+            autoResizeTextarea();
 
             // Build form data for the Ask request
             var formData = new FormData();
@@ -1136,6 +1218,8 @@ if (empty($_SESSION['csrf_token'])) {
         // ===========================================
         clearBtn.addEventListener('click', function () {
             queryInput.value = '';
+            // Reset textarea height back to default after clearing
+            autoResizeTextarea();
             resultsRow.innerHTML = '';
             deepenBtn.style.display = 'none';
             depthBadge.style.display = 'none';
