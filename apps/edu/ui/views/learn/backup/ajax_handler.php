@@ -25,13 +25,42 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // --- Demo access key gate ---
-// Two ways to be authorized: logged-in user (from dashboard) OR demo key unlocked via URL.
-// This prevents anonymous visitors from bypassing the UI and hitting the API directly.
+// Re-validate the stored access key on every AJAX call (same logic as record.php).
+// The old approach checked a boolean $_SESSION['demo_unlocked'] which died when the
+// PHP session expired. Now we re-check the actual key against the DB so access stays
+// active as long as the admin hasn't deactivated the code.
 $isLoggedIn = !empty($_SESSION['user_id']);
-if (!empty(DEMO_ACCESS_KEY) && !$isLoggedIn && empty($_SESSION['demo_unlocked'])) {
-    http_response_code(403);
-    echo json_encode(['error' => 'Access denied. Please open the app with a valid access key first.']);
-    exit;
+if (!empty(DEMO_ACCESS_KEY) && !$isLoggedIn) {
+    $ajaxKeyValid = false;
+    $keyToCheck = $_SESSION['demo_access_key'] ?? '';
+
+    if (!empty($keyToCheck)) {
+        // Check 1: hardcoded demo key (always valid)
+        if (hash_equals(DEMO_ACCESS_KEY, $keyToCheck)) {
+            $ajaxKeyValid = true;
+        }
+
+        // Check 2: dashboard-generated code — must still be active in DB
+        if (!$ajaxKeyValid) {
+            try {
+                $acDb = new PDO('sqlite:' . __DIR__ . '/database.sqlite');
+                $acDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                $acStmt = $acDb->prepare("SELECT id FROM access_codes WHERE code = ? AND is_active = 1 LIMIT 1");
+                $acStmt->execute([$keyToCheck]);
+                if ($acStmt->fetch()) {
+                    $ajaxKeyValid = true;
+                }
+            } catch (PDOException $e) {
+                error_log("AJAX access code lookup failed: " . $e->getMessage());
+            }
+        }
+    }
+
+    if (!$ajaxKeyValid) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Access denied. Your access key may have been deactivated. Please reload the page.']);
+        exit;
+    }
 }
 
 // --- CSRF protection ---
