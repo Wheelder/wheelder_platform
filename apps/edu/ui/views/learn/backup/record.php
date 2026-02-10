@@ -2,6 +2,9 @@
 // $path = __DIR__;
 include __DIR__ . '/AppController.php';
 
+// Include top.php for url() helper — ensures AJAX URLs work on both localhost and production
+require_once dirname(dirname(dirname(dirname(dirname(__DIR__))))) . '/top.php';
+
 $note = new AppController();
 
  
@@ -669,7 +672,7 @@ if (empty($_SESSION['csrf_token'])) {
     <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
 
         <!-- Brand — col-md-2 matches blog layout -->
-        <a class="navbar-brand col-md-2 col-lg-2 me-0 px-3 fs-6" href="/wheelder/learn">Wheelder Lab</a>
+        <a class="navbar-brand col-md-2 col-lg-2 me-0 px-3 fs-6" href="<?php echo url('/learn'); ?>">Wheelder Lab</a>
 
         <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse"
             data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false"
@@ -716,7 +719,7 @@ if (empty($_SESSION['csrf_token'])) {
 
                         <!-- "New Research" link resets the page to a fresh state -->
                         <li class="nav-item">
-                            <a href="/wheelder/learn<?php echo !empty($keyParam) ? '?key=' . urlencode($_GET['key']) : ''; ?>" class="nav-link <?php echo empty($_GET['view']) && empty($_POST['ask']) && empty($_POST['deepen']) ? 'active' : ''; ?>">
+                            <a href="<?php echo url('/learn'); ?><?php echo !empty($keyParam) ? '?key=' . urlencode($_GET['key']) : ''; ?>" class="nav-link <?php echo empty($_GET['view']) && empty($_POST['ask']) && empty($_POST['deepen']) ? 'active' : ''; ?>">
                                 <i class="fas fa-plus"></i> New Research
                             </a>
                         </li>
@@ -731,7 +734,7 @@ if (empty($_SESSION['csrf_token'])) {
                             $isActive = (!empty($_GET['view']) && $_GET['view'] === $conv['session_id']) ? 'active' : '';
                         ?>
                         <li class="nav-item d-flex align-items-center" data-session="<?php echo htmlspecialchars($conv['session_id']); ?>">
-                            <a href="/wheelder/learn?view=<?php echo urlencode($conv['session_id']) . $keyParam; ?>" class="nav-link flex-grow-1 <?php echo $isActive; ?>" title="<?php echo htmlspecialchars($conv['question']); ?>">
+                            <a href="<?php echo url('/learn'); ?>?view=<?php echo urlencode($conv['session_id']) . $keyParam; ?>" class="nav-link flex-grow-1 <?php echo $isActive; ?>" title="<?php echo htmlspecialchars($conv['question']); ?>">
                                 <?php echo htmlspecialchars($label); ?>
                                 <span class="conv-date"><?php echo $conv['created_at']; ?></span>
                             </a>
@@ -942,6 +945,8 @@ if (empty($_SESSION['csrf_token'])) {
             document.body.style.right = '0';
             document.body.style.overflow = 'hidden';
             document.documentElement.style.overflow = 'hidden';
+            // Jump back to where the user was before opening the overlay
+            window.scrollTo(0, _overlayScrollY);
         }
         function closeImageOverlay() {
             document.getElementById('imgOverlay').classList.remove('active');
@@ -986,7 +991,7 @@ if (empty($_SESSION['csrf_token'])) {
             formData.append('csrf_token', csrfToken);
 
             // Use fetch API — modern, clean, no jQuery needed
-            fetch('/wheelder/learn/ajax', {
+            fetch('<?php echo url("/learn/ajax"); ?>', {
                 method: 'POST',
                 body: formData
             })
@@ -1181,7 +1186,7 @@ if (empty($_SESSION['csrf_token'])) {
             // Attach CSRF token for backend validation
             formData.append('csrf_token', csrfToken);
 
-            fetch('/wheelder/learn/ajax', {
+            fetch('<?php echo url("/learn/ajax"); ?>', {
                 method: 'POST',
                 body: formData
             })
@@ -1199,7 +1204,7 @@ if (empty($_SESSION['csrf_token'])) {
                 // If the user was viewing this conversation, redirect to fresh state
                 // so the main area doesn't show stale data for a now-archived thread
                 if (ajaxState.sessionId === sessionId) {
-                    window.location.href = '/wheelder/learn';
+                    window.location.href = '<?php echo url("/learn"); ?>';
                 }
             })
             .catch(function (err) {
@@ -1355,7 +1360,7 @@ if (empty($_SESSION['csrf_token'])) {
             var fd = new FormData();
             fd.append('text', ttsPlainText);
             fd.append('csrf_token', csrfToken);
-            fetch('/wheelder/learn/tts', { method: 'POST', body: fd })
+            fetch('<?php echo url("/learn/tts"); ?>', { method: 'POST', body: fd })
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 ttsIsLoading = false;
