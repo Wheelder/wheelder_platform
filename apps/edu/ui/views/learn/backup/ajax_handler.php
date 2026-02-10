@@ -91,6 +91,92 @@ if (isset($_POST['ask']) || isset($_POST['deepen'])) {
     $_SESSION['rate_timestamps'][] = $now;
 }
 
+// ==========================================================================
+// formatMarkdown — lightweight markdown-to-HTML converter for AI responses.
+// Handles the most common patterns the AI returns: headings, bold, italic,
+// code blocks, inline code, numbered lists, bullet lists, and paragraphs.
+// No external library needed — keeps the codebase simple and self-contained.
+// ==========================================================================
+function formatMarkdown($text) {
+    // Normalize line endings so regex works consistently across OS
+    $text = str_replace("\r\n", "\n", $text);
+    $text = str_replace("\r", "\n", $text);
+
+    // --- Fenced code blocks (```lang ... ```) → <pre><code> ---
+    // Must run BEFORE inline rules so backticks inside code blocks aren't mangled
+    $text = preg_replace('/```(\w*)\n([\s\S]*?)```/m', '<pre><code>$2</code></pre>', $text);
+
+    // --- Inline code (`...`) → <code> ---
+    $text = preg_replace('/`([^`]+)`/', '<code>$1</code>', $text);
+
+    // --- Headings (### → h5, ## → h4, # → h3) ---
+    // Using h3-h5 so they fit inside the .qa-answer panel without being too large
+    $text = preg_replace('/^### (.+)$/m', '<h5>$1</h5>', $text);
+    $text = preg_replace('/^## (.+)$/m',  '<h4>$1</h4>', $text);
+    $text = preg_replace('/^# (.+)$/m',   '<h3>$1</h3>', $text);
+
+    // --- Bold and italic (order matters: bold-italic first) ---
+    $text = preg_replace('/\*\*\*(.+?)\*\*\*/', '<strong><em>$1</em></strong>', $text);
+    $text = preg_replace('/\*\*(.+?)\*\*/',     '<strong>$1</strong>', $text);
+    $text = preg_replace('/\*(.+?)\*/',          '<em>$1</em>', $text);
+
+    // --- Horizontal rules (--- or *** on their own line) ---
+    $text = preg_replace('/^[-*]{3,}$/m', '<hr>', $text);
+
+    // --- Lists and paragraphs: process line-by-line ---
+    // Split into lines, group consecutive list items into <ol>/<ul> blocks,
+    // and wrap remaining text lines into <p> tags separated by blank lines.
+    $lines  = explode("\n", $text);
+    $html   = '';
+    $inOl   = false;  // currently inside an ordered list?
+    $inUl   = false;  // currently inside an unordered list?
+
+    foreach ($lines as $line) {
+        $trimmed = trim($line);
+
+        // Skip empty lines — they act as paragraph separators
+        if ($trimmed === '') {
+            // Close any open list before the gap
+            if ($inOl) { $html .= '</ol>'; $inOl = false; }
+            if ($inUl) { $html .= '</ul>'; $inUl = false; }
+            continue;
+        }
+
+        // Ordered list item: "1. text" or "1) text"
+        if (preg_match('/^\d+[\.\)]\s+(.+)$/', $trimmed, $m)) {
+            if ($inUl) { $html .= '</ul>'; $inUl = false; }
+            if (!$inOl) { $html .= '<ol>'; $inOl = true; }
+            $html .= '<li>' . $m[1] . '</li>';
+            continue;
+        }
+
+        // Unordered list item: "- text" or "* text" or "• text"
+        if (preg_match('/^[-*•]\s+(.+)$/', $trimmed, $m)) {
+            if ($inOl) { $html .= '</ol>'; $inOl = false; }
+            if (!$inUl) { $html .= '<ul>'; $inUl = true; }
+            $html .= '<li>' . $m[1] . '</li>';
+            continue;
+        }
+
+        // Regular text line — close any open list, then wrap in <p>
+        if ($inOl) { $html .= '</ol>'; $inOl = false; }
+        if ($inUl) { $html .= '</ul>'; $inUl = false; }
+
+        // Don't wrap lines that are already block-level HTML (headings, hr, pre)
+        if (preg_match('/^<(h[1-6]|hr|pre|ol|ul|li|blockquote)/', $trimmed)) {
+            $html .= $trimmed;
+        } else {
+            $html .= '<p>' . $trimmed . '</p>';
+        }
+    }
+
+    // Close any list left open at end of text
+    if ($inOl) $html .= '</ol>';
+    if ($inUl) $html .= '</ul>';
+
+    return $html;
+}
+
 try {
 
     // --- ASK handler: new question ---
@@ -104,17 +190,11 @@ try {
             exit;
         }
 
-        // Generate the AI answer
+        // Generate the AI answer (raw text, often contains markdown formatting)
         $answer = $note->generateResponse($q);
 
-        // Split sentences for readable formatting (same logic as app_src.php)
-        $sentences = preg_split('/(?<=[.?!])\s+(?=[A-Z])/', $answer);
-        $formattedAnswer = implode("<br></br>", $sentences);
-        $formattedAnswer = trim($formattedAnswer);
-
-        // Strip markdown symbols so the answer reads as clean plain text
-        $content = str_replace(array('###', '##', '#', '***', '**', '*', '---', '`'), '', $formattedAnswer);
-        $content = trim($content);
+        // Convert markdown to HTML so numbered lists, bullets, bold, etc. render properly
+        $content = formatMarkdown($answer);
 
         // Generate a relevant image for the question
         $image = $note->generateImage($q);
@@ -178,14 +258,8 @@ try {
         $answer = $note->generateResponse($deeperPrompt);
         $image  = $note->generateImage($mainq);
 
-        // Format the answer (same logic as app_src.php)
-        $sentences = preg_split('/(?<=[.?!])\s+(?=[A-Z])/', $answer);
-        $formattedAnswer = implode("<br></br>", $sentences);
-        $formattedAnswer = trim($formattedAnswer);
-
-        // Strip markdown symbols
-        $content = str_replace(array('###', '##', '#', '***', '**', '*', '---', '`'), '', $formattedAnswer);
-        $content = trim($content);
+        // Convert markdown to HTML so numbered lists, bullets, bold, etc. render properly
+        $content = formatMarkdown($answer);
 
         // Generate session_id if not provided (shouldn't happen, but safety net)
         if (empty($sessionId)) {

@@ -160,13 +160,75 @@ if (empty($_SESSION['csrf_token'])) {
             margin-bottom: 16px;
             padding-bottom: 8px;
             border-bottom: 1px dashed #ddd;
+            /* Let formatted HTML (lists, paragraphs) breathe with normal line-height */
+            line-height: 1.7;
         }
 
-        /* Depth label shown above deepened answers */
-        .qa-depth-label {
-            font-size: 11px;
-            color: #888;
-            margin-bottom: 2px;
+        /* Numbered and bullet lists inside answers — indent so they don't hug the left edge */
+        .qa-answer ol,
+        .qa-answer ul {
+            padding-left: 28px;
+            margin: 8px 0;
+        }
+        .qa-answer li {
+            margin-bottom: 4px;
+        }
+
+        /* Paragraphs inside answers — compact spacing between consecutive <p> tags */
+        .qa-answer p {
+            margin: 6px 0;
+        }
+
+        /* Headings inside answers — scale down so they fit the panel context */
+        .qa-answer h3 { font-size: 1.15em; margin: 12px 0 6px; }
+        .qa-answer h4 { font-size: 1.05em; margin: 10px 0 4px; }
+        .qa-answer h5 { font-size: 0.95em; margin: 8px 0 4px; }
+
+        /* Inline code — subtle background to distinguish from prose */
+        .qa-answer code {
+            background-color: #f0f0f0;
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: 0.92em;
+        }
+
+        /* Fenced code blocks — scrollable, dark background */
+        .qa-answer pre {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            padding: 12px 14px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 10px 0;
+            font-size: 0.88em;
+            line-height: 1.5;
+        }
+        /* Reset inline-code style when inside a code block */
+        .qa-answer pre code {
+            background: none;
+            padding: 0;
+            font-size: inherit;
+        }
+
+        /* Horizontal rules inside answers */
+        .qa-answer hr {
+            border: none;
+            border-top: 1px solid #ddd;
+            margin: 12px 0;
+        }
+
+        /* Bold and italic inherit the answer font but stand out */
+        .qa-answer strong { font-weight: 700; }
+        .qa-answer em { font-style: italic; }
+
+        /* Dark mode overrides for code blocks and inline code */
+        .dark-mode .qa-answer pre {
+            background-color: #333;
+            color: #fff;
+        }
+        .dark-mode .qa-answer code {
+            background-color: #444;
+            color: #fff;
         }
 
         /* Image panel — same height and border style as text panel */
