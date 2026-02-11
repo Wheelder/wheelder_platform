@@ -52,7 +52,9 @@ class AppController extends Controller
                 ]
             ],
             'temperature' => 1,
-            'max_tokens' => 4096,
+            // 1024 tokens is enough for a detailed answer (~750 words). The old 4096
+            // caused very long responses that exceeded nginx's 60s gateway timeout → 504.
+            'max_tokens' => 1024,
             'top_p' => 1
         ];
 
@@ -66,6 +68,9 @@ class AppController extends Controller
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        // 30s timeout — prevents hanging if Groq is slow; must finish before nginx's
+        // gateway timeout (60-120s) to avoid a 504 that returns HTML instead of JSON
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
 
         $response = curl_exec($ch);
 
