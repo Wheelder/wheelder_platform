@@ -237,14 +237,14 @@ try {
             exit;
         }
 
-        // Generate the AI answer (raw text, often contains markdown formatting)
-        $answer = $note->generateResponse($q);
+        // Generate the AI answer AND find a relevant image in parallel.
+        // Before: 3 sequential HTTP calls (8-25s). After: 2 parallel calls (5-15s).
+        $result = $note->generateAnswerAndImage($q);
+        $answer = $result['answer'];
+        $image  = $result['image'];
 
         // Convert markdown to HTML so numbered lists, bullets, bold, etc. render properly
         $content = formatMarkdown($answer);
-
-        // Generate a relevant image for the question
-        $image = $note->generateImage($q);
 
         // If a session_id was passed, this is a follow-up question in an existing thread.
         // Otherwise create a new conversation thread.
@@ -301,9 +301,12 @@ try {
             . " Make this answer one level more deeper (depth level " . $depthLevel . " of 7)"
             . " beside keeping this answer. Add more detail, examples, and nuance.";
 
-        // Generate the deeper answer and a relevant image
-        $answer = $note->generateResponse($deeperPrompt);
-        $image  = $note->generateImage($mainq);
+        // Generate the deeper answer AND find a relevant image in parallel.
+        // Pass $mainq as the image query so the image matches the original topic,
+        // not the verbose deepen prompt.
+        $result = $note->generateAnswerAndImage($deeperPrompt, $mainq);
+        $answer = $result['answer'];
+        $image  = $result['image'];
 
         // Convert markdown to HTML so numbered lists, bullets, bold, etc. render properly
         $content = formatMarkdown($answer);

@@ -97,17 +97,121 @@ class AppController extends Controller
         }
     }
  
+    public function generateAnswerAndImage($userInput, $imageQuery = null)
+    {
+        // Use the image query if provided (deepen uses the original question),
+        // otherwise use the user's input for both text and image
+        $imgQuery = $imageQuery ?? $userInput;
+
+        // --- Build the Groq text request ---
+        $textData = [
+            'model' => GROQ_MODEL,
+            'messages' => [
+                ['role' => 'user', 'content' => $userInput]
+            ],
+            'temperature' => 1,
+            // 1024 tokens ≈ 750 words — enough for a detailed answer without
+            // exceeding nginx's gateway timeout
+            'max_tokens' => 1024,
+            'top_p' => 1
+        ];
+        $textHeaders = [
+            'Content-Type: application/json',
+            'Authorization: Bearer ' . GROQ_API_KEY
+        ];
+
+        $chText = curl_init(GROQ_API_ENDPOINT);
+        curl_setopt($chText, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($chText, CURLOPT_POST, true);
+        curl_setopt($chText, CURLOPT_POSTFIELDS, json_encode($textData));
+        curl_setopt($chText, CURLOPT_HTTPHEADER, $textHeaders);
+        curl_setopt($chText, CURLOPT_TIMEOUT, 30);
+
+        // --- Build the Wikimedia image request ---
+        // Extract keywords locally (no Groq call) — saves 1-5s per request
+        $keywords = $this->extractKeywords($imgQuery);
+        $imageApiUrl = "https://commons.wikimedia.org/w/api.php?"
+            . "action=query"
+            . "&generator=search"
+            . "&gsrsearch=" . urlencode($keywords)
+            . "&gsrnamespace=6"
+            . "&gsrlimit=10"
+            . "&prop=imageinfo"
+            . "&iiprop=url|mime"
+            . "&iiurlwidth=1024"
+            . "&format=json";
+
+        $chImage = curl_init($imageApiUrl);
+        curl_setopt($chImage, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($chImage, CURLOPT_TIMEOUT, 5);
+        curl_setopt($chImage, CURLOPT_USERAGENT, "WheelderApp/1.0");
+
+        // --- Run both requests in parallel using curl_multi ---
+        // This is the main speed win: instead of waiting for text THEN image,
+        // both HTTP calls happen simultaneously. Total time = max(text, image).
+        $mh = curl_multi_init();
+        curl_multi_add_handle($mh, $chText);
+        curl_multi_add_handle($mh, $chImage);
+
+        // Execute all handles until they're done
+        do {
+            $status = curl_multi_exec($mh, $running);
+            // Wait for activity instead of busy-looping (saves CPU)
+            if ($running > 0) {
+                curl_multi_select($mh);
+            }
+        } while ($running > 0 && $status === CURLM_OK);
+
+        // --- Collect the text result ---
+        $answer = '';
+        $textResponse = curl_multi_getcontent($chText);
+        if (curl_errno($chText)) {
+            $answer = json_encode(['error' => curl_error($chText)]);
+        } else {
+            $textJson = json_decode($textResponse, true);
+            if (isset($textJson['choices'][0]['message']['content'])) {
+                $answer = $textJson['choices'][0]['message']['content'];
+            } else {
+                $apiError = $textJson['error']['message'] ?? 'Unknown API error';
+                $apiType  = $textJson['error']['type'] ?? 'unknown';
+                $answer = json_encode([
+                    'error' => $apiError,
+                    'type'  => $apiType,
+                    'hint'  => 'Check your Groq API key at https://console.groq.com'
+                ]);
+            }
+        }
+
+        // --- Collect the image result ---
+        $imageUrl = '';
+        $imageResponse = curl_multi_getcontent($chImage);
+        if (!curl_errno($chImage) && !empty($imageResponse)) {
+            $imageUrl = $this->parseWikimediaResponse($imageResponse);
+        }
+        // Fallback to placeholder if Wikimedia returned nothing
+        if (empty($imageUrl)) {
+            $imageUrl = "https://placehold.co/1024x630?text=" . urlencode($keywords);
+        }
+
+        // Clean up curl handles
+        curl_multi_remove_handle($mh, $chText);
+        curl_multi_remove_handle($mh, $chImage);
+        curl_multi_close($mh);
+        curl_close($chText);
+        curl_close($chImage);
+
+        return ['answer' => $answer, 'image' => $imageUrl];
+    }
+
     public function generateImage($prompt)
     {
-        // Step 1: Ask Groq to turn the question into short image-search keywords
-        // e.g. "What's AI?" → "artificial intelligence,robot,technology"
-        // This makes the image relevant to the topic (like the old formulaic prompt approach)
-        $keywords = $this->generateImageKeywords($prompt);
+        // Extract keywords locally instead of calling Groq (saves 1-5s)
+        $keywords = $this->extractKeywords($prompt);
 
-        // Step 2: Search Wikimedia Commons for a relevant image (free, no API key)
+        // Search Wikimedia Commons for a relevant image (free, no API key)
         $imageUrl = $this->searchWikimediaImage($keywords);
 
-        // Step 3: If Wikimedia fails, fall back to a topic placeholder
+        // Fall back to a topic placeholder if Wikimedia returned nothing
         if (empty($imageUrl)) {
             $imageUrl = "https://placehold.co/1024x630?text=" . urlencode($keywords);
         }
@@ -136,7 +240,7 @@ class AppController extends Controller
 
         $ch = curl_init($apiUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 8);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
         // Wikimedia requires a User-Agent header for API requests
         curl_setopt($ch, CURLOPT_USERAGENT, "WheelderApp/1.0");
 
@@ -183,59 +287,78 @@ class AppController extends Controller
     }
 
     /**
-     * Uses Groq to convert a user question into 3-5 descriptive image keywords
-     * so the image search returns relevant results
+     * Extract 2-3 meaningful keywords from a question using PHP string manipulation.
+     * Replaces the old generateImageKeywords() which made a separate Groq API call
+     * just to extract keywords — that added 1-5s of latency per request.
+     * This approach is instant (<1ms) and produces good-enough keywords for Wikimedia search.
      */
-    private function generateImageKeywords($prompt)
+    private function extractKeywords($prompt)
     {
-        // Ask the LLM to extract visual keywords from the question
-        $data = [
-            'model' => GROQ_MODEL,
-            'messages' => [
-                [
-                    'role' => 'system',
-                    'content' => 'You are a keyword extractor for image search. Given a question, reply with ONLY 2 to 3 simple space-separated words that would find a relevant photograph. No commas, no sentences, no academic terms. Example: "What is AI?" → "robot technology", "Tell me about space travel" → "space rocket launch", "What is automation?" → "industrial robot factory"'
-                ],
-                [
-                    'role' => 'user',
-                    'content' => $prompt
-                ]
-            ],
-            'temperature' => 0.3,
-            'max_tokens' => 50
-        ];
+        // Common English stop words that don't help image search
+        $stopWords = ['what','whats','how','why','when','where','who','which','whom',
+            'is','are','was','were','be','been','being','do','does','did',
+            'the','a','an','and','or','but','in','on','at','to','for','of',
+            'with','by','from','as','into','about','between','through',
+            'can','could','would','should','will','shall','may','might',
+            'have','has','had','not','no','its','it','this','that','these',
+            'those','i','me','my','we','our','you','your','he','she','they',
+            'tell','explain','describe','define','give','make','please',
+            'definition','meaning','example','difference'];
 
-        $headers = [
-            'Content-Type: application/json',
-            'Authorization: Bearer ' . GROQ_API_KEY
-        ];
+        // Strip punctuation, lowercase, split into words
+        $clean = preg_replace('/[^a-zA-Z0-9\s]/', '', strtolower($prompt));
+        $words = preg_split('/\s+/', trim($clean));
 
-        $ch = curl_init(GROQ_API_ENDPOINT);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-
-        $response = curl_exec($ch);
-
-        // If Groq fails, fall back to the raw prompt words as keywords
-        if (curl_errno($ch)) {
-            curl_close($ch);
-            return trim($prompt);
+        // Keep only meaningful words (not stop words, at least 3 chars)
+        $keywords = [];
+        foreach ($words as $w) {
+            if (strlen($w) >= 3 && !in_array($w, $stopWords)) {
+                $keywords[] = $w;
+            }
+            // 3 keywords is enough for a good image search
+            if (count($keywords) >= 3) break;
         }
 
-        curl_close($ch);
-
-        $responseData = json_decode($response, true);
-
-        // Extract the keywords from Groq's response
-        if (isset($responseData['choices'][0]['message']['content'])) {
-            return trim($responseData['choices'][0]['message']['content']);
+        // Fallback: if no keywords survived filtering, use first 3 words of the prompt
+        if (empty($keywords)) {
+            $keywords = array_slice($words, 0, 3);
         }
 
-        // Fallback: use the original prompt if Groq didn't return keywords
-        return trim($prompt);
+        return implode(' ', $keywords);
+    }
+
+    /**
+     * Parse a Wikimedia API JSON response and return the first valid image URL.
+     * Extracted into its own method so both generateImage() and generateAnswerAndImage()
+     * can reuse the same parsing logic without duplication.
+     */
+    private function parseWikimediaResponse($responseJson)
+    {
+        $data = json_decode($responseJson, true);
+
+        if (!isset($data['query']['pages'])) {
+            return '';
+        }
+
+        // Loop through results to find an actual photo (skip PDFs, SVGs, etc.)
+        foreach ($data['query']['pages'] as $page) {
+            if (!isset($page['imageinfo'][0])) continue;
+            $info = $page['imageinfo'][0];
+            $mime = $info['mime'] ?? '';
+
+            // Only accept actual image files (JPEG, PNG, WebP)
+            if (strpos($mime, 'image/jpeg') === false
+                && strpos($mime, 'image/png') === false
+                && strpos($mime, 'image/webp') === false) {
+                continue;
+            }
+
+            // Prefer the resized thumbnail (1024px wide)
+            if (isset($info['thumburl'])) return $info['thumburl'];
+            if (isset($info['url']))      return $info['url'];
+        }
+
+        return '';
     }
 
     //store data in the MySQL database in questions table 
