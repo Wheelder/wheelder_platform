@@ -956,6 +956,11 @@ if (empty($_SESSION['csrf_token'])) {
         // so the backend can reject forged cross-site requests
         var csrfToken = <?php echo json_encode($_SESSION['csrf_token']); ?>;
 
+        // Access key — sent with every AJAX POST so the backend can re-validate
+        // even if the PHP session expired (session garbage-collected after inactivity).
+        // Without this, AJAX calls fail with 403 after the session dies.
+        var accessKey = <?php echo json_encode($_SESSION['demo_access_key'] ?? ''); ?>;
+
         <?php
         // If viewing a past conversation, seed the JS state so deepen works immediately
         if (!empty($viewConversation)):
@@ -1090,8 +1095,6 @@ if (empty($_SESSION['csrf_token'])) {
             var safeLabel = label.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
             var safeTitle = questionText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
             var safeSession = sessionId.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-
-            // Build the key param for the URL (same logic as PHP $keyParam)
             var keyParam = '';
             var urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('key')) {
@@ -1143,6 +1146,8 @@ if (empty($_SESSION['csrf_token'])) {
 
             // Attach CSRF token so the backend can verify this request came from our page
             formData.append('csrf_token', csrfToken);
+            // Attach access key so backend can re-validate even if session expired
+            if (accessKey) formData.append('access_key', accessKey);
 
             // Use fetch API — modern, clean, no jQuery needed
             fetch('<?php echo url("/learn/ajax"); ?>', {
@@ -1150,7 +1155,14 @@ if (empty($_SESSION['csrf_token'])) {
                 body: formData
             })
             .then(function (response) {
-                // Parse JSON even if HTTP status is not 200 (server returns error JSON)
+                // Guard: if the response isn't JSON (e.g. PHP fatal error, nginx 404),
+                // read it as text and throw a clear error instead of a cryptic parse failure
+                var ct = response.headers.get('content-type') || '';
+                if (ct.indexOf('application/json') === -1) {
+                    return response.text().then(function (html) {
+                        throw new Error('Server returned HTML instead of JSON (HTTP ' + response.status + '). Please reload the page.');
+                    });
+                }
                 return response.json();
             })
             .then(function (data) {
@@ -1349,12 +1361,22 @@ if (empty($_SESSION['csrf_token'])) {
             formData.append('session_id', sessionId);
             // Attach CSRF token for backend validation
             formData.append('csrf_token', csrfToken);
+            // Attach access key so backend can re-validate even if session expired
+            if (accessKey) formData.append('access_key', accessKey);
 
             fetch('<?php echo url("/learn/ajax"); ?>', {
                 method: 'POST',
                 body: formData
             })
-            .then(function (response) { return response.json(); })
+            .then(function (response) {
+                var ct = response.headers.get('content-type') || '';
+                if (ct.indexOf('application/json') === -1) {
+                    return response.text().then(function () {
+                        throw new Error('Server returned non-JSON response. Please reload the page.');
+                    });
+                }
+                return response.json();
+            })
             .then(function (data) {
                 if (data.error) {
                     alert('Error: ' + data.error);

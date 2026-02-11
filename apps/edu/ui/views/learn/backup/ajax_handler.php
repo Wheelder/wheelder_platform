@@ -25,14 +25,17 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // --- Demo access key gate ---
-// Re-validate the stored access key on every AJAX call (same logic as record.php).
-// The old approach checked a boolean $_SESSION['demo_unlocked'] which died when the
-// PHP session expired. Now we re-check the actual key against the DB so access stays
-// active as long as the admin hasn't deactivated the code.
+// Re-validate the access key on every AJAX call.
+// The key can come from two sources:
+//   1. $_SESSION['demo_access_key'] — set when record.php validated the key on page load
+//   2. $_POST['access_key'] — sent by the frontend JS as a fallback for when the
+//      PHP session expired (garbage-collected after inactivity). Without this fallback,
+//      AJAX calls fail with 403 after the session dies, returning HTML instead of JSON.
 $isLoggedIn = !empty($_SESSION['user_id']);
 if (!empty(DEMO_ACCESS_KEY) && !$isLoggedIn) {
     $ajaxKeyValid = false;
-    $keyToCheck = $_SESSION['demo_access_key'] ?? '';
+    // Priority: session first, then POST fallback
+    $keyToCheck = $_SESSION['demo_access_key'] ?? $_POST['access_key'] ?? '';
 
     if (!empty($keyToCheck)) {
         // Check 1: hardcoded demo key (always valid)
@@ -54,6 +57,13 @@ if (!empty(DEMO_ACCESS_KEY) && !$isLoggedIn) {
                 error_log("AJAX access code lookup failed: " . $e->getMessage());
             }
         }
+
+        // Re-store the key in the (possibly new) session so subsequent AJAX calls
+        // within this session don't need to re-validate from POST every time
+        if ($ajaxKeyValid) {
+            $_SESSION['demo_access_key'] = $keyToCheck;
+            $_SESSION['demo_unlocked']   = true;
+        }
     }
 
     if (!$ajaxKeyValid) {
@@ -67,10 +77,18 @@ if (!empty(DEMO_ACCESS_KEY) && !$isLoggedIn) {
 // Every AJAX POST must include the csrf_token that was embedded in the page.
 // This prevents cross-site request forgery — a malicious site can't guess the token.
 $csrfToken = $_POST['csrf_token'] ?? '';
-if (empty($_SESSION['csrf_token']) || empty($csrfToken)) {
+if (empty($csrfToken)) {
     http_response_code(403);
     echo json_encode(['error' => 'Missing CSRF token. Please reload the page and try again.']);
     exit;
+}
+// If the session has no CSRF token (fresh session after expiry), but the access key
+// just re-validated above, adopt the frontend's token into the new session.
+// This bridges the gap between session expiry and page reload — without it, every
+// AJAX call after session expiry would fail with "Invalid CSRF token" even though
+// the user's access key is still valid.
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = $csrfToken;
 }
 // Timing-safe comparison so attackers can't guess the token character by character
 if (!hash_equals($_SESSION['csrf_token'], $csrfToken)) {
