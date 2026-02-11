@@ -144,6 +144,8 @@ if (empty($_SESSION['csrf_token'])) {
 
         /* Scrollable text panel — holds Q&A pairs in questionnaire style */
         .content {
+            /* Relative so the text-fullscreen-btn can be positioned inside */
+            position: relative;
             width: 100%;
             padding: 10px;
             height: 600px;
@@ -291,17 +293,114 @@ if (empty($_SESSION['csrf_token'])) {
             background: rgba(0,0,0,0.85);
         }
 
+        /* Fullscreen button — top-right corner of the text answer panel (mirrors image panel) */
+        .text-fullscreen-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+            background: rgba(0,0,0,0.6);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.2s;
+        }
+        .text-fullscreen-btn:hover {
+            background: rgba(0,0,0,0.85);
+        }
+
+        /* Text zoom overlay — full-viewport readable view of the answer text */
+        .text-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            z-index: 99999;
+            background: rgba(0,0,0,0.95);
+            /* Scrollable so long answers don't get cut off */
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .text-overlay.active {
+            display: block;
+        }
+        /* The text container inside the overlay — centered, readable width */
+        .text-overlay-content {
+            max-width: 800px;
+            margin: 60px auto 40px;
+            padding: 30px;
+            color: #fff;
+            font-family: Verdana, sans-serif;
+            font-size: 18px;
+            line-height: 1.7;
+        }
+        /* Inherit answer formatting inside the overlay */
+        .text-overlay-content .qa-question {
+            border: 2px solid #fff;
+            padding: 8px 12px;
+            margin-bottom: 16px;
+            font-weight: 700;
+            font-size: 1.1em;
+            color: #fff;
+            background: transparent;
+        }
+        .text-overlay-content .qa-answer {
+            margin-bottom: 24px;
+        }
+        .text-overlay-content .qa-answer strong { font-weight: 700; }
+        .text-overlay-content .qa-answer em { font-style: italic; }
+        .text-overlay-content .qa-depth-label {
+            color: #aaa;
+            font-size: 0.85em;
+            margin-bottom: 6px;
+        }
+        .text-overlay-content .qa-answer pre {
+            background-color: #333;
+            color: #d4d4d4;
+            padding: 12px 14px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+        .text-overlay-content .qa-answer code {
+            background-color: #444;
+            color: #fff;
+            padding: 1px 5px;
+            border-radius: 3px;
+        }
+        .text-overlay-content .qa-answer pre code {
+            background: none;
+            padding: 0;
+        }
+        /* Close button on the text overlay — same style as image overlay */
+        .text-overlay-close {
+            position: fixed;
+            top: calc(18px + env(safe-area-inset-top, 0px));
+            right: calc(24px + env(safe-area-inset-right, 0px));
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 32px;
+            cursor: pointer;
+            z-index: 100000;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        .text-overlay-close:hover {
+            color: #ccc;
+        }
+
         /* Fullscreen image overlay — covers the entire viewport above all layers */
         .img-overlay {
             display: none;
             position: fixed;
-            /* inset:0 + explicit edges = belt-and-suspenders for all browsers */
             inset: 0;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            /* dvh adapts when mobile address bar shows/hides; vh is fallback for older browsers */
+            top: 0; left: 0; right: 0; bottom: 0;
             width: 100vw;
             height: 100vh;
             height: 100dvh;
@@ -309,9 +408,7 @@ if (empty($_SESSION['csrf_token'])) {
             background: rgba(0,0,0,0.95);
             align-items: center;
             justify-content: center;
-            /* Prevent touch gestures (scroll, pinch) from leaking through to the page behind */
             touch-action: none;
-            /* Stop iOS Safari rubber-band overscroll on the overlay itself */
             -webkit-overflow-scrolling: touch;
             overflow: hidden;
         }
@@ -321,18 +418,15 @@ if (empty($_SESSION['csrf_token'])) {
         /* The image inside the overlay — fit within viewport with padding */
         .img-overlay img {
             max-width: 95vw;
-            /* dvh so the image resizes when mobile address bar appears/disappears */
             max-height: 90vh;
             max-height: 90dvh;
             object-fit: contain;
             border-radius: 8px;
-            /* Allow pinch-to-zoom on the image itself (useful on mobile) */
             touch-action: pinch-zoom;
         }
         /* Close button on the overlay */
         .img-overlay-close {
             position: absolute;
-            /* env(safe-area-inset-top) pushes the button below the iPhone notch/Dynamic Island */
             top: calc(18px + env(safe-area-inset-top, 0px));
             right: calc(24px + env(safe-area-inset-right, 0px));
             background: none;
@@ -341,12 +435,78 @@ if (empty($_SESSION['csrf_token'])) {
             font-size: 32px;
             cursor: pointer;
             z-index: 100000;
-            /* Larger tap target on mobile — minimum 44px per Apple HIG */
             min-width: 44px;
             min-height: 44px;
         }
         .img-overlay-close:hover {
             color: #ccc;
+        }
+
+        /* --- Print styles: only show answer text + image, hide all UI chrome --- */
+        @media print {
+            /* Hide everything that isn't the answer or image */
+            header, .navbar, .sidebar, .controls,
+            #sidebarMenu, #questionInput, #askBtn, #deepenBtn, #clearBtn,
+            #depthBadge, #loadingSpinner, #errorMsg,
+            .img-fullscreen-btn, .text-fullscreen-btn,
+            .img-overlay, .text-overlay,
+            .mb-5, .d-flex.gap-2,
+            .row.justify-content-center {
+                display: none !important;
+            }
+
+            /* Remove sidebar column width so content fills the page */
+            .col-md-10 {
+                width: 100% !important;
+                max-width: 100% !important;
+                flex: 0 0 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            /* Answer panel — remove fixed height, border, shadow for clean print */
+            .content {
+                height: auto !important;
+                overflow: visible !important;
+                border: none !important;
+                box-shadow: none !important;
+                font-size: 12pt !important;
+                padding: 0 !important;
+            }
+
+            /* Image panel — auto height, no border, centered */
+            .contentImage {
+                height: auto !important;
+                max-height: 400px !important;
+                overflow: visible !important;
+                border: none !important;
+                box-shadow: none !important;
+                page-break-before: always;
+            }
+            .contentImage img {
+                max-width: 100% !important;
+                height: auto !important;
+                object-fit: contain !important;
+            }
+
+            /* Make panels stack vertically for print (not side by side) */
+            .col-md-6 {
+                width: 100% !important;
+                max-width: 100% !important;
+                flex: 0 0 100% !important;
+            }
+
+            /* Clean question boxes for print */
+            .qa-question {
+                border: 1px solid #000 !important;
+                color: #000 !important;
+                background: #fff !important;
+            }
+
+            body {
+                background: #fff !important;
+                color: #000 !important;
+            }
         }
 
         /* Dark mode — toggled by the moon/sun icons in the toolbar */
@@ -883,6 +1043,10 @@ if (empty($_SESSION['csrf_token'])) {
                     ?>
                     <div class="col-md-6">
                         <div class="content" id="answerPanel">
+                            <!-- Focus button — opens the answer text in a full-viewport overlay for reading -->
+                            <button class="text-fullscreen-btn" title="Focus view" onclick="openTextOverlay()">
+                                <i class="fas fa-expand"></i>
+                            </button>
                             <?php
                             // Render all Q&A pairs in questionnaire style inside the answer panel
                             foreach ($viewConversation as $entry):
@@ -918,6 +1082,12 @@ if (empty($_SESSION['csrf_token'])) {
     <div class="img-overlay" id="imgOverlay">
         <button class="img-overlay-close" title="Close" onclick="closeImageOverlay()">&times;</button>
         <img id="imgOverlayImg" src="" alt="Fullscreen image"/>
+    </div>
+
+    <!-- Text focus overlay — hidden by default, shown when the text expand button is clicked -->
+    <div class="text-overlay" id="textOverlay">
+        <button class="text-overlay-close" title="Close" onclick="closeTextOverlay()">&times;</button>
+        <div class="text-overlay-content" id="textOverlayContent"></div>
     </div>
 
     <!-- Bottom spacing so content doesn't crowd the page end -->
@@ -989,7 +1159,11 @@ if (empty($_SESSION['csrf_token'])) {
             if (!document.getElementById('answerPanel')) {
                 resultsRow.innerHTML =
                     '<div class="col-md-6">' +
-                    '    <div class="content" id="answerPanel"></div>' +
+                    '    <div class="content" id="answerPanel">' +
+                    '        <button class="text-fullscreen-btn" title="Focus view" onclick="openTextOverlay()">' +
+                    '            <i class="fas fa-expand"></i>' +
+                    '        </button>' +
+                    '    </div>' +
                     '</div>' +
                     '<div class="col-md-6">' +
                     '    <div class="contentImage" id="imagePanel"></div>' +
@@ -1049,9 +1223,55 @@ if (empty($_SESSION['csrf_token'])) {
             // Jump back to where the user was before opening the overlay
             window.scrollTo(0, _overlayScrollY);
         }
-        // Close overlay with Escape key
+
+        // --- Text overlay helpers ---
+        // Opens a full-viewport overlay with the answer panel's content for focused reading.
+        // Copies the innerHTML (excluding the focus button) so the overlay always
+        // reflects the latest Q&A content, even after AJAX updates.
+        function openTextOverlay() {
+            var panel = document.getElementById('answerPanel');
+            if (!panel) return;
+
+            // Clone the panel's content but skip the focus button itself
+            var overlayContent = document.getElementById('textOverlayContent');
+            overlayContent.innerHTML = '';
+            var children = panel.children;
+            for (var i = 0; i < children.length; i++) {
+                if (children[i].classList.contains('text-fullscreen-btn')) continue;
+                overlayContent.innerHTML += children[i].outerHTML;
+            }
+
+            document.getElementById('textOverlay').classList.add('active');
+
+            // Lock page scroll (same pattern as image overlay)
+            _overlayScrollY = window.scrollY;
+            document.body.style.position = 'fixed';
+            document.body.style.top = '-' + _overlayScrollY + 'px';
+            document.body.style.left = '0';
+            document.body.style.right = '0';
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+        }
+        function closeTextOverlay() {
+            document.getElementById('textOverlay').classList.remove('active');
+            document.getElementById('textOverlayContent').innerHTML = '';
+
+            // Restore page scroll
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.left = '';
+            document.body.style.right = '';
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
+            window.scrollTo(0, _overlayScrollY);
+        }
+
+        // Close either overlay with Escape key
         document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') closeImageOverlay();
+            if (e.key === 'Escape') {
+                closeImageOverlay();
+                closeTextOverlay();
+            }
         });
 
         // Auto-scroll on page load if viewing a past conversation
