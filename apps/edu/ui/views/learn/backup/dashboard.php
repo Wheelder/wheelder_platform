@@ -381,7 +381,7 @@ try {
     <div class="navbar-top">
         <a href="/wheelder/dashboard">Wheelder Dashboard</a>
         <div class="nav-links">
-            <a href="/wheelder/learn"><i class="fas fa-flask"></i> Learn App</a>
+            <a href="/wheelder/demo"><i class="fas fa-flask"></i> Demo App</a>
             <a href="/wheelder/"><i class="fas fa-home"></i> Home</a>
         </div>
     </div>
@@ -438,7 +438,7 @@ try {
                         <?php foreach ($codes as $i => $row): ?>
                             <?php
                                 // Build the full shareable URL for this code
-                                $shareUrl = $baseUrl . '/learn?key=' . urlencode($row['code']);
+                                $shareUrl = $baseUrl . '/demo?key=' . urlencode($row['code']);
                             ?>
                             <tr>
                                 <td><?php echo $i + 1; ?></td>

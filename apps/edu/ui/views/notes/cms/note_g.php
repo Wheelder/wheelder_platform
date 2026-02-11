@@ -717,7 +717,7 @@ $note = new NoteController();
                                  <input type="text" class="form-control" name="category" value="<?php echo $_GET['category'] ?? null; ?>" placeholder="Category..">
                                 <button type="submit" class="btn btn-primary" name="search">Search</button>
                             &nbsp;
-                            <a href="/learn" class="btn btn-primary">Reset</a>
+                            <a href="/demo" class="btn btn-primary">Reset</a>
                         </div>
                 </div>
                 </form>

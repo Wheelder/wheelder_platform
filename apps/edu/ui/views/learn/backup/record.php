@@ -34,7 +34,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // --- Demo access key gate ---
-// Three ways to access /learn:
+// Three ways to access /demo:
 //   1. Logged-in user (has $_SESSION['user_id']) — no key needed
 //   2. Hardcoded DEMO_ACCESS_KEY from config.local.php — ?key=VALUE in the URL
 //   3. Dashboard-generated code stored in access_codes table — ?key=CODE in the URL
@@ -104,7 +104,7 @@ if (!empty(DEMO_ACCESS_KEY) && !$isLoggedIn) {
 }
 
 // Preserve the access key so sidebar links don't lose it on navigation.
-// Without this, clicking a conversation reloads /learn?view=... without ?key=,
+// Without this, clicking a conversation reloads /demo?view=... without ?key=,
 // which breaks access for users who opened the app via a shareable link.
 // Falls back to the session-stored key if the URL doesn't have one — this covers
 // the case where the user navigated via sidebar (no ?key= in URL) but the session
@@ -912,7 +912,7 @@ if (empty($_SESSION['csrf_token'])) {
     <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
 
         <!-- Brand — col-md-2 matches blog layout -->
-        <a class="navbar-brand col-md-2 col-lg-2 me-0 px-3 fs-6" href="<?php echo url('/learn'); ?>">Wheelder Lab</a>
+        <a class="navbar-brand col-md-2 col-lg-2 me-0 px-3 fs-6" href="<?php echo url('/demo'); ?>">Wheelder Lab</a>
 
         <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse"
             data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false"
@@ -959,7 +959,7 @@ if (empty($_SESSION['csrf_token'])) {
 
                         <!-- "New Research" link resets the page to a fresh state -->
                         <li class="nav-item">
-                            <a href="<?php echo url('/learn'); ?><?php echo !empty($keyParam) ? '?key=' . urlencode($_GET['key']) : ''; ?>" class="nav-link <?php echo empty($_GET['view']) && empty($_POST['ask']) && empty($_POST['deepen']) ? 'active' : ''; ?>">
+                            <a href="<?php echo url('/demo'); ?><?php echo !empty($keyParam) ? '?key=' . urlencode($_GET['key']) : ''; ?>" class="nav-link <?php echo empty($_GET['view']) && empty($_POST['ask']) && empty($_POST['deepen']) ? 'active' : ''; ?>">
                                 <i class="fas fa-plus"></i> New Research
                             </a>
                         </li>
@@ -974,7 +974,7 @@ if (empty($_SESSION['csrf_token'])) {
                             $isActive = (!empty($_GET['view']) && $_GET['view'] === $conv['session_id']) ? 'active' : '';
                         ?>
                         <li class="nav-item d-flex align-items-center" data-session="<?php echo htmlspecialchars($conv['session_id']); ?>">
-                            <a href="<?php echo url('/learn'); ?>?view=<?php echo urlencode($conv['session_id']) . $keyParam; ?>" class="nav-link flex-grow-1 <?php echo $isActive; ?>" title="<?php echo htmlspecialchars($conv['question']); ?>">
+                            <a href="<?php echo url('/demo'); ?>?view=<?php echo urlencode($conv['session_id']) . $keyParam; ?>" class="nav-link flex-grow-1 <?php echo $isActive; ?>" title="<?php echo htmlspecialchars($conv['question']); ?>">
                                 <?php echo htmlspecialchars($label); ?>
                                 <span class="conv-date"><?php echo $conv['created_at']; ?></span>
                             </a>
@@ -1328,7 +1328,7 @@ if (empty($_SESSION['csrf_token'])) {
                 String(today.getDate()).padStart(2, '0');
 
             li.innerHTML =
-                '<a href="' + '<?php echo url("/learn"); ?>?view=' + encodeURIComponent(sessionId) + keyParam + '"' +
+                '<a href="' + '<?php echo url("/demo"); ?>?view=' + encodeURIComponent(sessionId) + keyParam + '"' +
                 '   class="nav-link flex-grow-1 active" title="' + safeTitle + '">' +
                     safeLabel +
                     '<span class="conv-date">' + dateStr + '</span>' +
@@ -1370,7 +1370,7 @@ if (empty($_SESSION['csrf_token'])) {
             if (accessKey) formData.append('access_key', accessKey);
 
             // Use fetch API — modern, clean, no jQuery needed
-            fetch('<?php echo url("/learn/ajax"); ?>', {
+            fetch('<?php echo url("/demo/ajax"); ?>', {
                 method: 'POST',
                 body: formData
             })
@@ -1575,7 +1575,7 @@ if (empty($_SESSION['csrf_token'])) {
                 return;
             }
 
-            // Build the AJAX request — reuses the same /learn/ajax endpoint
+            // Build the AJAX request — reuses the same /demo/ajax endpoint
             var formData = new FormData();
             formData.append(isArchive ? 'archive' : 'delete', '1');
             formData.append('session_id', sessionId);
@@ -1584,7 +1584,7 @@ if (empty($_SESSION['csrf_token'])) {
             // Attach access key so backend can re-validate even if session expired
             if (accessKey) formData.append('access_key', accessKey);
 
-            fetch('<?php echo url("/learn/ajax"); ?>', {
+            fetch('<?php echo url("/demo/ajax"); ?>', {
                 method: 'POST',
                 body: formData
             })
@@ -1610,7 +1610,7 @@ if (empty($_SESSION['csrf_token'])) {
                 // If the user was viewing this conversation, redirect to fresh state
                 // so the main area doesn't show stale data for a now-archived thread
                 if (ajaxState.sessionId === sessionId) {
-                    window.location.href = '<?php echo url("/learn"); ?>';
+                    window.location.href = '<?php echo url("/demo"); ?>';
                 }
             })
             .catch(function (err) {
@@ -1682,7 +1682,7 @@ if (empty($_SESSION['csrf_token'])) {
 
         // ===========================================
         // Text-to-Speech — Edge TTS (natural neural voice)
-        // Uses a server-side PHP proxy (/learn/tts) that calls
+        // Uses a server-side PHP proxy (/demo/tts) that calls
         // Microsoft Edge's free neural TTS service. Voice: en-US-GuyNeural.
         // No API key required. Returns MP3 audio + word boundary timestamps.
         // ===========================================
@@ -1766,7 +1766,7 @@ if (empty($_SESSION['csrf_token'])) {
             var fd = new FormData();
             fd.append('text', ttsPlainText);
             fd.append('csrf_token', csrfToken);
-            fetch('<?php echo url("/learn/tts"); ?>', { method: 'POST', body: fd })
+            fetch('<?php echo url("/demo/tts"); ?>', { method: 'POST', body: fd })
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 ttsIsLoading = false;

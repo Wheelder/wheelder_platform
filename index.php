@@ -149,18 +149,34 @@ $router->route('/dashboard', function() {
 
 // --- LAB and Blog sections ---
 
-$router->route('/learn', function() {
+$router->route('/demo', function() {
     require 'apps/edu/ui/views/learn/backup/record.php';
 });
 
-// AJAX endpoint for the /learn page — handles Ask and Deepen requests without page reload
-$router->route('/learn/ajax', function() {
+// AJAX endpoint for the /demo page — handles Ask and Deepen requests without page reload
+$router->route('/demo/ajax', function() {
     require 'apps/edu/ui/views/learn/backup/ajax_handler.php';
 });
 
 // TTS endpoint — converts text to natural speech using Edge TTS neural voices
-$router->route('/learn/tts', function() {
+$router->route('/demo/tts', function() {
     require 'apps/edu/ui/views/learn/backup/tts_proxy.php';
+});
+
+// --- Legacy /learn redirects — 301 so old bookmarks and shared links still work ---
+$router->route('/learn', function() {
+    // Preserve query string (?key=, ?view=) so shared access links keep working
+    $qs = $_SERVER['QUERY_STRING'] ? '?' . $_SERVER['QUERY_STRING'] : '';
+    header('Location: ' . url('/demo') . $qs, true, 301);
+    exit;
+});
+$router->route('/learn/ajax', function() {
+    header('Location: ' . url('/demo/ajax'), true, 301);
+    exit;
+});
+$router->route('/learn/tts', function() {
+    header('Location: ' . url('/demo/tts'), true, 301);
+    exit;
 });
 
 

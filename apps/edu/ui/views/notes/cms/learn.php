@@ -687,7 +687,7 @@ $note = new NoteController();
 <body>
     <header class="navbar navbar-dark sticky-top bg-dark  flex-md-nowrap p-0 shadow">
 
-        <a class="navbar-brand col-md-2 col-lg-2 me-0 px-3 fs-6" href="/learn">Wheeleder</a>
+        <a class="navbar-brand col-md-2 col-lg-2 me-0 px-3 fs-6" href="/demo">Wheeleder</a>
 
         <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse"
             data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false"
@@ -741,7 +741,7 @@ $note = new NoteController();
                             &nbsp;
                             <button type="submit" class="btn btn-dark">Ask</button>
                             &nbsp;
-                            <a href="/learn" class="btn btn-dark">Reset</a>
+                            <a href="/demo" class="btn btn-dark">Reset</a>
                         </div>
 
                 </div>
