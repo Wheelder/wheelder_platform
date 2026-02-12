@@ -148,30 +148,33 @@ class AppController extends Controller
         }
         curl_close($chText);
 
-        // --- Step 2: Convert the answer into a formulaic image search prompt ---
-        // Simple keyword extraction (word frequency) produces vague search terms
-        // that return irrelevant Wikimedia images. Instead, we ask the LLM to
-        // read the answer and produce a short, visual search phrase — the LLM
-        // understands context and can pick the single most iconic visual concept.
-        // Falls back to extractKeywords() if the LLM call fails or the answer is an error.
-        $imagePrompt = '';
+        // --- Step 2: Summarize the answer into 1-2 focused sentences ---
+        // The full answer is too long and noisy for image prompt generation.
+        // A concise summary strips away filler, examples, and caveats, giving
+        // the image-prompt step a clean, focused input about the core topic.
+        $summary = '';
         if (!empty($answer) && $answer[0] !== '{') {
-            // Use the LLM to distill the answer into a Wikimedia search phrase
-            $imagePrompt = $this->answerToImagePrompt($answer);
+            $summary = $this->summarizeAnswer($answer);
         }
-        // Fallback: if LLM prompt generation failed, use local keyword extraction
+
+        // --- Step 3: Translate summary into an AI image generation prompt ---
+        // The LLM converts the summary into a descriptive visual prompt suitable
+        // for Pollinations AI (e.g. "photosynthesis diagram showing sunlight
+        // hitting green leaf cells"). Falls back to keyword extraction on failure.
+        $imagePrompt = '';
+        if (!empty($summary)) {
+            $imagePrompt = $this->answerToImagePrompt($summary);
+        }
+        // Fallback: if summarization or prompt generation failed
         if (empty($imagePrompt)) {
             $fallbackSource = $imageQuery ?? $userInput;
             $imagePrompt = $this->extractKeywords($fallbackSource);
         }
 
-        // --- Step 3: Search Wikimedia for a relevant image ---
-        $imageUrl = $this->searchWikimediaImage($imagePrompt);
-
-        // Fallback to placeholder if Wikimedia returned nothing
-        if (empty($imageUrl)) {
-            $imageUrl = "https://placehold.co/1024x630?text=" . urlencode($imagePrompt);
-        }
+        // --- Step 4: Generate an image via Pollinations AI ---
+        // Pollinations generates a custom image from the prompt — no API key needed.
+        // Falls back to a text placeholder if the URL can't be built.
+        $imageUrl = $this->generatePollinationsImage($imagePrompt);
 
         return ['answer' => $answer, 'image' => $imageUrl];
     }
@@ -193,46 +196,37 @@ class AppController extends Controller
     }
 
     /**
-     * Use the LLM to convert an AI-generated answer into a short, formulaic
-     * image search prompt suitable for Wikimedia Commons.
+     * Summarize an AI-generated answer into 1-2 concise sentences.
      *
-     * Why not just extract keywords locally? Because word-frequency picks generic
-     * terms (e.g. "system", "data", "process") that return irrelevant photos.
-     * The LLM understands the *visual concept* behind the text and can produce
-     * a precise phrase like "photosynthesis plant leaf diagram" or "neural network
-     * brain illustration" — exactly what Wikimedia needs to find a relevant image.
+     * Why summarize first? The full answer (500-750 words) contains examples,
+     * caveats, and filler that confuse the image-prompt step. A tight summary
+     * gives answerToImagePrompt() a clean, focused description of the core topic,
+     * producing much more relevant image generation prompts.
      *
-     * Uses a small/fast model (llama-3.1-8b-instant) with max_tokens=30 and
-     * temperature=0 for deterministic, fast responses (~0.5-1s).
-     * Returns empty string on failure so the caller can fall back to extractKeywords().
+     * Uses llama-3.1-8b-instant (fast, cheap) with max_tokens=80.
+     * Returns empty string on failure so the caller can fall back.
      */
-    private function answerToImagePrompt($answerText)
+    private function summarizeAnswer($answerText)
     {
-        // Truncate the answer to ~500 chars — the LLM only needs the gist,
-        // and sending the full 750-word answer wastes tokens and adds latency
-        $snippet = mb_substr($answerText, 0, 500);
+        // Truncate to ~800 chars — enough context for a good summary
+        // without wasting tokens on the full answer
+        $snippet = mb_substr($answerText, 0, 800);
 
         $data = [
-            // Use a small, fast model for this simple task — 8b is ~3x faster
-            // than 70b and more than capable of extracting a visual concept
             'model' => 'llama-3.1-8b-instant',
             'messages' => [
                 [
                     'role' => 'system',
-                    // Tight system prompt: forces the LLM to output ONLY the search
-                    // phrase with no preamble, explanation, or formatting
-                    'content' => 'You are an image search assistant. Given a text passage, output ONLY a 3-5 word Wikimedia Commons image search query that would find the most relevant, iconic photograph or diagram for the main topic. Output NOTHING else — no quotes, no explanation, no punctuation. Just the search words.'
+                    // Force a tight, factual summary — no preamble or meta-commentary
+                    'content' => 'Summarize the following text in exactly 1-2 sentences. Focus on the main topic and key concept. Output ONLY the summary, nothing else.'
                 ],
                 [
                     'role' => 'user',
                     'content' => $snippet
                 ]
             ],
-            // temperature=0 for deterministic output — we want the same prompt
-            // every time for the same answer, not creative variations
             'temperature' => 0,
-            // 30 tokens is plenty for a 3-5 word phrase
-            'max_tokens' => 30,
+            'max_tokens' => 80,
             'top_p' => 1
         ];
 
@@ -246,13 +240,11 @@ class AppController extends Controller
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        // Short timeout — this is a secondary call; if it's slow, we fall back
-        // to extractKeywords() rather than making the user wait
+        // Short timeout — summary is a helper step, not critical
         curl_setopt($ch, CURLOPT_TIMEOUT, 8);
 
         $response = curl_exec($ch);
 
-        // On cURL failure, return empty so caller uses the fallback
         if (curl_errno($ch)) {
             curl_close($ch);
             return '';
@@ -265,19 +257,106 @@ class AppController extends Controller
             return '';
         }
 
-        // Clean up the LLM output — strip quotes, newlines, and extra whitespace
-        // that the model might add despite the system prompt
+        return trim($json['choices'][0]['message']['content']);
+    }
+
+    /**
+     * Use the LLM to convert a summary into a descriptive image generation prompt
+     * suitable for Pollinations AI.
+     *
+     * Unlike Wikimedia search (which needs short keyword phrases), Pollinations
+     * works best with descriptive visual prompts like "detailed diagram of
+     * photosynthesis showing sunlight hitting green leaf cells". The LLM
+     * understands what would make a good visual and crafts the prompt accordingly.
+     *
+     * Uses llama-3.1-8b-instant with max_tokens=60 and temperature=0.
+     * Returns empty string on failure so the caller can fall back to extractKeywords().
+     */
+    private function answerToImagePrompt($summaryText)
+    {
+        $data = [
+            'model' => 'llama-3.1-8b-instant',
+            'messages' => [
+                [
+                    'role' => 'system',
+                    // Prompt engineered for Pollinations AI — descriptive visual scene,
+                    // not just keywords. "educational illustration" steers toward
+                    // clean diagrams rather than photorealistic noise.
+                    'content' => 'You are an AI image prompt writer. Given a summary, output ONLY a short descriptive prompt (8-15 words) for generating an educational illustration or diagram of the main topic. The prompt should describe what the image should visually show. Output NOTHING else — no quotes, no explanation. Just the image prompt.'
+                ],
+                [
+                    'role' => 'user',
+                    'content' => $summaryText
+                ]
+            ],
+            'temperature' => 0,
+            // 60 tokens for a descriptive 8-15 word prompt
+            'max_tokens' => 60,
+            'top_p' => 1
+        ];
+
+        $headers = [
+            'Content-Type: application/json',
+            'Authorization: Bearer ' . GROQ_API_KEY
+        ];
+
+        $ch = curl_init(GROQ_API_ENDPOINT);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 8);
+
+        $response = curl_exec($ch);
+
+        if (curl_errno($ch)) {
+            curl_close($ch);
+            return '';
+        }
+        curl_close($ch);
+
+        $json = json_decode($response, true);
+
+        if (!isset($json['choices'][0]['message']['content'])) {
+            return '';
+        }
+
+        // Clean up — strip quotes, newlines, extra whitespace
         $prompt = trim($json['choices'][0]['message']['content']);
-        $prompt = trim($prompt, '"\'');
+        $prompt = trim($prompt, '"\'\'');
         $prompt = preg_replace('/\s+/', ' ', $prompt);
 
-        // Safety: if the LLM returned something too long (hallucinated a paragraph),
-        // it's not a valid search query — discard it
-        if (strlen($prompt) > 80 || strlen($prompt) < 3) {
+        // Safety: discard if too long (hallucinated paragraph) or too short
+        if (strlen($prompt) > 200 || strlen($prompt) < 5) {
             return '';
         }
 
         return $prompt;
+    }
+
+    /**
+     * Generate an image URL using Pollinations AI (free, no API key required).
+     *
+     * Pollinations works via a simple GET URL: the prompt is URL-encoded in the path.
+     * The service generates a unique image on-the-fly and returns it as a JPEG.
+     * We add a seed based on the prompt hash so the same prompt always returns
+     * the same image (deterministic, cacheable).
+     *
+     * @param string $prompt  Descriptive image generation prompt
+     * @return string         Full Pollinations image URL
+     */
+    private function generatePollinationsImage($prompt)
+    {
+        // URL-encode the prompt for safe use in the URL path
+        $encodedPrompt = urlencode($prompt);
+
+        // Use a hash-based seed so the same prompt always generates the same image
+        // (deterministic output, avoids confusion if the user reloads)
+        $seed = crc32($prompt);
+
+        // Pollinations API: width=1024, height=630 to match the panel aspect ratio,
+        // nologo=true to remove the Pollinations watermark
+        return "https://image.pollinations.ai/prompt/{$encodedPrompt}?width=1024&height=630&seed={$seed}&nologo=true";
     }
 
     /**
