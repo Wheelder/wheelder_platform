@@ -1398,15 +1398,28 @@ if (empty($_SESSION['csrf_token'])) {
                 body: formData
             })
             .then(function (response) {
-                // Guard: if the response isn't JSON (e.g. PHP fatal error, nginx 404),
-                // read it as text and throw a clear error instead of a cryptic parse failure
-                var ct = response.headers.get('content-type') || '';
-                if (ct.indexOf('application/json') === -1) {
-                    return response.text().then(function (html) {
-                        throw new Error('Server returned HTML instead of JSON (HTTP ' + response.status + '). Please reload the page.');
-                    });
+                // Read body as text first — this lets us detect empty responses
+                // (PHP can die mid-execution after sending headers, leaving an empty body
+                // that causes "Unexpected end of JSON input" when parsed directly)
+                return response.text().then(function (text) {
+                    return { text: text, status: response.status, ct: response.headers.get('content-type') || '' };
+                });
+            })
+            .then(function (res) {
+                // Guard 1: empty body — PHP died before writing any output
+                if (!res.text || !res.text.trim()) {
+                    throw new Error('Server returned an empty response (HTTP ' + res.status + '). The request may have timed out. Please try again.');
                 }
-                return response.json();
+                // Guard 2: non-JSON content type (e.g. PHP fatal error page, nginx 404)
+                if (res.ct.indexOf('application/json') === -1) {
+                    throw new Error('Server returned HTML instead of JSON (HTTP ' + res.status + '). Please reload the page.');
+                }
+                // Guard 3: parse JSON safely — catch malformed/truncated JSON
+                try {
+                    return JSON.parse(res.text);
+                } catch (e) {
+                    throw new Error('Server returned invalid JSON (HTTP ' + res.status + '). Please try again.');
+                }
             })
             .then(function (data) {
                 // Hide spinner
@@ -1612,13 +1625,23 @@ if (empty($_SESSION['csrf_token'])) {
                 body: formData
             })
             .then(function (response) {
-                var ct = response.headers.get('content-type') || '';
-                if (ct.indexOf('application/json') === -1) {
-                    return response.text().then(function () {
-                        throw new Error('Server returned non-JSON response. Please reload the page.');
-                    });
+                // Read body as text first to detect empty/truncated responses
+                return response.text().then(function (text) {
+                    return { text: text, status: response.status, ct: response.headers.get('content-type') || '' };
+                });
+            })
+            .then(function (res) {
+                if (!res.text || !res.text.trim()) {
+                    throw new Error('Server returned an empty response (HTTP ' + res.status + ').');
                 }
-                return response.json();
+                if (res.ct.indexOf('application/json') === -1) {
+                    throw new Error('Server returned non-JSON response. Please reload the page.');
+                }
+                try {
+                    return JSON.parse(res.text);
+                } catch (e) {
+                    throw new Error('Server returned invalid JSON (HTTP ' + res.status + ').');
+                }
             })
             .then(function (data) {
                 if (data.error) {

@@ -8,6 +8,23 @@
 // Always return JSON
 header('Content-Type: application/json');
 
+// Catch fatal PHP errors (OOM, timeout, etc.) that would otherwise leave an empty
+// response body — the browser sees Content-Type: application/json but gets nothing,
+// causing "Unexpected end of JSON input". This shutdown handler ensures the browser
+// always receives a parseable JSON error message, even if PHP dies mid-execution.
+register_shutdown_function(function () {
+    $err = error_get_last();
+    // Only handle fatal errors (E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR)
+    if ($err && in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        // Clear any partial output that PHP may have buffered before dying
+        if (ob_get_length()) ob_end_clean();
+        http_response_code(500);
+        echo json_encode([
+            'error' => 'A server error occurred. Please try again. (' . basename($err['file']) . ':' . $err['line'] . ')'
+        ]);
+    }
+});
+
 // Only accept POST requests — GET makes no sense for form submissions
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
