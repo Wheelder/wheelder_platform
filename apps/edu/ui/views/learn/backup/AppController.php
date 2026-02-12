@@ -99,11 +99,11 @@ class AppController extends Controller
  
     public function generateAnswerAndImage($userInput, $imageQuery = null)
     {
-        // Use the image query if provided (deepen uses the original question),
-        // otherwise use the user's input for both text and image
-        $imgQuery = $imageQuery ?? $userInput;
-
-        // --- Build the Groq text request ---
+        // --- Step 1: Get the AI answer first ---
+        // We need the answer text BEFORE searching for an image, because keywords
+        // extracted from a short question (e.g. "What's AI?") are too vague and
+        // produce unrelated Wikimedia results. The answer text is rich with
+        // topic-specific vocabulary that yields much better image matches.
         $textData = [
             'model' => GROQ_MODEL,
             'messages' => [
@@ -127,44 +127,9 @@ class AppController extends Controller
         curl_setopt($chText, CURLOPT_HTTPHEADER, $textHeaders);
         curl_setopt($chText, CURLOPT_TIMEOUT, 30);
 
-        // --- Build the Wikimedia image request ---
-        // Extract keywords locally (no Groq call) — saves 1-5s per request
-        $keywords = $this->extractKeywords($imgQuery);
-        $imageApiUrl = "https://commons.wikimedia.org/w/api.php?"
-            . "action=query"
-            . "&generator=search"
-            . "&gsrsearch=" . urlencode($keywords)
-            . "&gsrnamespace=6"
-            . "&gsrlimit=10"
-            . "&prop=imageinfo"
-            . "&iiprop=url|mime"
-            . "&iiurlwidth=1024"
-            . "&format=json";
-
-        $chImage = curl_init($imageApiUrl);
-        curl_setopt($chImage, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($chImage, CURLOPT_TIMEOUT, 5);
-        curl_setopt($chImage, CURLOPT_USERAGENT, "WheelderApp/1.0");
-
-        // --- Run both requests in parallel using curl_multi ---
-        // This is the main speed win: instead of waiting for text THEN image,
-        // both HTTP calls happen simultaneously. Total time = max(text, image).
-        $mh = curl_multi_init();
-        curl_multi_add_handle($mh, $chText);
-        curl_multi_add_handle($mh, $chImage);
-
-        // Execute all handles until they're done
-        do {
-            $status = curl_multi_exec($mh, $running);
-            // Wait for activity instead of busy-looping (saves CPU)
-            if ($running > 0) {
-                curl_multi_select($mh);
-            }
-        } while ($running > 0 && $status === CURLM_OK);
-
-        // --- Collect the text result ---
+        $textResponse = curl_exec($chText);
         $answer = '';
-        $textResponse = curl_multi_getcontent($chText);
+
         if (curl_errno($chText)) {
             $answer = json_encode(['error' => curl_error($chText)]);
         } else {
@@ -181,24 +146,27 @@ class AppController extends Controller
                 ]);
             }
         }
+        curl_close($chText);
 
-        // --- Collect the image result ---
-        $imageUrl = '';
-        $imageResponse = curl_multi_getcontent($chImage);
-        if (!curl_errno($chImage) && !empty($imageResponse)) {
-            $imageUrl = $this->parseWikimediaResponse($imageResponse);
+        // --- Step 2: Extract keywords from the ANSWER (not the question) ---
+        // The answer contains rich, descriptive text about the topic. Extracting
+        // keywords from it produces far more relevant image search terms than
+        // a short question like "What's AI?" which yields almost nothing after
+        // stop-word removal. Falls back to the question if the answer is an error.
+        $keywordSource = $answer;
+        // If the answer looks like a JSON error, fall back to the original question
+        if (empty($answer) || $answer[0] === '{') {
+            $keywordSource = $imageQuery ?? $userInput;
         }
+        $keywords = $this->extractKeywords($keywordSource);
+
+        // --- Step 3: Search Wikimedia for a relevant image ---
+        $imageUrl = $this->searchWikimediaImage($keywords);
+
         // Fallback to placeholder if Wikimedia returned nothing
         if (empty($imageUrl)) {
             $imageUrl = "https://placehold.co/1024x630?text=" . urlencode($keywords);
         }
-
-        // Clean up curl handles
-        curl_multi_remove_handle($mh, $chText);
-        curl_multi_remove_handle($mh, $chImage);
-        curl_multi_close($mh);
-        curl_close($chText);
-        curl_close($chImage);
 
         return ['answer' => $answer, 'image' => $imageUrl];
     }
