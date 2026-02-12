@@ -112,12 +112,7 @@ if (!empty(DEMO_ACCESS_KEY) && !$isLoggedIn) {
         }
 
         http_response_code(403);
-        echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Access Required</title>'
-           . '<style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background:#f5f5f5;}'
-           . '.box{text-align:center;padding:40px;border-radius:12px;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.1);}'
-           . 'h1{margin:0 0 8px;font-size:1.5rem}p{color:#666;margin:0}</style></head>'
-           . '<body><div class="box"><h1>Access Required</h1>'
-           . '<p>You need a valid access key to use this app.</p></div></body></html>';
+        echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Access Required</title><style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background:#f5f5f5;}.box{text-align:center;padding:40px;border-radius:12px;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.1);}h1{margin:0 0 8px;font-size:1.5rem}p{color:#666;margin:0}</style></head><body><div class="box"><h1>Access Required</h1><p>You need a valid access key to use this app.</p></div></body></html>';
         exit;
     }
 }
@@ -924,6 +919,41 @@ if (empty($_SESSION['csrf_token'])) {
         }
 
         /* --- Large screens (desktops, 992px+) — defaults apply --- */
+
+        /* Site footer — sits below all content, offset to account for the sidebar.
+           Red text with a heart icon to match the "Proudly made in Canada" branding. */
+        .site-footer {
+            text-align: center;
+            padding: 18px 10px;
+            font-family: Verdana, sans-serif;
+            font-size: 14px;
+            color: #cc0000;
+            /* Push right of the sidebar so it centers within the main content area */
+            margin-left: 260px;
+        }
+        .site-footer .footer-heart {
+            color: #cc0000;
+            margin-right: 4px;
+        }
+        /* Dark mode — keep the red but brighten slightly for contrast on black */
+        .dark-mode .site-footer {
+            color: #ff4444;
+        }
+        .dark-mode .site-footer .footer-heart {
+            color: #ff4444;
+        }
+        /* Print — hide the footer, it's branding not content */
+        @media print {
+            .site-footer {
+                display: none !important;
+            }
+        }
+        /* Mobile — remove sidebar offset since sidebar collapses */
+        @media (max-width: 767.98px) {
+            .site-footer {
+                margin-left: 0;
+            }
+        }
 
     </style>
 
@@ -1933,6 +1963,11 @@ if (empty($_SESSION['csrf_token'])) {
             }
         });
     </script>
+
+<!-- Footer — branding line pinned below all page content -->
+<footer class="site-footer">
+    <span class="footer-heart">&#9829;</span>Proudly made in Canada.
+</footer>
 
 </body>
 
