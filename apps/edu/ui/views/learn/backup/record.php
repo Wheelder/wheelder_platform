@@ -1422,11 +1422,9 @@ if (empty($_SESSION['csrf_token'])) {
                 }
             })
             .then(function (data) {
-                // Hide spinner
-                loadingSpinner.style.display = 'none';
-
                 if (data.error) {
-                    // Show error message from the server
+                    // Hide spinner and show error — no panels to render
+                    loadingSpinner.style.display = 'none';
                     errorMsg.textContent = data.error;
                     errorMsg.style.display = 'block';
                     askBtn.disabled = false;
@@ -1434,64 +1432,111 @@ if (empty($_SESSION['csrf_token'])) {
                     return;
                 }
 
-                // --- Success: create panels if first call, then append Q&A and update image ---
-                ensurePanels();
-                var answerPanel = document.getElementById('answerPanel');
-                var imagePanel  = document.getElementById('imagePanel');
+                // --- Hold both panels: preload the image BEFORE rendering anything ---
+                // Problem: text renders instantly but Pollinations image takes 3-8s,
+                // so the user sees a blank right panel while the image generates.
+                // Solution: keep the spinner visible, preload the image in a hidden
+                // Image() object, then render BOTH panels simultaneously once loaded.
 
-                // Build depth label if this is a deepen response
-                var depthHtml = '';
-                if (data.depth_level >= 1) {
-                    depthHtml = '<div class="qa-depth-label">Depth Level ' + data.depth_level + '/7</div>';
+                // renderBothPanels — called once the image is ready (or on fallback)
+                // Renders the answer text and image at the same time so the user
+                // sees both panels appear together, not one-at-a-time
+                function renderBothPanels(imageUrl) {
+                    // Hide spinner now that everything is ready
+                    loadingSpinner.style.display = 'none';
+
+                    ensurePanels();
+                    var answerPanel = document.getElementById('answerPanel');
+                    var imagePanel  = document.getElementById('imagePanel');
+
+                    // Build depth label if this is a deepen response
+                    var depthHtml = '';
+                    if (data.depth_level >= 1) {
+                        depthHtml = '<div class="qa-depth-label">Depth Level ' + data.depth_level + '/7</div>';
+                    }
+
+                    // Append the question + answer pair into the answer panel (questionnaire style)
+                    answerPanel.innerHTML += depthHtml +
+                        '<div class="qa-question">' + questionText.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>' +
+                        '<div class="qa-answer">' + data.answer + '</div>';
+                    scrollAnswerPanel();
+
+                    // Replace the image panel with the preloaded image + fullscreen button
+                    if (imageUrl) {
+                        imagePanel.innerHTML =
+                            '<button class="img-fullscreen-btn" title="View fullscreen" onclick="openImageOverlay(this)">' +
+                            '    <i class="fas fa-expand"></i>' +
+                            '</button>' +
+                            '<img src="' + imageUrl + '" alt="Generated image"/>';
+                    }
+
+                    // --- Add new thread to sidebar instantly (only for brand-new conversations) ---
+                    // Must check BEFORE updating ajaxState, because once sessionId is set
+                    // follow-up asks within the same thread should NOT create duplicate entries.
+                    if (!ajaxState.sessionId && data.session_id) {
+                        addSidebarThread(data.session_id, data.original_question || questionText);
+                    }
+
+                    // --- Update AJAX state so the next deepen call chains correctly ---
+                    ajaxState.sessionId        = data.session_id;
+                    ajaxState.originalQuestion = data.original_question;
+                    ajaxState.prevAnswer       = data.prev_answer;
+                    ajaxState.depthLevel       = data.depth_level;
+
+                    // Show the deepen button (hidden until first successful ask)
+                    // Hide it if we've hit max depth (7)
+                    if (data.depth_level < 7) {
+                        deepenBtn.style.display = 'inline-block';
+                    } else {
+                        deepenBtn.style.display = 'none';
+                    }
+
+                    // Show or update the depth badge
+                    if (data.depth_level >= 1) {
+                        depthBadge.textContent = 'Depth Level ' + data.depth_level + '/7';
+                        depthBadge.style.display = 'inline-block';
+                    } else {
+                        depthBadge.style.display = 'none';
+                    }
+
+                    // Re-enable buttons now that both panels are visible
+                    askBtn.disabled = false;
+                    deepenBtn.disabled = false;
                 }
 
-                // Append the question + answer pair into the answer panel (questionnaire style)
-                answerPanel.innerHTML += depthHtml +
-                    '<div class="qa-question">' + questionText.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>' +
-                    '<div class="qa-answer">' + data.answer + '</div>';
-                scrollAnswerPanel();
-
-                // Replace the image panel with the latest generated image + fullscreen button
+                // --- Preload the image before rendering ---
+                // If there's an image URL, load it in a hidden Image() object.
+                // Once loaded (or on error/timeout), call renderBothPanels().
                 if (data.image) {
-                    imagePanel.innerHTML =
-                        '<button class="img-fullscreen-btn" title="View fullscreen" onclick="openImageOverlay(this)">' +
-                        '    <i class="fas fa-expand"></i>' +
-                        '</button>' +
-                        '<img src="' + data.image + '" alt="Generated image"/>';
-                }
+                    var preloader = new Image();
+                    var imageLoaded = false;
 
-                // --- Add new thread to sidebar instantly (only for brand-new conversations) ---
-                // Must check BEFORE updating ajaxState, because once sessionId is set
-                // follow-up asks within the same thread should NOT create duplicate entries.
-                if (!ajaxState.sessionId && data.session_id) {
-                    addSidebarThread(data.session_id, data.original_question || questionText);
-                }
+                    // Guard: prevent renderBothPanels from firing twice
+                    // (e.g. if timeout fires right after onload)
+                    function onImageReady() {
+                        if (imageLoaded) return;
+                        imageLoaded = true;
+                        clearTimeout(imageTimeout);
+                        renderBothPanels(data.image);
+                    }
 
-                // --- Update AJAX state so the next deepen call chains correctly ---
-                ajaxState.sessionId        = data.session_id;
-                ajaxState.originalQuestion = data.original_question;
-                ajaxState.prevAnswer       = data.prev_answer;
-                ajaxState.depthLevel       = data.depth_level;
+                    // Image loaded successfully — render both panels
+                    preloader.onload = onImageReady;
 
-                // Show the deepen button (hidden until first successful ask)
-                // Hide it if we've hit max depth (7)
-                if (data.depth_level < 7) {
-                    deepenBtn.style.display = 'inline-block';
+                    // Image failed to load — render anyway with the URL
+                    // (browser will show broken-image icon, but text still appears)
+                    preloader.onerror = onImageReady;
+
+                    // Safety timeout: if Pollinations takes longer than 15s,
+                    // render both panels anyway so the user isn't stuck waiting forever
+                    var imageTimeout = setTimeout(onImageReady, 15000);
+
+                    // Start loading — this triggers the Pollinations generation
+                    preloader.src = data.image;
                 } else {
-                    deepenBtn.style.display = 'none';
+                    // No image URL — render the answer panel immediately
+                    renderBothPanels('');
                 }
-
-                // Show or update the depth badge
-                if (data.depth_level >= 1) {
-                    depthBadge.textContent = 'Depth Level ' + data.depth_level + '/7';
-                    depthBadge.style.display = 'inline-block';
-                } else {
-                    depthBadge.style.display = 'none';
-                }
-
-                // Re-enable buttons
-                askBtn.disabled = false;
-                deepenBtn.disabled = false;
             })
             .catch(function (err) {
                 // Network error or JSON parse failure
