@@ -347,16 +347,23 @@ class AppController extends Controller
      */
     private function generatePollinationsImage($prompt)
     {
+        // Append quality keywords to the prompt — steers the AI model toward
+        // crisp, detailed output instead of soft/painterly/blurry styles.
+        // These are standard Stable Diffusion quality tokens that Pollinations supports.
+        $enhancedPrompt = $prompt . ', high quality, sharp focus, detailed, 4k';
+
         // URL-encode the prompt for safe use in the URL path
-        $encodedPrompt = urlencode($prompt);
+        $encodedPrompt = urlencode($enhancedPrompt);
 
         // Use a hash-based seed so the same prompt always generates the same image
         // (deterministic output, avoids confusion if the user reloads)
         $seed = crc32($prompt);
 
-        // Pollinations API: width=1024, height=630 to match the panel aspect ratio,
-        // nologo=true to remove the Pollinations watermark
-        return "https://image.pollinations.ai/prompt/{$encodedPrompt}?width=1024&height=630&seed={$seed}&nologo=true";
+        // Pollinations API: 2048x1260 (2x the old 1024x630) for sharp rendering
+        // on Retina/HiDPI displays. Same 1.63:1 aspect ratio as the panel.
+        // enhance=true applies server-side upscaling/sharpening.
+        // nologo=true removes the Pollinations watermark.
+        return "https://image.pollinations.ai/prompt/{$encodedPrompt}?width=2048&height=1260&seed={$seed}&nologo=true&enhance=true";
     }
 
     /**
