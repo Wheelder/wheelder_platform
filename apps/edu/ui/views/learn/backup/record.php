@@ -53,7 +53,9 @@ if (!empty(DEMO_ACCESS_KEY) && !$isLoggedIn) {
     // Determine which key to validate:
     // Priority 1: key from URL (user just opened a shareable link)
     // Priority 2: key stored in session from a previous validated visit
-    $keyToCheck = $_GET['key'] ?? $_SESSION['demo_access_key'] ?? '';
+    // Priority 3: key stored in a long-lived cookie — survives PHP session expiry
+    //             (sessions die after ~24 min of inactivity; the cookie lasts 30 days)
+    $keyToCheck = $_GET['key'] ?? $_SESSION['demo_access_key'] ?? $_COOKIE['demo_access_key'] ?? '';
 
     $keyValid = false;
 
@@ -87,10 +89,27 @@ if (!empty(DEMO_ACCESS_KEY) && !$isLoggedIn) {
         $_SESSION['demo_access_key'] = $keyToCheck;
         // Keep legacy flag for backward compatibility with ajax_handler.php
         $_SESSION['demo_unlocked'] = true;
+
+        // Also persist in a long-lived cookie so access survives PHP session expiry.
+        // HttpOnly: JS can't read it (XSS protection). SameSite=Lax: sent on same-site
+        // navigations but not cross-site POSTs. Secure: only over HTTPS in production.
+        // 30-day lifetime — access stays active until admin deactivates the key.
+        $isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+        setcookie('demo_access_key', $keyToCheck, [
+            'expires'  => time() + (30 * 24 * 60 * 60),  // 30 days
+            'path'     => '/',
+            'secure'   => $isSecure,
+            'httponly'  => true,
+            'samesite' => 'Lax',
+        ]);
     } else {
         // Key is missing, invalid, or was deactivated by admin — revoke access
         unset($_SESSION['demo_unlocked']);
         unset($_SESSION['demo_access_key']);
+        // Clear the cookie so the browser stops sending a stale/deactivated key
+        if (isset($_COOKIE['demo_access_key'])) {
+            setcookie('demo_access_key', '', ['expires' => 1, 'path' => '/']);
+        }
 
         http_response_code(403);
         echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Access Required</title>'
@@ -110,7 +129,7 @@ if (!empty(DEMO_ACCESS_KEY) && !$isLoggedIn) {
 // the case where the user navigated via sidebar (no ?key= in URL) but the session
 // still holds the validated key.
 $keyParam = '';
-$activeKey = $_GET['key'] ?? $_SESSION['demo_access_key'] ?? '';
+$activeKey = $_GET['key'] ?? $_SESSION['demo_access_key'] ?? $_COOKIE['demo_access_key'] ?? '';
 if (!empty($activeKey)) {
     $keyParam = '&key=' . urlencode($activeKey);
 }

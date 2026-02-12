@@ -34,8 +34,8 @@ if (session_status() === PHP_SESSION_NONE) {
 $isLoggedIn = !empty($_SESSION['user_id']);
 if (!empty(DEMO_ACCESS_KEY) && !$isLoggedIn) {
     $ajaxKeyValid = false;
-    // Priority: session first, then POST fallback
-    $keyToCheck = $_SESSION['demo_access_key'] ?? $_POST['access_key'] ?? '';
+    // Priority: session first, then POST fallback, then cookie (survives session expiry)
+    $keyToCheck = $_SESSION['demo_access_key'] ?? $_POST['access_key'] ?? $_COOKIE['demo_access_key'] ?? '';
 
     if (!empty($keyToCheck)) {
         // Check 1: hardcoded demo key (always valid)
