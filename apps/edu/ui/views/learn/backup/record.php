@@ -1325,19 +1325,18 @@ if (empty($_SESSION['csrf_token'])) {
             // Truncate label to 30 chars to match the PHP sidebar rendering
             var label = questionText.length > 30 ? questionText.substring(0, 30) + '...' : questionText;
 
-            // Build the same HTML structure as the PHP loop generates
-            var li = document.createElement('li');
-            li.className = 'nav-item d-flex align-items-center';
-            li.setAttribute('data-session', sessionId);
-
             // Escape HTML in label to prevent XSS from user input
             var safeLabel = label.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
             var safeTitle = questionText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
             var safeSession = sessionId.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+            // Use URL key first, then fall back to the accessKey JS variable
+            // (set from session/cookie). Without this fallback, sidebar links
+            // lose the key when the user arrived via cookie (no ?key= in URL).
             var keyParam = '';
             var urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('key')) {
-                keyParam = '&key=' + encodeURIComponent(urlParams.get('key'));
+            var sidebarKey = urlParams.get('key') || accessKey;
+            if (sidebarKey) {
+                keyParam = '&key=' + encodeURIComponent(sidebarKey);
             }
 
             // Format today's date as YYYY-MM-DD to match the PHP conv-date display
@@ -1345,6 +1344,11 @@ if (empty($_SESSION['csrf_token'])) {
             var dateStr = today.getFullYear() + '-' +
                 String(today.getMonth() + 1).padStart(2, '0') + '-' +
                 String(today.getDate()).padStart(2, '0');
+
+            // Build the same HTML structure as the PHP loop generates
+            var li = document.createElement('li');
+            li.className = 'nav-item d-flex align-items-center';
+            li.setAttribute('data-session', sessionId);
 
             li.innerHTML =
                 '<a href="' + '<?php echo url("/demo"); ?>?view=' + encodeURIComponent(sessionId) + keyParam + '"' +

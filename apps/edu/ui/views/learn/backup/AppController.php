@@ -188,8 +188,8 @@ class AppController extends Controller
     }
 
     /**
-     * Searches Wikimedia Commons for a topic-relevant image using their public API
-     * Returns the thumbnail URL (1024px wide) or empty string on failure
+     * Searches Wikimedia Commons for a topic-relevant image using their public API.
+     * Returns the thumbnail URL (1024px wide) or empty string on failure.
      */
     private function searchWikimediaImage($keywords)
     {
@@ -222,77 +222,7 @@ class AppController extends Controller
 
         curl_close($ch);
 
-        $data = json_decode($response, true);
-
-        // Loop through results to find an actual photo (skip PDFs, SVGs, etc.)
-        if (isset($data['query']['pages'])) {
-            foreach ($data['query']['pages'] as $page) {
-                if (!isset($page['imageinfo'][0])) {
-                    continue;
-                }
-                $info = $page['imageinfo'][0];
-                $mime = $info['mime'] ?? '';
-
-                // Only accept actual image files (JPEG, PNG, WebP)
-                if (strpos($mime, 'image/jpeg') === false
-                    && strpos($mime, 'image/png') === false
-                    && strpos($mime, 'image/webp') === false) {
-                    continue;
-                }
-
-                // Prefer the resized thumbnail (1024px wide)
-                if (isset($info['thumburl'])) {
-                    return $info['thumburl'];
-                }
-                // Fall back to the original full-size URL
-                if (isset($info['url'])) {
-                    return $info['url'];
-                }
-            }
-        }
-
-        return "";
-    }
-
-    /**
-     * Extract 2-3 meaningful keywords from a question using PHP string manipulation.
-     * Replaces the old generateImageKeywords() which made a separate Groq API call
-     * just to extract keywords — that added 1-5s of latency per request.
-     * This approach is instant (<1ms) and produces good-enough keywords for Wikimedia search.
-     */
-    private function extractKeywords($prompt)
-    {
-        // Common English stop words that don't help image search
-        $stopWords = ['what','whats','how','why','when','where','who','which','whom',
-            'is','are','was','were','be','been','being','do','does','did',
-            'the','a','an','and','or','but','in','on','at','to','for','of',
-            'with','by','from','as','into','about','between','through',
-            'can','could','would','should','will','shall','may','might',
-            'have','has','had','not','no','its','it','this','that','these',
-            'those','i','me','my','we','our','you','your','he','she','they',
-            'tell','explain','describe','define','give','make','please',
-            'definition','meaning','example','difference'];
-
-        // Strip punctuation, lowercase, split into words
-        $clean = preg_replace('/[^a-zA-Z0-9\s]/', '', strtolower($prompt));
-        $words = preg_split('/\s+/', trim($clean));
-
-        // Keep only meaningful words (not stop words, at least 3 chars)
-        $keywords = [];
-        foreach ($words as $w) {
-            if (strlen($w) >= 3 && !in_array($w, $stopWords)) {
-                $keywords[] = $w;
-            }
-            // 3 keywords is enough for a good image search
-            if (count($keywords) >= 3) break;
-        }
-
-        // Fallback: if no keywords survived filtering, use first 3 words of the prompt
-        if (empty($keywords)) {
-            $keywords = array_slice($words, 0, 3);
-        }
-
-        return implode(' ', $keywords);
+        return $this->parseWikimediaResponse($response);
     }
 
     /**
