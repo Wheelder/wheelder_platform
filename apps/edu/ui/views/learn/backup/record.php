@@ -934,9 +934,10 @@ if (empty($_SESSION['csrf_token'])) {
             /* Offset from sidebar and span the remaining width */
             left: 260px;
             right: 0;
-            /* Sit above scrollable content but below modals/overlays */
-            z-index: 100;
-            background: #fff;
+            /* No background — just text floating at the bottom, no visible div */
+            background: transparent;
+            /* Let clicks pass through to content underneath */
+            pointer-events: none;
         }
         .site-footer .footer-heart {
             color: #cc0000;
@@ -945,7 +946,6 @@ if (empty($_SESSION['csrf_token'])) {
         /* Dark mode — keep the red but brighten slightly for contrast on black */
         .dark-mode .site-footer {
             color: #ff4444;
-            background: #1a1a1a;
         }
         .dark-mode .site-footer .footer-heart {
             color: #ff4444;
