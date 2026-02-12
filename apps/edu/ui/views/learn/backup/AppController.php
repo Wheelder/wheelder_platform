@@ -717,8 +717,9 @@ class AppController extends Controller
             if (isset($db) && $db->inTransaction()) {
                 $db->rollBack();
             }
-            error_log("archiveConversation failed: " . $e->getMessage());
-            throw new Exception('Failed to archive conversation.');
+            // Log the full PDO error so we can diagnose DB issues from the error log
+            error_log("archiveConversation PDO error: " . $e->getMessage() . " | code: " . $e->getCode() . " | trace: " . $e->getTraceAsString());
+            throw new Exception('Failed to archive conversation: ' . $e->getMessage(), 0, $e);
         }
     }
 
