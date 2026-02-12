@@ -363,7 +363,13 @@ try {
         }
 
         // Move to archived_conversations with status 'archived'
-        $note->archiveConversation($sessionId, 'archived');
+        try {
+            $note->archiveConversation($sessionId, 'archived');
+        } catch (Exception $archErr) {
+            error_log("ARCHIVE DEBUG: " . $archErr->getMessage() . " | prev: " . ($archErr->getPrevious() ? $archErr->getPrevious()->getMessage() : 'none') . " | trace: " . $archErr->getTraceAsString());
+            echo json_encode(['error' => 'Archive failed: ' . $archErr->getMessage()]);
+            exit;
+        }
 
         echo json_encode(['success' => true, 'action' => 'archived', 'session_id' => $sessionId]);
         exit;
@@ -380,7 +386,13 @@ try {
         }
 
         // Move to archived_conversations with status 'deleted'
-        $note->archiveConversation($sessionId, 'deleted');
+        try {
+            $note->archiveConversation($sessionId, 'deleted');
+        } catch (Exception $delErr) {
+            error_log("DELETE DEBUG: " . $delErr->getMessage() . " | prev: " . ($delErr->getPrevious() ? $delErr->getPrevious()->getMessage() : 'none') . " | trace: " . $delErr->getTraceAsString());
+            echo json_encode(['error' => 'Delete failed: ' . $delErr->getMessage()]);
+            exit;
+        }
 
         echo json_encode(['success' => true, 'action' => 'deleted', 'session_id' => $sessionId]);
         exit;
