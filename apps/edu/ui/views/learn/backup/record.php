@@ -312,11 +312,13 @@ if (empty($_SESSION['csrf_token'])) {
             background: rgba(0,0,0,0.85);
         }
 
-        /* Fullscreen button — top-right corner of the text answer panel (mirrors image panel) */
+        /* Fullscreen button — stays pinned at top-right of the scrollable answer panel.
+           position:sticky keeps it visible even when the user scrolls down.
+           float:right removes it from the normal block flow so it doesn't push content down. */
         .text-fullscreen-btn {
-            position: absolute;
+            position: sticky;
             top: 10px;
-            right: 10px;
+            float: right;
             z-index: 10;
             background: rgba(0,0,0,0.6);
             color: #fff;
