@@ -188,6 +188,72 @@ class AppController extends Controller
     }
 
     /**
+     * Extract 2-3 meaningful keywords from text using word frequency analysis.
+     * For long text (AI answers), the most frequently repeated non-stop-words
+     * are the actual topic terms — much better than just taking the first 3 words.
+     * For short text (questions), falls back to first-3 meaningful words.
+     * Instant (<1ms), no API call needed.
+     */
+    private function extractKeywords($prompt)
+    {
+        // Common English stop words that don't help image search — includes
+        // question words, pronouns, prepositions, auxiliaries, and generic verbs
+        $stopWords = ['what','whats','how','why','when','where','who','which','whom',
+            'is','are','was','were','be','been','being','do','does','did',
+            'the','a','an','and','or','but','in','on','at','to','for','of',
+            'with','by','from','as','into','about','between','through',
+            'can','could','would','should','will','shall','may','might',
+            'have','has','had','not','no','its','it','this','that','these',
+            'those','i','me','my','we','our','you','your','he','she','they',
+            'tell','explain','describe','define','give','make','please',
+            'definition','meaning','example','difference','also','known',
+            'such','more','most','some','other','than','very','just','like',
+            'well','even','much','many','each','every','both','all','any',
+            'few','own','same','here','there','then','now','only','over',
+            'after','before','while','during','may','include','includes',
+            'including','refers','refer','based','using','used','use',
+            'create','creating','created','one','two','three','new','way',
+            'ways','however','although','often','still','another','become',
+            'becomes','able','need','needs','help','helps','part','parts',
+            'called','call','calls','allows','allow','various','several',
+            'different','specific','particular','general','overall','key',
+            'important','main','first','second','third','last','next'];
+
+        // Strip punctuation, lowercase, split into words
+        $clean = preg_replace('/[^a-zA-Z0-9\s]/', '', strtolower($prompt));
+        $words = preg_split('/\s+/', trim($clean));
+
+        // Filter to meaningful words only (not stop words, at least 3 chars)
+        $meaningful = [];
+        foreach ($words as $w) {
+            if (strlen($w) >= 3 && !in_array($w, $stopWords)) {
+                $meaningful[] = $w;
+            }
+        }
+
+        // For long text (AI answers): pick the top 3 most frequent words.
+        // Repeated words in an answer are strong topic signals — e.g. an answer
+        // about "photosynthesis" will mention "photosynthesis", "plant", "light"
+        // many times, while generic words appear only once or twice.
+        if (count($meaningful) > 10) {
+            $freq = array_count_values($meaningful);
+            arsort($freq);
+            // Take the top 3 most frequent meaningful words
+            $keywords = array_slice(array_keys($freq), 0, 3);
+        } else {
+            // Short text (questions): just take the first 3 meaningful words
+            $keywords = array_slice($meaningful, 0, 3);
+        }
+
+        // Fallback: if no keywords survived filtering, use first 3 raw words
+        if (empty($keywords)) {
+            $keywords = array_slice($words, 0, 3);
+        }
+
+        return implode(' ', $keywords);
+    }
+
+    /**
      * Searches Wikimedia Commons for a topic-relevant image using their public API.
      * Returns the thumbnail URL (1024px wide) or empty string on failure.
      */
