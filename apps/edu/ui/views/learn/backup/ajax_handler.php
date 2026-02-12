@@ -366,7 +366,7 @@ try {
         try {
             $note->archiveConversation($sessionId, 'archived');
         } catch (Exception $archErr) {
-            error_log("ARCHIVE DEBUG: " . $archErr->getMessage() . " | prev: " . ($archErr->getPrevious() ? $archErr->getPrevious()->getMessage() : 'none') . " | trace: " . $archErr->getTraceAsString());
+            error_log("archiveConversation error: " . $archErr->getMessage());
             echo json_encode(['error' => 'Archive failed: ' . $archErr->getMessage()]);
             exit;
         }
@@ -389,7 +389,7 @@ try {
         try {
             $note->archiveConversation($sessionId, 'deleted');
         } catch (Exception $delErr) {
-            error_log("DELETE DEBUG: " . $delErr->getMessage() . " | prev: " . ($delErr->getPrevious() ? $delErr->getPrevious()->getMessage() : 'none') . " | trace: " . $delErr->getTraceAsString());
+            error_log("deleteConversation error: " . $delErr->getMessage());
             echo json_encode(['error' => 'Delete failed: ' . $delErr->getMessage()]);
             exit;
         }

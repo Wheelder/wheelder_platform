@@ -923,12 +923,12 @@ if (empty($_SESSION['csrf_token'])) {
         /* Site footer — sits below all content, offset to account for the sidebar.
            Red text with a heart icon to match the "Proudly made in Canada" branding. */
         .site-footer {
-            text-align: center;
+            text-align: left;
             padding: 18px 10px;
             font-family: Verdana, sans-serif;
             font-size: 14px;
             color: #cc0000;
-            /* Push right of the sidebar so it centers within the main content area */
+            /* Push right of the sidebar so it aligns within the main content area */
             margin-left: 260px;
         }
         .site-footer .footer-heart {

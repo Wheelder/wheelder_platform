@@ -514,6 +514,10 @@ class AppController extends Controller
             // Use __DIR__ so the DB file resolves relative to this file, not the CWD
             $db = new PDO('sqlite:' . __DIR__ . '/database.sqlite');
             $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            // Retry for up to 5s if another connection holds a lock (prevents "database is locked")
+            $db->exec('PRAGMA busy_timeout = 5000');
+            // WAL mode allows concurrent readers + one writer without blocking
+            $db->exec('PRAGMA journal_mode = WAL');
 
             // Auto-create table if it doesn't exist (first-run safety)
             $db->exec("CREATE TABLE IF NOT EXISTS ans_data (
@@ -547,6 +551,8 @@ class AppController extends Controller
         try {
             $db = new PDO('sqlite:' . __DIR__ . '/database.sqlite');
             $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $db->exec('PRAGMA busy_timeout = 5000');
+            $db->exec('PRAGMA journal_mode = WAL');
 
             // Auto-create table on first run — session_id groups entries that belong together
             $db->exec("CREATE TABLE IF NOT EXISTS conversations (
@@ -579,6 +585,8 @@ class AppController extends Controller
         try {
             $db = new PDO('sqlite:' . __DIR__ . '/database.sqlite');
             $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $db->exec('PRAGMA busy_timeout = 5000');
+            $db->exec('PRAGMA journal_mode = WAL');
 
             // Auto-create table so the query doesn't fail on a fresh install
             $db->exec("CREATE TABLE IF NOT EXISTS conversations (
@@ -618,6 +626,8 @@ class AppController extends Controller
         try {
             $db = new PDO('sqlite:' . __DIR__ . '/database.sqlite');
             $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $db->exec('PRAGMA busy_timeout = 5000');
+            $db->exec('PRAGMA journal_mode = WAL');
 
             // Use prepared statement to prevent injection via session_id
             $stmt = $db->prepare("SELECT * FROM conversations WHERE session_id = ? ORDER BY depth_level ASC");
@@ -640,6 +650,8 @@ class AppController extends Controller
         try {
             $db = new PDO('sqlite:' . __DIR__ . '/database.sqlite');
             $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $db->exec('PRAGMA busy_timeout = 5000');
+            $db->exec('PRAGMA journal_mode = WAL');
 
             $stmt = $db->prepare("SELECT COALESCE(MAX(depth_level), -1) + 1 AS next_level FROM conversations WHERE session_id = ?");
             $stmt->execute([$sessionId]);
@@ -661,6 +673,10 @@ class AppController extends Controller
         try {
             $db = new PDO('sqlite:' . __DIR__ . '/database.sqlite');
             $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            // Retry for up to 5s if another connection holds a lock (prevents "database is locked")
+            $db->exec('PRAGMA busy_timeout = 5000');
+            // WAL mode allows concurrent readers + one writer without blocking
+            $db->exec('PRAGMA journal_mode = WAL');
 
             // Create the archive table if it doesn't exist — mirrors conversations + status column
             $db->exec("CREATE TABLE IF NOT EXISTS archived_conversations (
@@ -728,6 +744,8 @@ class AppController extends Controller
             // Use __DIR__ so the DB file resolves relative to this file, not the CWD
             $db = new PDO('sqlite:' . __DIR__ . '/database.sqlite');
             $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $db->exec('PRAGMA busy_timeout = 5000');
+            $db->exec('PRAGMA journal_mode = WAL');
 
             // Auto-create table if it doesn't exist (first-run safety)
             $db->exec("CREATE TABLE IF NOT EXISTS ans_data (
