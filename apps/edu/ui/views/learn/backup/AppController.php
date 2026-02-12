@@ -148,24 +148,29 @@ class AppController extends Controller
         }
         curl_close($chText);
 
-        // --- Step 2: Extract keywords from the ANSWER (not the question) ---
-        // The answer contains rich, descriptive text about the topic. Extracting
-        // keywords from it produces far more relevant image search terms than
-        // a short question like "What's AI?" which yields almost nothing after
-        // stop-word removal. Falls back to the question if the answer is an error.
-        $keywordSource = $answer;
-        // If the answer looks like a JSON error, fall back to the original question
-        if (empty($answer) || $answer[0] === '{') {
-            $keywordSource = $imageQuery ?? $userInput;
+        // --- Step 2: Convert the answer into a formulaic image search prompt ---
+        // Simple keyword extraction (word frequency) produces vague search terms
+        // that return irrelevant Wikimedia images. Instead, we ask the LLM to
+        // read the answer and produce a short, visual search phrase — the LLM
+        // understands context and can pick the single most iconic visual concept.
+        // Falls back to extractKeywords() if the LLM call fails or the answer is an error.
+        $imagePrompt = '';
+        if (!empty($answer) && $answer[0] !== '{') {
+            // Use the LLM to distill the answer into a Wikimedia search phrase
+            $imagePrompt = $this->answerToImagePrompt($answer);
         }
-        $keywords = $this->extractKeywords($keywordSource);
+        // Fallback: if LLM prompt generation failed, use local keyword extraction
+        if (empty($imagePrompt)) {
+            $fallbackSource = $imageQuery ?? $userInput;
+            $imagePrompt = $this->extractKeywords($fallbackSource);
+        }
 
         // --- Step 3: Search Wikimedia for a relevant image ---
-        $imageUrl = $this->searchWikimediaImage($keywords);
+        $imageUrl = $this->searchWikimediaImage($imagePrompt);
 
         // Fallback to placeholder if Wikimedia returned nothing
         if (empty($imageUrl)) {
-            $imageUrl = "https://placehold.co/1024x630?text=" . urlencode($keywords);
+            $imageUrl = "https://placehold.co/1024x630?text=" . urlencode($imagePrompt);
         }
 
         return ['answer' => $answer, 'image' => $imageUrl];
@@ -185,6 +190,94 @@ class AppController extends Controller
         }
 
         return $imageUrl;
+    }
+
+    /**
+     * Use the LLM to convert an AI-generated answer into a short, formulaic
+     * image search prompt suitable for Wikimedia Commons.
+     *
+     * Why not just extract keywords locally? Because word-frequency picks generic
+     * terms (e.g. "system", "data", "process") that return irrelevant photos.
+     * The LLM understands the *visual concept* behind the text and can produce
+     * a precise phrase like "photosynthesis plant leaf diagram" or "neural network
+     * brain illustration" — exactly what Wikimedia needs to find a relevant image.
+     *
+     * Uses a small/fast model (llama-3.1-8b-instant) with max_tokens=30 and
+     * temperature=0 for deterministic, fast responses (~0.5-1s).
+     * Returns empty string on failure so the caller can fall back to extractKeywords().
+     */
+    private function answerToImagePrompt($answerText)
+    {
+        // Truncate the answer to ~500 chars — the LLM only needs the gist,
+        // and sending the full 750-word answer wastes tokens and adds latency
+        $snippet = mb_substr($answerText, 0, 500);
+
+        $data = [
+            // Use a small, fast model for this simple task — 8b is ~3x faster
+            // than 70b and more than capable of extracting a visual concept
+            'model' => 'llama-3.1-8b-instant',
+            'messages' => [
+                [
+                    'role' => 'system',
+                    // Tight system prompt: forces the LLM to output ONLY the search
+                    // phrase with no preamble, explanation, or formatting
+                    'content' => 'You are an image search assistant. Given a text passage, output ONLY a 3-5 word Wikimedia Commons image search query that would find the most relevant, iconic photograph or diagram for the main topic. Output NOTHING else — no quotes, no explanation, no punctuation. Just the search words.'
+                ],
+                [
+                    'role' => 'user',
+                    'content' => $snippet
+                ]
+            ],
+            // temperature=0 for deterministic output — we want the same prompt
+            // every time for the same answer, not creative variations
+            'temperature' => 0,
+            // 30 tokens is plenty for a 3-5 word phrase
+            'max_tokens' => 30,
+            'top_p' => 1
+        ];
+
+        $headers = [
+            'Content-Type: application/json',
+            'Authorization: Bearer ' . GROQ_API_KEY
+        ];
+
+        $ch = curl_init(GROQ_API_ENDPOINT);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        // Short timeout — this is a secondary call; if it's slow, we fall back
+        // to extractKeywords() rather than making the user wait
+        curl_setopt($ch, CURLOPT_TIMEOUT, 8);
+
+        $response = curl_exec($ch);
+
+        // On cURL failure, return empty so caller uses the fallback
+        if (curl_errno($ch)) {
+            curl_close($ch);
+            return '';
+        }
+        curl_close($ch);
+
+        $json = json_decode($response, true);
+
+        if (!isset($json['choices'][0]['message']['content'])) {
+            return '';
+        }
+
+        // Clean up the LLM output — strip quotes, newlines, and extra whitespace
+        // that the model might add despite the system prompt
+        $prompt = trim($json['choices'][0]['message']['content']);
+        $prompt = trim($prompt, '"\'');
+        $prompt = preg_replace('/\s+/', ' ', $prompt);
+
+        // Safety: if the LLM returned something too long (hallucinated a paragraph),
+        // it's not a valid search query — discard it
+        if (strlen($prompt) > 80 || strlen($prompt) < 3) {
+            return '';
+        }
+
+        return $prompt;
     }
 
     /**
