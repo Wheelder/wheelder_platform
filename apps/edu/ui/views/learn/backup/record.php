@@ -920,16 +920,23 @@ if (empty($_SESSION['csrf_token'])) {
 
         /* --- Large screens (desktops, 992px+) — defaults apply --- */
 
-        /* Site footer — sits below all content, offset to account for the sidebar.
+        /* Site footer — fixed to the bottom of the viewport, centered within the main content area.
            Red text with a heart icon to match the "Proudly made in Canada" branding. */
         .site-footer {
-            text-align: left;
+            text-align: center;
             padding: 18px 10px;
             font-family: Verdana, sans-serif;
             font-size: 14px;
             color: #cc0000;
-            /* Push right of the sidebar so it aligns within the main content area */
-            margin-left: 260px;
+            /* Pin to viewport bottom so it's always visible regardless of scroll */
+            position: fixed;
+            bottom: 0;
+            /* Offset from sidebar and span the remaining width */
+            left: 260px;
+            right: 0;
+            /* Sit above scrollable content but below modals/overlays */
+            z-index: 100;
+            background: #fff;
         }
         .site-footer .footer-heart {
             color: #cc0000;
@@ -938,6 +945,7 @@ if (empty($_SESSION['csrf_token'])) {
         /* Dark mode — keep the red but brighten slightly for contrast on black */
         .dark-mode .site-footer {
             color: #ff4444;
+            background: #1a1a1a;
         }
         .dark-mode .site-footer .footer-heart {
             color: #ff4444;
@@ -951,7 +959,7 @@ if (empty($_SESSION['csrf_token'])) {
         /* Mobile — remove sidebar offset since sidebar collapses */
         @media (max-width: 767.98px) {
             .site-footer {
-                margin-left: 0;
+                left: 0;
             }
         }
 
