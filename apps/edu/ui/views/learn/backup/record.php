@@ -924,13 +924,13 @@ if (empty($_SESSION['csrf_token'])) {
            Red text with a heart icon to match the "Proudly made in Canada" branding. */
         .site-footer {
             text-align: center;
-            padding: 24px 10px 28px;
+            padding: 6px 10px 4px;
             font-family: Verdana, sans-serif;
             font-size: 14px;
             color: #cc0000;
-            /* Pin to viewport bottom so it's always visible regardless of scroll */
+            /* Pin to viewport bottom — nudged down so it hugs the very edge */
             position: fixed;
-            bottom: 0;
+            bottom: -8px;
             /* Offset from sidebar and span the remaining width */
             left: 260px;
             right: 0;
