@@ -924,7 +924,7 @@ if (empty($_SESSION['csrf_token'])) {
            Red text with a heart icon to match the "Proudly made in Canada" branding. */
         .site-footer {
             text-align: center;
-            padding: 18px 10px;
+            padding: 24px 10px 28px;
             font-family: Verdana, sans-serif;
             font-size: 14px;
             color: #cc0000;
@@ -1956,15 +1956,21 @@ if (empty($_SESSION['csrf_token'])) {
         document.getElementById('fullscreen').addEventListener('click', function () {
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen().then(function () {
-                    var el = document.querySelector('.content');
-                    if (el) el.style.height = '80vh';
+                    /* Resize both panels to same height so they align in fullscreen */
+                    var txt = document.querySelector('.content');
+                    var img = document.querySelector('.contentImage');
+                    if (txt) txt.style.height = '80vh';
+                    if (img) img.style.height = '80vh';
                 }).catch(function (e) {
                     console.error('Failed to enter fullscreen mode: ', e);
                 });
             } else {
                 document.exitFullscreen().then(function () {
-                    var el = document.querySelector('.content');
-                    if (el) el.style.height = '600px';
+                    /* Restore both panels to default height on exit */
+                    var txt = document.querySelector('.content');
+                    var img = document.querySelector('.contentImage');
+                    if (txt) txt.style.height = '600px';
+                    if (img) img.style.height = '600px';
                 }).catch(function (e) {
                     console.error('Failed to exit fullscreen mode: ', e);
                 });
