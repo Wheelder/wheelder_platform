@@ -608,11 +608,9 @@ if (empty($_SESSION['csrf_token'])) {
             width: 260px;
             z-index: 100;
             padding: 40px 0 0;
-            /* Flex column so the branding label pins to the bottom */
-            display: flex;
-            flex-direction: column;
-            /* Hide overflow on the sidebar itself — the inner sticky div scrolls instead */
-            overflow: hidden;
+            /* Show scrollbar only when items overflow — avoids an empty white gap when they don't */
+            overflow-y: auto;
+            overflow-x: hidden;
             background-color: white;
             color: #000;
             border: 1px solid #ccc;
@@ -766,34 +764,31 @@ if (empty($_SESSION['csrf_token'])) {
             background-color: #000;
         }
 
-        /* Sidebar branding — pinned to the bottom of the sidebar via flex layout */
-        .sidebar-branding {
-            text-align: center;
-            padding: 10px 8px;
-            font-family: Verdana, sans-serif;
-            font-size: 12px;
-            color: #cc0000;
-            /* Prevent the label from shrinking when the nav list is long */
+        /* Navbar branding — right-aligned in the top bar */
+        .navbar-branding {
+            /* Keep it from shrinking so it stays visible next to the controls */
             flex-shrink: 0;
-            /* Push to the very bottom of the sidebar flex column */
-            margin-top: auto;
-            border-top: 1px solid #eee;
-        }
-        .sidebar-branding .footer-heart {
+            white-space: nowrap;
+            padding: 0 16px;
+            font-family: Verdana, sans-serif;
+            font-size: 15px;
             color: #cc0000;
-            margin-right: 3px;
         }
-        /* Dark mode — brighten the red for contrast on black sidebar */
-        .dark-mode .sidebar-branding {
+        .navbar-branding .footer-heart {
+            color: #cc0000;
+            margin-right: 4px;
+            font-size: 17px;
+        }
+        /* Dark mode — brighten the red for contrast on dark navbar */
+        .dark-mode .navbar-branding {
             color: #ff4444;
-            border-color: #444;
         }
-        .dark-mode .sidebar-branding .footer-heart {
+        .dark-mode .navbar-branding .footer-heart {
             color: #ff4444;
         }
         /* Print — hide branding, it's not content */
         @media print {
-            .sidebar-branding {
+            .navbar-branding {
                 display: none !important;
             }
         }
@@ -996,6 +991,11 @@ if (empty($_SESSION['csrf_token'])) {
 
         </div>
 
+        <!-- Branding — right-aligned in the navbar so it's always visible -->
+        <span class="navbar-branding d-none d-md-inline">
+            <span class="footer-heart">&#9829;</span>Proudly made in Canada.
+        </span>
+
     </header>
 
     <!-- Blog-style grid: sidebar (col-md-2) + main content (col-md-10) -->
@@ -1041,10 +1041,6 @@ if (empty($_SESSION['csrf_token'])) {
                     </ul>
                 </div>
 
-                <!-- Branding — pinned to the bottom of the sidebar -->
-                <div class="sidebar-branding">
-                    <span class="footer-heart">&#9829;</span>Proudly made in Canada.
-                </div>
             </nav>
 
             <!-- Main content area — col-md-10 matches blog layout -->
