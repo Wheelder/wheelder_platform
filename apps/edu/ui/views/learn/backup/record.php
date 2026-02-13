@@ -608,9 +608,11 @@ if (empty($_SESSION['csrf_token'])) {
             width: 260px;
             z-index: 100;
             padding: 40px 0 0;
-            /* Show scrollbar only when items overflow — avoids an empty white gap when they don't */
-            overflow-y: auto;
-            overflow-x: hidden;
+            /* Flex column so the branding label pins to the bottom */
+            display: flex;
+            flex-direction: column;
+            /* Hide overflow on the sidebar itself — the inner sticky div scrolls instead */
+            overflow: hidden;
             background-color: white;
             color: #000;
             border: 1px solid #ccc;
@@ -762,6 +764,36 @@ if (empty($_SESSION['csrf_token'])) {
         .dark-mode #sidebarMenu {
             color: #fff;
             background-color: #000;
+        }
+
+        /* Sidebar branding — pinned to the bottom of the sidebar via flex layout */
+        .sidebar-branding {
+            text-align: center;
+            padding: 10px 8px;
+            font-family: Verdana, sans-serif;
+            font-size: 12px;
+            color: #cc0000;
+            /* Prevent the label from shrinking when the nav list is long */
+            flex-shrink: 0;
+            border-top: 1px solid #eee;
+        }
+        .sidebar-branding .footer-heart {
+            color: #cc0000;
+            margin-right: 3px;
+        }
+        /* Dark mode — brighten the red for contrast on black sidebar */
+        .dark-mode .sidebar-branding {
+            color: #ff4444;
+            border-color: #444;
+        }
+        .dark-mode .sidebar-branding .footer-heart {
+            color: #ff4444;
+        }
+        /* Print — hide branding, it's not content */
+        @media print {
+            .sidebar-branding {
+                display: none !important;
+            }
         }
 
 /* RESPONSIVE — mobile-first breakpoints
@@ -920,49 +952,6 @@ if (empty($_SESSION['csrf_token'])) {
 
         /* --- Large screens (desktops, 992px+) — defaults apply --- */
 
-        /* Site footer — fixed to the bottom of the viewport, centered within the main content area.
-           Red text with a heart icon to match the "Proudly made in Canada" branding. */
-        .site-footer {
-            text-align: center;
-            padding: 6px 10px 4px;
-            font-family: Verdana, sans-serif;
-            font-size: 14px;
-            color: #cc0000;
-            /* Pin to viewport bottom — nudged down so it hugs the very edge */
-            position: fixed;
-            bottom: -8px;
-            /* Offset from sidebar and span the remaining width */
-            left: 260px;
-            right: 0;
-            /* No background — just text floating at the bottom, no visible div */
-            background: transparent;
-            /* Let clicks pass through to content underneath */
-            pointer-events: none;
-        }
-        .site-footer .footer-heart {
-            color: #cc0000;
-            margin-right: 4px;
-        }
-        /* Dark mode — keep the red but brighten slightly for contrast on black */
-        .dark-mode .site-footer {
-            color: #ff4444;
-        }
-        .dark-mode .site-footer .footer-heart {
-            color: #ff4444;
-        }
-        /* Print — hide the footer, it's branding not content */
-        @media print {
-            .site-footer {
-                display: none !important;
-            }
-        }
-        /* Mobile — remove sidebar offset since sidebar collapses */
-        @media (max-width: 767.98px) {
-            .site-footer {
-                left: 0;
-            }
-        }
-
     </style>
 
 </head>
@@ -1013,7 +1002,8 @@ if (empty($_SESSION['csrf_token'])) {
 
             <!-- Sidebar — matches blog's nav structure -->
             <nav id="sidebarMenu" class="col-md-2 col-lg-2 d-md-block sidebar collapse">
-                <div class="position-sticky pt-3 sidebar-sticky">
+                <!-- Scrollable nav list — flex-grow so it fills available space above the branding -->
+                <div class="position-sticky pt-3 sidebar-sticky" style="flex:1 1 auto; overflow-y:auto; overflow-x:hidden;">
                     <ul class="nav flex-column">
 
                         <!-- "New Research" link resets the page to a fresh state -->
@@ -1046,6 +1036,11 @@ if (empty($_SESSION['csrf_token'])) {
                         <?php endforeach; ?>
 
                     </ul>
+                </div>
+
+                <!-- Branding — pinned to the bottom of the sidebar -->
+                <div class="sidebar-branding">
+                    <span class="footer-heart">&#9829;</span>Proudly made in Canada.
                 </div>
             </nav>
 
@@ -1977,11 +1972,6 @@ if (empty($_SESSION['csrf_token'])) {
             }
         });
     </script>
-
-<!-- Footer — branding line pinned below all page content -->
-<footer class="site-footer">
-    <span class="footer-heart">&#9829;</span>Proudly made in Canada.
-</footer>
 
 </body>
 

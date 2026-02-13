@@ -132,6 +132,12 @@ $router->route('/main', function() {
     require 'default.php';
 });
 
+$router->route('/main', function() {
+    require 'default.php';
+});
+
+
+
 // Verification page — requires active email session to prevent abuse
 $router->route('/verification', function() {
     if (empty($_SESSION['email'])) {
