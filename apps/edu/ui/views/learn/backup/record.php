@@ -775,6 +775,8 @@ if (empty($_SESSION['csrf_token'])) {
             color: #cc0000;
             /* Prevent the label from shrinking when the nav list is long */
             flex-shrink: 0;
+            /* Push to the very bottom of the sidebar flex column */
+            margin-top: auto;
             border-top: 1px solid #eee;
         }
         .sidebar-branding .footer-heart {
@@ -960,7 +962,7 @@ if (empty($_SESSION['csrf_token'])) {
     <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
 
         <!-- Brand — col-md-2 matches blog layout -->
-        <a class="navbar-brand col-md-2 col-lg-2 me-0 px-3 fs-6" href="<?php echo url('/demo'); ?>">Wheelder Lab</a>
+        <a class="navbar-brand col-md-2 col-lg-2 me-0 px-3 fs-6" href="<?php echo url('/demo'); ?>">Wheelder</a>
 
         <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse"
             data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false"
@@ -1003,7 +1005,8 @@ if (empty($_SESSION['csrf_token'])) {
             <!-- Sidebar — matches blog's nav structure -->
             <nav id="sidebarMenu" class="col-md-2 col-lg-2 d-md-block sidebar collapse">
                 <!-- Scrollable nav list — flex-grow so it fills available space above the branding -->
-                <div class="position-sticky pt-3 sidebar-sticky" style="flex:1 1 auto; overflow-y:auto; overflow-x:hidden;">
+                <!-- Removed position-sticky — it conflicts with flex column; the inline flex styles handle scrolling -->
+                <div class="pt-3 sidebar-sticky" style="flex:1 1 auto; overflow-y:auto; overflow-x:hidden; min-height:0;">
                     <ul class="nav flex-column">
 
                         <!-- "New Research" link resets the page to a fresh state -->

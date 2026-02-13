@@ -132,9 +132,7 @@ $router->route('/main', function() {
     require 'default.php';
 });
 
-$router->route('/main', function() {
-    require 'default.php';
-});
+
 
 
 
