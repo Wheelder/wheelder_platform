@@ -23,6 +23,11 @@ $router = new Router(); // Now auto-detects base path
 
 
 $router->route('/', function() {
+    require 'apps/edu/ui/views/center/record.php';
+});
+
+// Optional: legacy landing page remains reachable for marketing screenshots
+$router->route('/landing', function() {
     require 'landing.php';
 });
 
@@ -46,6 +51,23 @@ $router->route('/profile_setup', function() {
         exit;
     }
     require 'pool/auth/profile.php';
+});
+
+// --- Magic Link Authentication Routes ---
+$router->route('/auth/magic-link-request', function() {
+    require 'pool/auth/magic_link_request.php';
+});
+
+$router->route('/auth/verify', function() {
+    require 'pool/auth/magic_link_verify.php';
+});
+
+$router->route('/auth/magic-link-test', function() {
+    require 'pool/auth/magic_link_test.php';
+});
+
+$router->route('/auth/test-endpoint', function() {
+    require 'pool/auth/test_endpoint.php';
 });
 
 $router->route('/log_api', function() {
@@ -157,14 +179,27 @@ $router->route('/demo', function() {
     require 'apps/edu/ui/views/learn/backup/record.php';
 });
 
+// Center app — cloned from /demo but served as the primary experience
+$router->route('/center', function() {
+    require 'apps/edu/ui/views/center/record.php';
+});
+
 // AJAX endpoint for the /demo page — handles Ask and Deepen requests without page reload
 $router->route('/demo/ajax', function() {
     require 'apps/edu/ui/views/learn/backup/ajax_handler.php';
 });
 
+$router->route('/center/ajax', function() {
+    require 'apps/edu/ui/views/center/ajax_handler.php';
+});
+
 // TTS endpoint — converts text to natural speech using Edge TTS neural voices
 $router->route('/demo/tts', function() {
     require 'apps/edu/ui/views/learn/backup/tts_proxy.php';
+});
+
+$router->route('/center/tts', function() {
+    require 'apps/edu/ui/views/center/tts_proxy.php';
 });
 
 // --- Legacy /learn redirects — 301 so old bookmarks and shared links still work ---
@@ -254,6 +289,37 @@ $router->route('/blog/cms-new/view', function() {
 $router->route('/blog/cms-new/delete', function() {
     require 'apps/edu/ui/views/blogs/cms-new/delete.php';
 });
+// --- Lesson app routes (mirrors /blog structure) ---
+
+$router->route('/lesson', function() {
+    require 'apps/edu/ui/views/lessons/app_new.php';
+});
+
+$router->route('/lesson/cms', function() {
+    require 'apps/edu/ui/views/lessons/cms/list.php';
+});
+
+$router->route('/lesson/cms/create', function() {
+    require 'apps/edu/ui/views/lessons/cms/create.php';
+});
+
+$router->route('/lesson/cms/edit', function() {
+    require 'apps/edu/ui/views/lessons/cms/edit.php';
+});
+
+$router->route('/lesson/cms/delete', function() {
+    require 'apps/edu/ui/views/lessons/cms/delete.php';
+});
+
+// --- Lesson CMS2 — AI-powered lesson generator (mirrors /demo layout) ---
+$router->route('/lesson/cms2', function() {
+    require 'apps/edu/ui/views/lessons/cms2/index.php';
+});
+
+$router->route('/lesson/cms2/ajax', function() {
+    require 'apps/edu/ui/views/lessons/cms2/ajax.php';
+});
+
 // --- APIs for Education App ---
 $router->route('/edu_assets', function() {
     require 'apps/edu/ui/assets';
@@ -267,6 +333,9 @@ $router->route('/edu_db', function() {
 });
 $router->route('/edu_blog', function() {
     require 'apps/edu/api/blogAPI.php';
+});
+$router->route('/lesson_api', function() {
+    require 'apps/edu/api/lessonAPI.php';
 });
 
 $router->route('/edu_img_api', function() {

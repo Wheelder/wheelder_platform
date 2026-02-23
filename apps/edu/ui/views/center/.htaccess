@@ -1,0 +1,17 @@
+# Block direct HTTP access to sensitive files in this directory
+# Prevents downloading the SQLite database, .env, and other non-PHP files
+
+# Deny access to SQLite database files — contains all user conversations
+<FilesMatch "\.(sqlite|sqlite3|db)$">
+    Require all denied
+</FilesMatch>
+
+# Deny access to environment/config files — contains API keys
+<FilesMatch "(^\.env$|^config\.local\.php$)">
+    Require all denied
+</FilesMatch>
+
+# Deny access to .htaccess itself
+<FilesMatch "^\.htaccess$">
+    Require all denied
+</FilesMatch>
