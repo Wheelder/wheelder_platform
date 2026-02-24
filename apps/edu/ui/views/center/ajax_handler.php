@@ -228,8 +228,17 @@ try {
             $sessionId = uniqid('conv_', true);
         }
 
-        // Store the Q&A under the (possibly existing) session
-        $note->storeConversation($sessionId, $q, $content, $image, $depthLevel);
+        // Store the Q&A under the (possibly existing) session.
+        // WHY: production hit fatal errors when storeConversation() was missing, so guard + log instead of dying.
+        if (method_exists($note, 'storeConversation')) {
+            try {
+                $note->storeConversation($sessionId, $q, $content, $image, $depthLevel);
+            } catch (Throwable $storeErr) {
+                error_log('center/ajax storeConversation failed: ' . $storeErr->getMessage());
+            }
+        } else {
+            error_log('center/ajax storeConversation missing on AppController — skipping persistence for session ' . $sessionId);
+        }
 
         // Return everything the frontend needs to render the result and chain deeper calls
         echo json_encode([
@@ -287,8 +296,16 @@ try {
             $sessionId = uniqid('conv_', true);
         }
 
-        // Store the deepened Q&A under the same session
-        $note->storeConversation($sessionId, $mainq, $content, $image, $depthLevel);
+        // Store the deepened Q&A under the same session (guarded for reliability, see Ask handler comment above).
+        if (method_exists($note, 'storeConversation')) {
+            try {
+                $note->storeConversation($sessionId, $mainq, $content, $image, $depthLevel);
+            } catch (Throwable $storeErr) {
+                error_log('center/ajax storeConversation (deepen) failed: ' . $storeErr->getMessage());
+            }
+        } else {
+            error_log('center/ajax storeConversation missing during deepen for session ' . $sessionId);
+        }
 
         // Also store in the legacy ans_data table (existing behaviour)
         $note->storeData($mainq, $content, $image);
