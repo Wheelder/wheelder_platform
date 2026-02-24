@@ -41,54 +41,8 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// --- Demo access key gate ---
-// Re-validate the access key on every AJAX call.
-// The key can come from two sources:
-//   1. $_SESSION['demo_access_key'] — set when record.php validated the key on page load
-//   2. $_POST['access_key'] — sent by the frontend JS as a fallback for when the
-//      PHP session expired (garbage-collected after inactivity). Without this fallback,
-//      AJAX calls fail with 403 after the session dies, returning HTML instead of JSON.
-$isLoggedIn = !empty($_SESSION['user_id']);
-if (!empty(DEMO_ACCESS_KEY) && !$isLoggedIn) {
-    $ajaxKeyValid = false;
-    // Priority: session first, then POST fallback, then cookie (survives session expiry)
-    $keyToCheck = $_SESSION['demo_access_key'] ?? $_POST['access_key'] ?? $_COOKIE['demo_access_key'] ?? '';
-
-    if (!empty($keyToCheck)) {
-        // Check 1: hardcoded demo key (always valid)
-        if (hash_equals(DEMO_ACCESS_KEY, $keyToCheck)) {
-            $ajaxKeyValid = true;
-        }
-
-        // Check 2: dashboard-generated code — must still be active in DB
-        if (!$ajaxKeyValid) {
-            try {
-                $acDb = new PDO('sqlite:' . __DIR__ . '/database.sqlite');
-                $acDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                $acStmt = $acDb->prepare("SELECT id FROM access_codes WHERE code = ? AND is_active = 1 LIMIT 1");
-                $acStmt->execute([$keyToCheck]);
-                if ($acStmt->fetch()) {
-                    $ajaxKeyValid = true;
-                }
-            } catch (PDOException $e) {
-                error_log("AJAX access code lookup failed: " . $e->getMessage());
-            }
-        }
-
-        // Re-store the key in the (possibly new) session so subsequent AJAX calls
-        // within this session don't need to re-validate from POST every time
-        if ($ajaxKeyValid) {
-            $_SESSION['demo_access_key'] = $keyToCheck;
-            $_SESSION['demo_unlocked']   = true;
-        }
-    }
-
-    if (!$ajaxKeyValid) {
-        http_response_code(403);
-        echo json_encode(['error' => 'Access denied. Your access key may have been deactivated. Please reload the page.']);
-        exit;
-    }
-}
+// Public center experience — access key was removed. CSRF + rate limiting + server-side
+// validation already protect costs, so we do not gate with DEMO_ACCESS_KEY here.
 
 // --- CSRF protection ---
 // Every AJAX POST must include the csrf_token that was embedded in the page.

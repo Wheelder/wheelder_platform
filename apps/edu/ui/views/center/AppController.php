@@ -32,6 +32,36 @@ class AppController extends Controller
 {
     // Groq API key stored as class property for convenience
     private $api_key = GROQ_API_KEY;
+    private $dbPath;
+
+    /**
+     * Ensure the center database exists — on fresh deploys the SQLite file is not committed,
+     * so we copy the seeded learn/backup DB the first time it is needed.
+     */
+    private function getDatabasePath(): string
+    {
+        if (!empty($this->dbPath)) {
+            return $this->dbPath;
+        }
+
+        $dbPath = __DIR__ . '/database.sqlite';
+
+        if (!file_exists($dbPath)) {
+            $fallbackPath = dirname(__DIR__) . '/learn/backup/database.sqlite';
+            if (file_exists($fallbackPath)) {
+                // Copying preserves the seeded "What's AGI?" research so prod matches local.
+                if (!@copy($fallbackPath, $dbPath)) {
+                    error_log('Failed to copy fallback database into center context.');
+                }
+            } else {
+                // Touch guarantees PDO can open the file even if no fallback exists.
+                touch($dbPath);
+            }
+        }
+
+        $this->dbPath = $dbPath;
+        return $this->dbPath;
+    }
 
     public function check_auth()
     {
@@ -157,7 +187,7 @@ class AppController extends Controller
         // --- Step 2: Summarize the answer into 1-2 focused sentences ---
         // The full answer is too long and noisy for image prompt generation.
         // A concise summary strips away filler, examples, and caveats, giving
-        // the image-prompt step a clean, focused input about the core topic.
+        // the image-prompt step a clean, focused description of the core topic.
         $summary = '';
         if (!empty($answer) && $answer[0] !== '{') {
             $summary = $this->summarizeAnswer($answer);
@@ -386,7 +416,7 @@ class AppController extends Controller
      * Extract 2-3 meaningful keywords from text using word frequency analysis.
      * For long text (AI answers), the most frequently repeated non-stop-words
      * are the actual topic terms — much better than just taking the first 3 words.
-     * For short text (questions), falls back to first-3 meaningful words.
+     * For short text (questions), falls back to first 3 meaningful words.
      * Instant (<1ms), no API call needed.
      */
     private function extractKeywords($prompt)
@@ -520,15 +550,13 @@ class AppController extends Controller
         return '';
     }
 
-    //store data in the MySQL database in questions table 
-    
-
-
-
+    /**
+     * Store data in the MySQL database in questions table 
+     */
     function storeData($questions, $answers, $images) {
         try {
             // Use __DIR__ so the DB file resolves relative to this file, not the CWD
-            $db = new PDO('sqlite:' . __DIR__ . '/database.sqlite');
+            $db = new PDO('sqlite:' . $this->getDatabasePath());
             $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             // Retry for up to 5s if another connection holds a lock (prevents "database is locked")
             $db->exec('PRAGMA busy_timeout = 5000');
@@ -560,17 +588,6 @@ class AppController extends Controller
     }
 
     /**
-     * Store a conversation entry (question + answer + image) grouped by session_id.
-     * Each "Ask" creates a new session; each "Deepen" appends to the same session.
-     */
-    function storeConversation($sessionId, $question, $answer, $image, $depthLevel = 0) {
-        try {
-            $db = new PDO('sqlite:' . __DIR__ . '/database.sqlite');
-            $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $db->exec('PRAGMA busy_timeout = 5000');
-            $db->exec('PRAGMA journal_mode = WAL');
-
-            // Auto-create table on first run — session_id groups entries that belong together
             $db->exec("CREATE TABLE IF NOT EXISTS conversations (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 session_id TEXT NOT NULL,
@@ -599,7 +616,7 @@ class AppController extends Controller
      */
     function getConversations() {
         try {
-            $db = new PDO('sqlite:' . __DIR__ . '/database.sqlite');
+            $db = new PDO('sqlite:' . $this->getDatabasePath());
             $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $db->exec('PRAGMA busy_timeout = 5000');
             $db->exec('PRAGMA journal_mode = WAL');
@@ -640,7 +657,7 @@ class AppController extends Controller
      */
     function getConversationById($sessionId) {
         try {
-            $db = new PDO('sqlite:' . __DIR__ . '/database.sqlite');
+            $db = new PDO('sqlite:' . $this->getDatabasePath());
             $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $db->exec('PRAGMA busy_timeout = 5000');
             $db->exec('PRAGMA journal_mode = WAL');
@@ -664,7 +681,7 @@ class AppController extends Controller
      */
     function getNextDepthLevel($sessionId) {
         try {
-            $db = new PDO('sqlite:' . __DIR__ . '/database.sqlite');
+            $db = new PDO('sqlite:' . $this->getDatabasePath());
             $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $db->exec('PRAGMA busy_timeout = 5000');
             $db->exec('PRAGMA journal_mode = WAL');
@@ -687,7 +704,7 @@ class AppController extends Controller
      */
     function archiveConversation($sessionId, $status = 'archived') {
         try {
-            $db = new PDO('sqlite:' . __DIR__ . '/database.sqlite');
+            $db = new PDO('sqlite:' . $this->getDatabasePath());
             $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             // Retry for up to 5s if another connection holds a lock (prevents "database is locked")
             $db->exec('PRAGMA busy_timeout = 5000');
@@ -757,8 +774,8 @@ class AppController extends Controller
 
     function getAllData() {
         try {
-            // Use __DIR__ so the DB file resolves relative to this file, not the CWD
-            $db = new PDO('sqlite:' . __DIR__ . '/database.sqlite');
+            // Use getDatabasePath() so fresh deploys auto-copy the seeded DB from backup
+            $db = new PDO('sqlite:' . $this->getDatabasePath());
             $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $db->exec('PRAGMA busy_timeout = 5000');
             $db->exec('PRAGMA journal_mode = WAL');
