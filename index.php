@@ -17,16 +17,24 @@ require_once 'Router.php';
 
 $router = new Router(); // Now auto-detects base path
 
-// Shareable demo key that must always be present when the root URL is used
+// Shareable demo key that must always be present when the root URL is used (prod/staging)
 $rootDemoKey = '20eae05c4f4e';
+// Local developers need to hit /lesson without the forced demo key redirect — detect localhost automatically.
+$isLocalDev = in_array($_SERVER['HTTP_HOST'] ?? '', ['localhost', '127.0.0.1'], true);
 
 //include_once 'top.php';
 
 // --- Define routes cleanly using inline functions ---
 
 
-$router->route('/', function() use ($rootDemoKey) {
+$router->route('/', function() use ($rootDemoKey, $isLocalDev) {
     // WHY: root should behave like /demo?key=... but keep the cleaner /?key= URL.
+    if ($isLocalDev) {
+        // Dev-mode toggle — skip the redirect entirely so localhost/wheelder/lesson stays reachable.
+        require 'apps/edu/ui/views/learn/backup/record.php';
+        return;
+    }
+
     $query = $_GET;
 
     $keyMissing = empty($query['key']);
@@ -327,6 +335,8 @@ $router->route('/lesson', function() use ($lessonAppPath) {
     // When the legacy app.php boots it expects LessonController.php under DOCUMENT_ROOT.
     // Make sure we drop a resolver var it can reuse instead of duplicating the logic there.
     $GLOBALS['lessonControllerPath'] = __DIR__ . '/apps/edu/controllers/LessonController.php';
+    // Flag this session as public-lesson so TTS proxy can allow read-aloud without demo key login.
+    $_SESSION['lesson_public_tts'] = true;
     require $lessonAppPath;
 });
 

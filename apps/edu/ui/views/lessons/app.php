@@ -23,8 +23,7 @@ if (isset($GLOBALS['lessonControllerPath']) && file_exists($GLOBALS['lessonContr
 
 $lesson = new LessonController();
 
-// Auth gate — unauthenticated visitors are redirected to home
-$lesson->check_auth();
+// /lesson is public — skip the legacy auth redirect so visitors stay on the page
 
 // Fetch the full lesson row here so both center and right panels share the same data
 $t = isset($_GET['t']) ? trim($_GET['t']) : null;
@@ -173,6 +172,10 @@ function formatMarkdown($text) {
             background: #ffffff; border-right: 1px solid #e3e7ef;
             overflow-y: auto;
         }
+        body.sidebar-collapsed .lesson-sidebar { display: none; }
+        body.sidebar-collapsed .lesson-content { padding-left: max(16px, 2vw); }
+        body.sidebar-collapsed .lesson-panels { max-width: 1300px; }
+
         .lesson-sidebar .nav-link {
             display: block; padding: 7px 16px; font-size: .85rem;
             color: #1a202c; border-left: 3px solid transparent;
@@ -196,8 +199,17 @@ function formatMarkdown($text) {
             padding: 28px; width: 100%;
         }
         .lesson-card header { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
-        .lesson-card h4 { font-size: 1.8rem; font-weight: 700; color: #0f172a; margin: 0; }
-        .lesson-card .badge { align-self: flex-start; background: #101936; color: #fff; }
+        .lesson-card h4 {
+            font-size: 1.8rem; font-weight: 700; color: #0f172a; margin: 0;
+            line-height: 1.25; word-break: break-word; white-space: normal;
+        }
+        .lesson-category-chip {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 6px 12px; border: 1px solid #101936; border-radius: 999px;
+            font-size: .85rem; font-weight: 600; color: #101936;
+            background: rgba(16,25,54,.08);
+            margin-bottom: 18px;
+        }
         .lesson-meta { font-size: .85rem; color: #94a3b8; }
 
         .lesson-body { font-size: 1rem; line-height: 1.85; color: #1f2937; }
@@ -296,6 +308,8 @@ function formatMarkdown($text) {
         <!-- need space between controls and brand labl-->
          &nbsp;&nbsp;&nbsp;
         <div class="controls">
+            <i id="toggleSidebar"    class="fas fa-columns"     title="Toggle sidebar"></i>
+            <span class="sep">|</span>
             <i id="start"            class="fas fa-play"         title="Read aloud"></i>
             <i id="pause"            class="fas fa-pause"        title="Pause"></i>
             <i id="resume"           class="fas fa-step-forward" title="Resume"></i>
@@ -353,11 +367,15 @@ function formatMarkdown($text) {
                 <article class="lesson-card lesson-scroll">
                     <header>
                         <h4><?php echo htmlspecialchars($row['title'], ENT_QUOTES, 'UTF-8'); ?></h4>
-                        <?php if (!empty($row['category'])): ?>
-                            <span class="badge"><?php echo htmlspecialchars($row['category'], ENT_QUOTES, 'UTF-8'); ?></span>
-                        <?php endif; ?>
                         <div class="lesson-meta">Last updated: <?php echo htmlspecialchars($row['created_at'] ?? '—', ENT_QUOTES, 'UTF-8'); ?></div>
                     </header>
+
+                    <?php if (!empty($row['category'])): ?>
+                        <div class="lesson-category-chip">
+                            <span>Category:</span>
+                            <strong><?php echo htmlspecialchars($row['category'], ENT_QUOTES, 'UTF-8'); ?></strong>
+                        </div>
+                    <?php endif; ?>
 
                     <div class="lesson-body" id="contentDiv">
                         <?php
@@ -399,21 +417,20 @@ function formatMarkdown($text) {
         function copyCode(btn) {
             const code = document.getElementById('codeContent');
             if (!code) return;
-            navigator.clipboard.writeText(code.innerText).then(function () {
-                btn.textContent = 'Copied!';
-                setTimeout(function () { btn.textContent = 'Copy'; }, 2000);
-            }).catch(function () {
-                // Fallback for browsers without Clipboard API
-                const ta = document.createElement('textarea');
-                ta.value = code.innerText;
-                ta.style.position = 'absolute'; ta.style.left = '-9999px';
-                document.body.appendChild(ta); ta.select();
-                document.execCommand('copy');
-                document.body.removeChild(ta);
-                btn.textContent = 'Copied!';
-                setTimeout(function () { btn.textContent = 'Copy'; }, 2000);
-            });
+            navigator.clipboard.writeText(code.textContent)
+                .then(() => btn.textContent = 'Copied!')
+                .catch(() => btn.textContent = 'Failed');
+            setTimeout(() => btn.textContent = 'Copy', 1200);
         }
+
+        // Sidebar toggle — lets readers focus purely on the article panel.
+        (function () {
+            var toggleBtn = document.getElementById('toggleSidebar');
+            if (!toggleBtn) { return; }
+            toggleBtn.addEventListener('click', function () {
+                document.body.classList.toggle('sidebar-collapsed');
+            });
+        })();
 
         // ── Share button — Web Share API with clipboard fallback ──
         document.getElementById('shareButton').addEventListener('click', function () {
