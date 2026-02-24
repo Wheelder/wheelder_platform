@@ -54,102 +54,10 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// --- Access key gate (same rules as legacy /demo) ---
-// Three ways to access this center experience:
-//   1. Logged-in user (has $_SESSION['user_id']) — no key needed
-//   2. Hardcoded DEMO_ACCESS_KEY from config.local.php — ?key=VALUE in the URL
-//   3. Dashboard-generated code stored in access_codes table — ?key=CODE in the URL
-// If DEMO_ACCESS_KEY is empty in config, the gate is disabled (open access).
-//
-// IMPORTANT: We re-validate the key against the DB on EVERY page load.
-// The old approach cached a boolean in $_SESSION['demo_unlocked'], which died
-// when the PHP session expired (default ~24 min). Now we store the actual key
-// in $_SESSION['demo_access_key'] and re-check it each time. Access stays
-// active as long as the key is active in the DB — only stops when the admin
-// deactivates it in the dashboard.
-$isLoggedIn = !empty($_SESSION['user_id']);
-
-if (!empty(DEMO_ACCESS_KEY) && !$isLoggedIn) {
-
-    // Determine which key to validate:
-    // Priority 1: key from URL (user just opened a shareable link)
-    // Priority 2: key stored in session from a previous validated visit
-    // Priority 3: key stored in a long-lived cookie — survives PHP session expiry
-    //             (sessions die after ~24 min of inactivity; the cookie lasts 30 days)
-    $keyToCheck = $_GET['key'] ?? $_SESSION['demo_access_key'] ?? $_COOKIE['demo_access_key'] ?? '';
-
-    $keyValid = false;
-
-    if (!empty($keyToCheck)) {
-        // Check 1: Does it match the hardcoded demo key? (always valid, no DB needed)
-        if (hash_equals(DEMO_ACCESS_KEY, $keyToCheck)) {
-            $keyValid = true;
-        }
-
-        // Check 2: Does it match an ACTIVE code in the dashboard's access_codes table?
-        // This runs on every load so that admin deactivation takes effect immediately.
-        if (!$keyValid) {
-            try {
-                $acDb = new PDO('sqlite:' . __DIR__ . '/database.sqlite');
-                $acDb->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                $acStmt = $acDb->prepare("SELECT id FROM access_codes WHERE code = ? AND is_active = 1 LIMIT 1");
-                $acStmt->execute([$keyToCheck]);
-                if ($acStmt->fetch()) {
-                    $keyValid = true;
-                }
-            } catch (PDOException $e) {
-                // DB error — fail closed (deny access), log for diagnosis
-                error_log("Access code lookup failed: " . $e->getMessage());
-            }
-        }
-    }
-
-    if ($keyValid) {
-        // Store the actual key in session so subsequent page loads (sidebar clicks,
-        // navigation without ?key= in URL) can re-validate it without losing access.
-        $_SESSION['demo_access_key'] = $keyToCheck;
-        // Keep legacy flag for backward compatibility with ajax_handler.php
-        $_SESSION['demo_unlocked'] = true;
-
-        // Also persist in a long-lived cookie so access survives PHP session expiry.
-        // HttpOnly: JS can't read it (XSS protection). SameSite=Lax: sent on same-site
-        // navigations but not cross-site POSTs. Secure: only over HTTPS in production.
-        // 30-day lifetime — access stays active until admin deactivates the key.
-        $isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
-        setcookie('demo_access_key', $keyToCheck, [
-            'expires'  => time() + (30 * 24 * 60 * 60),  // 30 days
-            'path'     => '/',
-            'secure'   => $isSecure,
-            'httponly'  => true,
-            'samesite' => 'Lax',
-        ]);
-    } else {
-        // Key is missing, invalid, or was deactivated by admin — revoke access
-        unset($_SESSION['demo_unlocked']);
-        unset($_SESSION['demo_access_key']);
-        // Clear the cookie so the browser stops sending a stale/deactivated key
-        if (isset($_COOKIE['demo_access_key'])) {
-            setcookie('demo_access_key', '', ['expires' => 1, 'path' => '/']);
-        }
-
-        http_response_code(403);
-        echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Access Required</title><style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background:#f5f5f5;}.box{text-align:center;padding:40px;border-radius:12px;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.1);}h1{margin:0 0 8px;font-size:1.5rem}p{color:#666;margin:0}</style></head><body><div class="box"><h1>Access Required</h1><p>You need a valid access key to use this app.</p></div></body></html>';
-        exit;
-    }
-}
-
-// Preserve the access key so sidebar links don't lose it on navigation.
-// Without this, clicking a conversation reloads /?view=... without ?key=,
-// which breaks access for users who opened the app via a shareable link.
-// Falls back to the session-stored key if the URL doesn't have one — this covers
-// the case where the user navigated via sidebar (no ?key= in URL) but the session
-// still holds the validated key.
+// Public center experience — no access key required. Rate limiting + CSRF still
+// protect API usage, so we just keep URLs clean.
 $keyParam = '';
-$activeKey = $_GET['key'] ?? $_SESSION['demo_access_key'] ?? $_COOKIE['demo_access_key'] ?? '';
-if (!empty($activeKey)) {
-    $keyParam = '&key=' . urlencode($activeKey);
-}
-$newResearchUrl = $centerBaseUrl . (!empty($activeKey) ? '?key=' . urlencode($activeKey) : '');
+$newResearchUrl = $centerBaseUrl;
 
 // Generate a CSRF token once per session — sent with every AJAX POST
 // so the backend can verify the request came from our page, not a forged form
