@@ -701,7 +701,15 @@ class Controller extends Database
                 $stmt->bind_param($types, ...$values);
             }
             
-            $stmt->execute();
+            // Capture execute() result — false means the query failed (e.g. constraint violation)
+            $executed = $stmt->execute();
+            if ($executed === false) {
+                // Log the statement error so it's diagnosable without exposing it to the browser
+                error_log("run_query_prepared execute failed: " . $stmt->error . " | SQL: " . $sql);
+                $stmt->close();
+                return false;
+            }
+
             $result = $stmt->get_result();
             $stmt->close();
             return $result;

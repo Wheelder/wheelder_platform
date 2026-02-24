@@ -14,17 +14,19 @@
       </form>
     
 
-      <!-- Logo on the Right -->
+      <!-- User dropdown — avatar toggles menu; name shown as first non-clickable label -->
       <div class="dropdown text-start p-1">
         <a href="#" class="d-block link-body-emphasis text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-          <img src="<?php echo $_SESSION['profile_image'] ?>" alt="mdo" width="32" height="32" class="rounded-circle">
+          <img src="<?php echo htmlspecialchars($_SESSION['profile_image'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" alt="user" width="32" height="32" class="rounded-circle">
         </a>
         <ul class="dropdown-menu text-small">
-          <li><a class="dropdown-item" href="/apps/edu/ui/views/profile/profile.php?ui=<?php echo $_SESSION['id']; ?>"><span class="fs-14 text-black flex-grow"><?php echo $_SESSION['full_name']; ?></span></a></li>
+          <!-- Full name label — identifies who is logged in without exposing session data in the UI -->
+          <li><span class="dropdown-item-text fw-semibold"><?php echo htmlspecialchars($_SESSION['full_name'] ?? 'Admin', ENT_QUOTES, 'UTF-8'); ?></span></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="/apps/edu/ui/views/settings/settings.php?form=profile">Settings</a></li>
-            <li><a class="dropdown-item" href="/apps/edu/ui/views/finance/finances.php">Help desk</a></li>
-            <li><a class="dropdown-item" href="/logout">Logout</a></li>
+          <li><a class="dropdown-item" href="<?php echo url('/dashboard'); ?>">Settings</a></li>
+          <li><a class="dropdown-item" href="<?php echo url('/help'); ?>">Help desk</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item text-danger" href="<?php echo url('/logout'); ?>">Logout</a></li>
         </ul>
       </div>
 

@@ -1,98 +1,90 @@
 <?php
-// $path = __DIR__;
-include __DIR__ . '/AppController.php';
+// Resolve controller path relative to this file so prod DOC_ROOT differences never break includes (WHY: /lesson failed when wheelder lived in a subfolder on the server).
+$controllerPath = dirname(__DIR__, 3) . '/controllers/LessonController.php';
 
-// Include top.php for url() helper — center sits one level higher than /learn/backup,
-// so the relative path uses one fewer ../ segments.
-require_once dirname(dirname(dirname(dirname(dirname(__DIR__))))) . '/top.php';
-
-$note = new AppController();
-
- 
-$blog = $note;
-
-// Auth is intentionally disabled for demo mode — anyone with the URL can use the app.
-// API costs are protected by: CSRF tokens (no forged requests) + rate limiting (10 req/60s per session).
-// To require login, uncomment the line below:
-// $note->check_auth();
-
-// Fetch all past conversations for the sidebar (newest first)
-$conversations = $note->getConversations();
-
-// Central research thread — opens by default when no ?view= is supplied
-$defaultCenterSession = 'conv_698e63c6054173.74206200';
-
-// Pre-compute URLs so we can seamlessly point to the root path (no /center in the address bar)
-$centerBaseUrl      = url('/');
-$centerAjaxEndpoint = url('/center/ajax');
-$centerTtsEndpoint  = url('/center/tts');
-
-// If the user clicked a past conversation in the sidebar, load it via GET ?view=session_id
-// But NOT when a deepen POST is active — that means the user clicked "Circular Search/Deep Research"
-// and we need app_src.php to process the deeper request instead of showing the old stored answer
-$viewConversation = null;
-if (empty($_POST['deepen'])) {
-    $requestedSessionId = null;
-    if (!empty($_GET['view'])) {
-        // Sanitize the session_id from the URL to prevent injection
-        $requestedSessionId = htmlspecialchars($_GET['view'], ENT_QUOTES, 'UTF-8');
-    } elseif (!empty($defaultCenterSession)) {
-        $requestedSessionId = $defaultCenterSession;
+if (!file_exists($controllerPath)) {
+    // Fallback: attempt old DOCUMENT_ROOT strategy in case directory structure changes again.
+    $docRoot = rtrim($_SERVER['DOCUMENT_ROOT'] ?? '', '/\\');
+    $legacyPath = $docRoot === '' ? '' : $docRoot . '/apps/edu/controllers/LessonController.php';
+    if ($legacyPath !== '' && file_exists($legacyPath)) {
+        $controllerPath = $legacyPath;
     }
+}
 
-    if (!empty($requestedSessionId)) {
-        $viewConversation = $note->getConversationById($requestedSessionId);
-        if ($viewConversation && empty($_GET['view'])) {
-            // Mirror the default session into $_GET so active-state detection keeps working
-            $_GET['view'] = $requestedSessionId;
+if (!file_exists($controllerPath)) {
+    // Fail loudly with diagnosable message instead of fatal include warning (WHY: easier prod troubleshooting).
+    error_log('Lesson app bootstrap error: missing LessonController at ' . $controllerPath);
+    http_response_code(500);
+    echo 'Lesson module is temporarily unavailable. Please contact Wheelder support.';
+    exit;
+}
+
+require_once $controllerPath;
+
+$lesson = new LessonController();
+
+// /lesson is now public — skip check_auth() so casual visitors are not bounced to login.
+
+// Fetch the full lesson row here so both center and right panels share the same data
+$t = isset($_GET['t']) ? trim($_GET['t']) : null;
+
+if ($t === null) {
+    $sql = "SELECT * FROM lessons ORDER BY id DESC LIMIT 1";
+} else {
+    $title_q = ucwords(str_replace('_', ' ', $t));
+    $title_q = $lesson->connectDb()->real_escape_string($title_q);
+    $sql = "SELECT * FROM lessons WHERE title = '$title_q'";
+}
+
+$stmt = $lesson->run_query($sql);
+$row  = ($stmt && $stmt->num_rows > 0) ? $stmt->fetch_assoc() : null;
+
+// formatMarkdown — converts AI-generated markdown to HTML for display.
+// WHY: content is stored as raw markdown (from cms2 AI generation); nl2br+htmlspecialchars
+// would show raw symbols like ## and ** instead of rendered headings and bold text.
+// Identical function to the one in cms2/ajax.php so both views render consistently.
+function formatMarkdown($text) {
+    $text = str_replace(["\r\n", "\r"], "\n", $text);
+    $text = preg_replace('/```(\w*)\n([\s\S]*?)```/m', '<pre><code>$2</code></pre>', $text);
+    $text = preg_replace('/`([^`]+)`/', '<code>$1</code>', $text);
+    $text = preg_replace('/^### (.+)$/m', '<h5>$1</h5>', $text);
+    $text = preg_replace('/^## (.+)$/m',  '<h4>$1</h4>', $text);
+    $text = preg_replace('/^# (.+)$/m',   '<h3>$1</h3>', $text);
+    $text = preg_replace('/\*\*\*(.+?)\*\*\*/', '<strong><em>$1</em></strong>', $text);
+    $text = preg_replace('/\*\*(.+?)\*\*/',     '<strong>$1</strong>', $text);
+    $text = preg_replace('/\*(.+?)\*/',          '<em>$1</em>', $text);
+    $text = preg_replace('/^[-*]{3,}$/m', '<hr>', $text);
+    $lines = explode("\n", $text);
+    $html = ''; $inOl = false; $inUl = false;
+    foreach ($lines as $line) {
+        $t = trim($line);
+        if ($t === '') {
+            if ($inOl) { $html .= '</ol>'; $inOl = false; }
+            if ($inUl) { $html .= '</ul>'; $inUl = false; }
+            continue;
+        }
+        if (preg_match('/^\d+[\.\)]\s+(.+)$/', $t, $m)) {
+            if ($inUl) { $html .= '</ul>'; $inUl = false; }
+            if (!$inOl) { $html .= '<ol>'; $inOl = true; }
+            $html .= '<li>' . $m[1] . '</li>'; continue;
+        }
+        if (preg_match('/^[-*•]\s+(.+)$/', $t, $m)) {
+            if ($inOl) { $html .= '</ol>'; $inOl = false; }
+            if (!$inUl) { $html .= '<ul>'; $inUl = true; }
+            $html .= '<li>' . $m[1] . '</li>'; continue;
+        }
+        if ($inOl) { $html .= '</ol>'; $inOl = false; }
+        if ($inUl) { $html .= '</ul>'; $inUl = false; }
+        if (preg_match('/^<(h[1-6]|hr|pre|ol|ul|li|blockquote)/', $t)) {
+            $html .= $t;
+        } else {
+            $html .= '<p>' . $t . '</p>';
         }
     }
+    if ($inOl) $html .= '</ol>';
+    if ($inUl) $html .= '</ul>';
+    return $html;
 }
-
-$lastEntryIndex = null;
-$lastEntry = null;
-if (!empty($viewConversation)) {
-    // array_key_last keeps the structure intact even if numeric indexes are non-sequential.
-    $lastEntryIndex = function_exists('array_key_last') ? array_key_last($viewConversation) : (count($viewConversation) ? array_keys($viewConversation)[count($viewConversation) - 1] : null);
-    if ($lastEntryIndex !== null) {
-        $lastEntry = $viewConversation[$lastEntryIndex];
-
-        if (empty($lastEntry['image']) && !empty($lastEntry['question'])) {
-            try {
-                // WHY: legacy rows often lack image URLs, so we lazily regenerate one to keep the UI consistent.
-                $regeneratedImage = $note->generateImage($lastEntry['question']);
-                if (!empty($regeneratedImage)) {
-                    $viewConversation[$lastEntryIndex]['image'] = $regeneratedImage;
-                    $lastEntry = $viewConversation[$lastEntryIndex];
-
-                    if (method_exists($note, 'updateConversationImage') && !empty($lastEntry['id'])) {
-                        $note->updateConversationImage($lastEntry['id'], $regeneratedImage);
-                    }
-                }
-            } catch (Throwable $imgErr) {
-                // WHY: we log instead of surfacing to the user so UX remains smooth even if image regeneration fails.
-                error_log('center/record image regeneration failed: ' . $imgErr->getMessage());
-            }
-        }
-    }
-}
-
-// Only start a session if one isn't already active (avoids Notice when the router starts one)
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-// Public center experience — no access key required. Rate limiting + CSRF still
-// protect API usage, so we just keep URLs clean.
-$keyParam = '';
-$newResearchUrl = $centerBaseUrl;
-
-// Generate a CSRF token once per session — sent with every AJAX POST
-// so the backend can verify the request came from our page, not a forged form
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -120,7 +112,7 @@ if (empty($_SESSION['csrf_token'])) {
             position: relative;
             width: 100%;
             padding: 10px;
-            height: 600px;
+            height: 750px;
             overflow-y: auto;
             overflow-x: hidden;
             background-color: #fff;
@@ -186,20 +178,42 @@ if (empty($_SESSION['csrf_token'])) {
 
         /* Fenced code blocks — scrollable, dark background */
         .qa-answer pre {
-            background-color: #1e1e1e;
-            color: #d4d4d4;
-            padding: 12px 14px;
-            border-radius: 6px;
-            overflow-x: auto;
-            margin: 10px 0;
-            font-size: 0.88em;
-            line-height: 1.5;
+            margin: 16px 0;
         }
-        /* Reset inline-code style when inside a code block */
         .qa-answer pre code {
             background: none;
             padding: 0;
             font-size: inherit;
+        }
+        .inline-code-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 18px 0;
+            background: #0f172a;
+            box-shadow: 0 10px 30px rgba(15,18,44,.2);
+        }
+        .inline-code-card header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 16px; font-size: .82rem; color: #cbd5f5;
+            background: rgba(255,255,255,.05);
+        }
+        .inline-code-card pre {
+            margin: 0; padding: 16px;
+        }
+        .inline-code-card code {
+            color: #f8fafc;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            display: block;
+        }
+        .copy-btn {
+            border: 1px solid rgba(255,255,255,.4);
+            color: #fff;
+            background: transparent;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: .75rem;
         }
 
         /* Horizontal rules inside answers */
@@ -228,7 +242,7 @@ if (empty($_SESSION['csrf_token'])) {
             /* Relative so the fullscreen button can be positioned inside */
             position: relative;
             width: 100%;
-            height: 600px;
+            height: 750px;
             overflow: hidden;
             border: 2px solid #ccc;
             border-radius: 10px;
@@ -841,14 +855,14 @@ if (empty($_SESSION['csrf_token'])) {
 
     /* Answer panel — shorter height so it doesn't push image off-screen */
     .content {
-        height: 350px;
+        height: 500px;
         font-size: 14px;
         box-shadow: 4px 4px 4px #ccc;
     }
 
     /* Image panel — shorter on mobile, stacks below answer panel */
     .contentImage {
-        height: 250px;
+        height: 380px;
         margin-top: 12px;
         box-shadow: 4px 4px 4px #ccc;
     }
@@ -892,11 +906,11 @@ if (empty($_SESSION['csrf_token'])) {
 
             /* Answer + image panels — moderate height for tablet */
             .content {
-                height: 450px;
+                height: 520px;
                 font-size: 15px;
             }
             .contentImage {
-                height: 450px;
+                height: 520px;
             }
 
             /* Toolbar icons — slightly smaller on tablets */
@@ -915,7 +929,7 @@ if (empty($_SESSION['csrf_token'])) {
     <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
 
         <!-- Brand — col-md-2 matches blog layout -->
-        <a class="navbar-brand col-md-2 col-lg-2 me-0 px-3 fs-6" href="<?php echo $centerBaseUrl; ?>">Wheelder</a>
+        <a class="navbar-brand col-md-2 col-lg-2 me-0 px-3 fs-6" href="<?php echo url('/demo'); ?>">Wheelder</a>
 
         <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse"
             data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false"
@@ -966,127 +980,83 @@ if (empty($_SESSION['csrf_token'])) {
                 <!-- Removed position-sticky — it conflicts with flex column; the inline flex styles handle scrolling -->
                 <div class="pt-3 sidebar-sticky" style="flex:1 1 auto; overflow-y:auto; overflow-x:hidden; min-height:0;">
                     <ul class="nav flex-column">
-
-                        <!-- "New Research" link resets the page to a fresh state -->
-                        <li class="nav-item">
-                            <a href="<?php echo htmlspecialchars($newResearchUrl, ENT_QUOTES, 'UTF-8'); ?>" class="nav-link <?php echo empty($_GET['view']) && empty($_POST['ask']) && empty($_POST['deepen']) ? 'active' : ''; ?>">
-                                <i class="fas fa-plus"></i> New Research
-                            </a>
-                        </li>
-
-                        <?php
-                        // Loop through all past conversations and display them as clickable nav items
-                        foreach ($conversations as $conv):
-                            // Truncate long questions for the sidebar label
-                            $label = mb_substr($conv['question'], 0, 30);
-                            if (mb_strlen($conv['question']) > 30) $label .= '...';
-                            // Highlight the currently viewed conversation
-                            $isActive = (!empty($_GET['view']) && $_GET['view'] === $conv['session_id']) ? 'active' : '';
-                        ?>
-                        <li class="nav-item d-flex align-items-center" data-session="<?php echo htmlspecialchars($conv['session_id']); ?>">
-                            <a href="<?php echo $centerBaseUrl; ?>?view=<?php echo urlencode($conv['session_id']); ?><?php echo $keyParam ? str_replace('&', '&amp;', $keyParam) : ''; ?>" class="nav-link flex-grow-1 <?php echo $isActive; ?>" title="<?php echo htmlspecialchars($conv['question']); ?>">
-                                <?php echo htmlspecialchars($label); ?>
-                                <span class="conv-date"><?php echo $conv['created_at']; ?></span>
-                            </a>
-                            <!-- Archive + Delete buttons — appear on the right side of each sidebar item -->
-                            <span class="conv-actions">
-                                <i class="fas fa-box-archive conv-archive" title="Archive this research" data-session="<?php echo htmlspecialchars($conv['session_id']); ?>"></i>
-                                <i class="fas fa-trash conv-delete" title="Delete this research" data-session="<?php echo htmlspecialchars($conv['session_id']); ?>"></i>
-                            </span>
-                        </li>
-                        <?php endforeach; ?>
-
+                <?php
+                // Render all lesson titles as sidebar links; mark the active one
+                $all = $lesson->run_query("SELECT id, title FROM lessons ORDER BY id DESC");
+                if ($all && $all->num_rows > 0) {
+                    while ($r = $all->fetch_assoc()) {
+                        $slug    = urlencode(str_replace(' ', '_', strtolower($r['title'])));
+                        $label   = htmlspecialchars($r['title'], ENT_QUOTES, 'UTF-8');
+                        // Highlight the currently viewed lesson so the user knows where they are
+                        $active  = ($row && $row['id'] == $r['id']) ? ' active' : '';
+                        echo '<a class="nav-link' . $active . '" href="' . url('/lesson') . '?t=' . $slug . '">' . $label . '</a>';
+                    }
+                } else {
+                    echo '<p class="px-3 text-muted" style="font-size:.8rem">No lessons yet.</p>';
+                }
+                ?>
                     </ul>
                 </div>
 
             </nav>
-
             <!-- Main content area — col-md-10 matches blog layout -->
             <main class="col-md-10 ms-sm-auto col-lg-10 px-md-4">
 
-                <!-- Page title — centered -->
-                <h2 class="text-center mb-4 pt-3">Ask to Learn</h2>
-
-                <!-- Big textarea at top center — AJAX reads the value directly, no <form> needed -->
-                <div class="row justify-content-center">
-                    <div class="col-md-8">
-                        <textarea class="form-control mb-3" id="queryInput" rows="2"
-                            style="overflow-y:hidden; resize:none; min-height:60px; max-height:240px;"
-                            placeholder="Type your question here..."><?php
-                            // Pre-fill from viewed conversation so the user sees what was asked
-                            if (!empty($viewConversation)) {
-                                $lastEntry = end($viewConversation);
-                                echo htmlspecialchars($lastEntry['question'] ?? '');
-                            }
-                        ?></textarea>
-                    </div>
-                </div>
-
-                <!-- Buttons row: Ask | Deeper | Clear | Depth badge -->
-                <div class="row justify-content-center">
-                    <div class="col-md-8">
-                        <div class="d-flex gap-2 mb-3 flex-wrap">
-                            <button type="button" id="askBtn" class="btn btn-dark">Ask</button>
-                            <button type="button" id="deepenBtn" class="btn btn-outline-dark" style="display:none;">Circular Search/Deep Research</button>
-                            <button type="button" id="clearBtn" class="btn btn-dark">Clear</button>
-                            <span id="depthBadge" class="badge bg-dark fs-6 ms-auto align-self-center" style="display:none;"></span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Loading spinner — shown while AJAX request is in progress -->
-                <div id="loadingSpinner" class="text-center mb-3" style="display:none;">
-                    <div class="spinner-border text-dark" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p class="mt-2 text-muted">Generating response...</p>
-                </div>
-
-                <!-- Error message — shown if AJAX request fails -->
-                <div id="errorMsg" class="alert alert-danger mb-3" style="display:none;" role="alert"></div>
-
                 <!-- Two panels side by side: Answer panel (left) + Image panel (right) -->
                 <div class="row mt-2" id="resultsRow">
-                    <?php
-                    // If viewing a past conversation, pre-fill both panels with Q&A history
-                    if (!empty($viewConversation)):
-                    ?>
-                    <div class="col-md-6">
-                        <div class="content" id="answerPanel">
-                            <!-- Focus button — opens the answer text in a full-viewport overlay for reading -->
-                            <button class="text-fullscreen-btn" title="Focus view" onclick="openTextOverlay()">
-                                <i class="fas fa-expand"></i>
-                            </button>
-                            <?php
-                            // Render all Q&A pairs in questionnaire style inside the answer panel
-                            foreach ($viewConversation as $entry):
-                            ?>
-                                <?php if (!empty($entry['depth_level']) && $entry['depth_level'] > 0): ?>
-                                    <div class="qa-depth-label">Depth Level <?php echo (int)$entry['depth_level']; ?>/7</div>
-                                <?php endif; ?>
-                                <div class="qa-question"><?php echo htmlspecialchars($entry['question'] ?? ''); ?></div>
-                                <div class="qa-answer"><?php echo $entry['answer']; ?></div>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="contentImage" id="imagePanel">
-                            <?php if (!empty($lastEntry['image'])): ?>
-                                <!-- Fullscreen button — opens the image in a full-viewport overlay -->
-                                <button class="img-fullscreen-btn" title="View fullscreen" onclick="openImageOverlay(this)">
+                    <?php if ($row): ?>
+                        <div class="col-md-6">
+                            <div class="content" id="answerPanel">
+                                <!-- Focus button — opens the lesson text in a full-viewport overlay for reading -->
+                                <button class="text-fullscreen-btn" title="Focus view" onclick="openTextOverlay()">
                                     <i class="fas fa-expand"></i>
                                 </button>
-                                <img src="<?php echo htmlspecialchars($lastEntry['image']); ?>" alt="Generated image"/>
-                            <?php endif; ?>
+                                <div class="qa-question">
+                                    <?php echo htmlspecialchars($row['title'], ENT_QUOTES, 'UTF-8'); ?>
+                                    <?php if (!empty($row['category'])): ?>
+                                        <span class="badge bg-dark ms-2" style="font-size:.65rem;">
+                                            <?php echo htmlspecialchars($row['category'], ENT_QUOTES, 'UTF-8'); ?>
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="qa-answer" id="lessonBody">
+                                    <?php echo formatMarkdown($row['content'] ?? ''); ?>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                        <div class="col-md-6">
+                            <div class="visual-panel">
+                                <div class="contentImage" id="imagePanel">
+                                    <?php if (!empty($row['image_url'])): ?>
+                                        <button class="img-fullscreen-btn" title="View fullscreen" onclick="openImageOverlay(this)">
+                                            <i class="fas fa-expand"></i>
+                                        </button>
+                                        <img src="<?php echo htmlspecialchars($row['image_url'], ENT_QUOTES, 'UTF-8'); ?>" alt="Lesson visual"
+                                             onerror="this.parentElement.innerHTML='<div class=\'placeholder\'>Image unavailable</div>'">
+                                    <?php else: ?>
+                                        <div class="placeholder">No visual provided for this lesson.</div>
+                                    <?php endif; ?>
+                                </div>
+
+                                <?php if (!empty($row['code_block'])): ?>
+                                    <div class="code-snippet">
+                                        <header>
+                                            <span><?php echo htmlspecialchars($row['category'] ?? 'Code', ENT_QUOTES, 'UTF-8'); ?> snippet</span>
+                                            <button class="copy-btn" onclick="copyLessonCode(this)">Copy</button>
+                                        </header>
+                                        <pre><code><?php echo htmlspecialchars($row['code_block'], ENT_QUOTES, 'UTF-8'); ?></code></pre>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php else: ?>
+                        <div class="col-12">
+                            <div class="alert alert-info text-center">No lessons found. Generate one from CMS2 to view it here.</div>
+                        </div>
                     <?php endif; ?>
                 </div>
 
             </main> <!-- close main col-md-10 -->
-
-        </div> <!-- close row -->
-    </div> <!-- close container-fluid -->
 
     <!-- Fullscreen image overlay — hidden by default, shown when the expand button is clicked -->
     <div class="img-overlay" id="imgOverlay">
@@ -1122,6 +1092,55 @@ if (empty($_SESSION['csrf_token'])) {
          AJAX + Toolbar JavaScript
          ============================================================ -->
     <script>
+        // Turn markdown <pre><code> blocks into copyable cards so indentation survives copy/paste
+        function enhanceLessonCodeBlocks() {
+            var container = document.getElementById('lessonBody');
+            if (!container) return;
+            container.querySelectorAll('pre').forEach(function(pre) {
+                if (pre.dataset.enhanced === '1') return;
+                var code = pre.querySelector('code');
+                if (!code) return;
+                var card = document.createElement('div');
+                card.className = 'inline-code-card';
+
+                var header = document.createElement('header');
+                header.innerHTML = '<span>Code snippet</span>';
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'copy-btn';
+                btn.textContent = 'Copy';
+                btn.addEventListener('click', function () {
+                    navigator.clipboard.writeText(code.textContent).then(function () {
+                        btn.textContent = 'Copied!';
+                        setTimeout(function () { btn.textContent = 'Copy'; }, 2000);
+                    }).catch(function () {
+                        alert('Copy failed.');
+                    });
+                });
+                header.appendChild(btn);
+
+                var clonedPre = pre.cloneNode(true);
+                clonedPre.dataset.enhanced = '1';
+                card.appendChild(header);
+                card.appendChild(clonedPre);
+
+                pre.replaceWith(card);
+            });
+        }
+        enhanceLessonCodeBlocks();
+
+        // Dedicated helper for the right-column code card
+        function copyLessonCode(btn) {
+            var codeEl = btn && btn.closest('.code-snippet') ? btn.closest('.code-snippet').querySelector('code') : null;
+            if (!codeEl) return;
+            navigator.clipboard.writeText(codeEl.textContent).then(function () {
+                btn.textContent = 'Copied!';
+                setTimeout(function () { btn.textContent = 'Copy'; }, 2000);
+            }).catch(function () {
+                alert('Copy failed.');
+            });
+        }
+
         // ===========================================
         // AJAX State — tracks the current conversation so deepen can chain from it
         // ===========================================
@@ -1134,16 +1153,104 @@ if (empty($_SESSION['csrf_token'])) {
 
         // CSRF token — generated server-side, sent with every AJAX POST
         // so the backend can reject forged cross-site requests
-        var csrfToken = <?php echo json_encode($_SESSION['csrf_token']); ?>;
+        var csrfToken = <?php echo json_encode($_SESSION['csrf_token'] ?? ''); ?> || '';
 
         // Access key — sent with every AJAX POST so the backend can re-validate
         // even if the PHP session expired (session garbage-collected after inactivity).
         // Without this, AJAX calls fail with 403 after the session dies.
         var accessKey = <?php echo json_encode($_SESSION['demo_access_key'] ?? ''); ?>;
+        var ttsEndpoint = <?php echo json_encode(url('/demo/tts')); ?>;
+
+        function getLessonElements() {
+            var panel = document.getElementById('answerPanel');
+            var body = document.getElementById('lessonBody');
+            return (panel && body) ? { panel: panel, body: body } : null;
+        }
+
+        function guardLesson(actionLabel) {
+            var ctx = getLessonElements();
+            if (!ctx && actionLabel) {
+                alert(actionLabel + ' is unavailable until a lesson is loaded.');
+            }
+            return ctx;
+        }
+
+        function getLessonText() {
+            var ctx = getLessonElements();
+            if (!ctx) return '';
+            var clone = ctx.panel.cloneNode(true);
+            clone.querySelectorAll('.text-fullscreen-btn').forEach(function (btn) {
+                btn.remove();
+            });
+            return clone.innerText.trim();
+        }
+
+        function getLessonTitle() {
+            var question = document.querySelector('#answerPanel .qa-question');
+            return question ? question.textContent.trim() : document.title;
+        }
+
+        function writeTextToClipboard(text) {
+            return new Promise(function (resolve, reject) {
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(text).then(resolve).catch(reject);
+                    return;
+                }
+                try {
+                    var textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    textarea.setAttribute('readonly', '');
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    document.body.appendChild(textarea);
+                    textarea.focus();
+                    textarea.select();
+                    var successful = document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    successful ? resolve() : reject(new Error('Clipboard command was blocked.'));
+                } catch (err) {
+                    reject(err);
+                }
+            });
+        }
+
+        function adjustFontSize(multiplier) {
+            var ctx = guardLesson('Font controls');
+            if (!ctx) return;
+            var panel = ctx.panel;
+            var currentSize = parseFloat(window.getComputedStyle(panel).fontSize);
+            var next = Math.min(30, Math.max(12, currentSize * multiplier));
+            panel.style.fontSize = next + 'px';
+        }
+
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+            try {
+                localStorage.setItem('lessonTheme', theme);
+            } catch (err) {
+                console.warn('Unable to persist theme preference.', err);
+            }
+        }
+
+        (function restoreThemePreference() {
+            try {
+                var savedTheme = localStorage.getItem('lessonTheme');
+                if (savedTheme === 'dark') {
+                    document.body.classList.add('dark-mode');
+                }
+            } catch (err) {
+                console.warn('Unable to read theme preference.', err);
+            }
+        })();
 
         <?php
         // If viewing a past conversation, seed the JS state so deepen works immediately
-        if (!empty($viewConversation) && !empty($lastEntry)):
+        if (!empty($viewConversation)):
+            $lastEntry = end($viewConversation);
         ?>
         ajaxState.sessionId        = <?php echo json_encode($_GET['view'] ?? ''); ?>;
         ajaxState.originalQuestion = <?php echo json_encode($lastEntry['question'] ?? ''); ?>;
@@ -1288,339 +1395,346 @@ if (empty($_SESSION['csrf_token'])) {
 
         // Show the deepen button if we already have a conversation loaded (from ?view=)
         <?php if (!empty($viewConversation)): ?>
-        deepenBtn.style.display = 'inline-block';
+        if (deepenBtn) { deepenBtn.style.display = 'inline-block'; }
         <?php endif; ?>
 
-        // ===========================================
-        // Auto-expand textarea — grows/shrinks as the user types
-        // Resets to auto first so shrinking works, then sets to scrollHeight.
-        // ===========================================
-        function autoResizeTextarea() {
-            queryInput.style.height = 'auto';
-            // Clamp to max-height so the page doesn't grow unbounded
-            queryInput.style.height = Math.min(queryInput.scrollHeight, 240) + 'px';
-        }
-        queryInput.addEventListener('input', autoResizeTextarea);
-        // Run once on load in case the textarea is pre-filled (viewing past conversation)
-        autoResizeTextarea();
+        // Determine if the /demo-style controls exist on this page
+        var hasDemoForm = askBtn && deepenBtn && clearBtn && queryInput && loadingSpinner && errorMsg && depthBadge;
 
-        // ===========================================
-        // addSidebarThread — inserts a new conversation into the sidebar immediately
-        // so the user doesn't have to refresh to see it.
-        // Only called for brand-new threads (not follow-ups in existing threads).
-        // ===========================================
-        function addSidebarThread(sessionId, questionText) {
-            if (!sidebarNav) return;
-
-            // Truncate label to 30 chars to match the PHP sidebar rendering
-            var label = questionText.length > 30 ? questionText.substring(0, 30) + '...' : questionText;
-
-            // Escape HTML in label to prevent XSS from user input
-            var safeLabel = label.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-            var safeTitle = questionText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-            var safeSession = sessionId.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-            // Use URL key first, then fall back to the accessKey JS variable
-            // (set from session/cookie). Without this fallback, sidebar links
-            // lose the key when the user arrived via cookie (no ?key= in URL).
-            var keyParam = '';
-            var urlParams = new URLSearchParams(window.location.search);
-            var sidebarKey = urlParams.get('key') || accessKey;
-            if (sidebarKey) {
-                keyParam = '&key=' + encodeURIComponent(sidebarKey);
+        if (hasDemoForm) {
+            // ===========================================
+            // Auto-expand textarea — grows/shrinks as the user types
+            // Resets to auto first so shrinking works, then sets to scrollHeight.
+            // ===========================================
+            function autoResizeTextarea() {
+                queryInput.style.height = 'auto';
+                // Clamp to max-height so the page doesn't grow unbounded
+                queryInput.style.height = Math.min(queryInput.scrollHeight, 240) + 'px';
             }
+            queryInput.addEventListener('input', autoResizeTextarea);
+            // Run once on load in case the textarea is pre-filled (viewing past conversation)
+            autoResizeTextarea();
 
-            // Format today's date as YYYY-MM-DD to match the PHP conv-date display
-            var today = new Date();
-            var dateStr = today.getFullYear() + '-' +
-                String(today.getMonth() + 1).padStart(2, '0') + '-' +
-                String(today.getDate()).padStart(2, '0');
+            // ===========================================
+            // addSidebarThread — inserts a new conversation into the sidebar immediately
+            // so the user doesn't have to refresh to see it.
+            // Only called for brand-new threads (not follow-ups in existing threads).
+            // ===========================================
+            function addSidebarThread(sessionId, questionText) {
+                if (!sidebarNav) return;
 
-            // Build the same HTML structure as the PHP loop generates
-            var li = document.createElement('li');
-            li.className = 'nav-item d-flex align-items-center';
-            li.setAttribute('data-session', sessionId);
+                // Truncate label to 30 chars to match the PHP sidebar rendering
+                var label = questionText.length > 30 ? questionText.substring(0, 30) + '...' : questionText;
 
-            li.innerHTML =
-                '<a href="' + '<?php echo $centerBaseUrl; ?>?view=' + encodeURIComponent(sessionId) + keyParam + '"' +
-                '   class="nav-link flex-grow-1 active" title="' + safeTitle + '">' +
-                    safeLabel +
-                    '<span class="conv-date">' + dateStr + '</span>' +
-                '</a>' +
-                '<span class="conv-actions">' +
-                    '<i class="fas fa-box-archive conv-archive" title="Archive this research" data-session="' + safeSession + '"></i>' +
-                    '<i class="fas fa-trash conv-delete" title="Delete this research" data-session="' + safeSession + '"></i>' +
-                '</span>';
+                // Escape HTML in label to prevent XSS from user input
+                var safeLabel = label.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+                var safeTitle = questionText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+                var safeSession = sessionId.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+                // Use URL key first, then fall back to the accessKey JS variable
+                // (set from session/cookie). Without this fallback, sidebar links
+                // lose the key when the user arrived via cookie (no ?key= in URL).
+                var keyParam = '';
+                var urlParams = new URLSearchParams(window.location.search);
+                var sidebarKey = urlParams.get('key') || accessKey;
+                if (sidebarKey) {
+                    keyParam = '&key=' + encodeURIComponent(sidebarKey);
+                }
 
-            // Remove 'active' class from all other sidebar links so only the new one is highlighted
-            sidebarNav.querySelectorAll('.nav-link').forEach(function (link) {
-                link.classList.remove('active');
-            });
+                // Format today's date as YYYY-MM-DD to match the PHP conv-date display
+                var today = new Date();
+                var dateStr = today.getFullYear() + '-' +
+                    String(today.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(today.getDate()).padStart(2, '0');
 
-            // Insert after the "+ New Research" item (first <li>)
-            var firstItem = sidebarNav.querySelector('li.nav-item');
-            if (firstItem && firstItem.nextSibling) {
-                sidebarNav.insertBefore(li, firstItem.nextSibling);
-            } else {
-                sidebarNav.appendChild(li);
-            }
-        }
+                // Build the same HTML structure as the PHP loop generates
+                var li = document.createElement('li');
+                li.className = 'nav-item d-flex align-items-center';
+                li.setAttribute('data-session', sessionId);
 
-        // ===========================================
-        // sendAjax — core function that POSTs to ajax_handler.php and renders the result
-        // ===========================================
-        function sendAjax(formData, questionText) {
-            // Show spinner, hide previous errors
-            loadingSpinner.style.display = 'block';
-            errorMsg.style.display = 'none';
+                li.innerHTML =
+                    '<a href="' + '<?php echo url("/demo"); ?>?view=' + encodeURIComponent(sessionId) + keyParam + '"' +
+                    '   class="nav-link flex-grow-1 active" title="' + safeTitle + '">' +
+                        safeLabel +
+                        '<span class="conv-date">' + dateStr + '</span>' +
+                    '</a>' +
+                    '<span class="conv-actions">' +
+                        '<i class="fas fa-box-archive conv-archive" title="Archive this research" data-session="' + safeSession + '"></i>' +
+                        '<i class="fas fa-trash conv-delete" title="Delete this research" data-session="' + safeSession + '"></i>' +
+                    '</span>';
 
-            // Disable buttons while request is in flight to prevent double-clicks
-            askBtn.disabled = true;
-            deepenBtn.disabled = true;
-
-            // Attach CSRF token so the backend can verify this request came from our page
-            formData.append('csrf_token', csrfToken);
-            // Attach access key so backend can re-validate even if session expired
-            if (accessKey) formData.append('access_key', accessKey);
-
-            // Use fetch API — modern, clean, no jQuery needed
-            fetch('<?php echo $centerAjaxEndpoint; ?>', {
-                method: 'POST',
-                body: formData
-            })
-            .then(function (response) {
-                // Read body as text first — this lets us detect empty responses
-                // (PHP can die mid-execution after sending headers, leaving an empty body
-                // that causes "Unexpected end of JSON input" when parsed directly)
-                return response.text().then(function (text) {
-                    return { text: text, status: response.status, ct: response.headers.get('content-type') || '' };
+                // Remove 'active' class from all other sidebar links so only the new one is highlighted
+                sidebarNav.querySelectorAll('.nav-link').forEach(function (link) {
+                    link.classList.remove('active');
                 });
-            })
-            .then(function (res) {
-                // Guard 1: empty body — PHP died before writing any output
-                if (!res.text || !res.text.trim()) {
-                    throw new Error('Server returned an empty response (HTTP ' + res.status + '). The request may have timed out. Please try again.');
+
+                // Insert after the "+ New Research" item (first <li>)
+                var firstItem = sidebarNav.querySelector('li.nav-item');
+                if (firstItem && firstItem.nextSibling) {
+                    sidebarNav.insertBefore(li, firstItem.nextSibling);
+                } else {
+                    sidebarNav.appendChild(li);
                 }
-                // Guard 2: non-JSON content type (e.g. PHP fatal error page, nginx 404)
-                if (res.ct.indexOf('application/json') === -1) {
-                    throw new Error('Server returned HTML instead of JSON (HTTP ' + res.status + '). Please reload the page.');
-                }
-                // Guard 3: parse JSON safely — catch malformed/truncated JSON
-                try {
-                    return JSON.parse(res.text);
-                } catch (e) {
-                    throw new Error('Server returned invalid JSON (HTTP ' + res.status + '). Please try again.');
-                }
-            })
-            .then(function (data) {
-                if (data.error) {
-                    // Hide spinner and show error — no panels to render
+            }
+
+            // ===========================================
+            // sendAjax — core function that POSTs to ajax_handler.php and renders the result
+            // ===========================================
+            function sendAjax(formData, questionText) {
+                // Show spinner, hide previous errors
+                loadingSpinner.style.display = 'block';
+                errorMsg.style.display = 'none';
+
+                // Disable buttons while request is in flight to prevent double-clicks
+                askBtn.disabled = true;
+                deepenBtn.disabled = true;
+
+                // Attach CSRF token so the backend can verify this request came from our page
+                formData.append('csrf_token', csrfToken);
+                // Attach access key so backend can re-validate even if session expired
+                if (accessKey) formData.append('access_key', accessKey);
+
+                // Use fetch API — modern, clean, no jQuery needed
+                fetch('<?php echo url("/demo/ajax"); ?>', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(function (response) {
+                    // Read body as text first — this lets us detect empty responses
+                    // (PHP can die mid-execution after sending headers, leaving an empty body
+                    // that causes "Unexpected end of JSON input" when parsed directly)
+                    return response.text().then(function (text) {
+                        return { text: text, status: response.status, ct: response.headers.get('content-type') || '' };
+                    });
+                })
+                .then(function (res) {
+                    // Guard 1: empty body — PHP died before writing any output
+                    if (!res.text || !res.text.trim()) {
+                        throw new Error('Server returned an empty response (HTTP ' + res.status + '). The request may have timed out. Please try again.');
+                    }
+                    // Guard 2: non-JSON content type (e.g. PHP fatal error page, nginx 404)
+                    if (res.ct.indexOf('application/json') === -1) {
+                        throw new Error('Server returned HTML instead of JSON (HTTP ' + res.status + '). Please reload the page.');
+                    }
+                    // Guard 3: parse JSON safely — catch malformed/truncated JSON
+                    try {
+                        return JSON.parse(res.text);
+                    } catch (e) {
+                        throw new Error('Server returned invalid JSON (HTTP ' + res.status + '). Please try again.');
+                    }
+                })
+                .then(function (data) {
+                    if (data.error) {
+                        // Hide spinner and show error — no panels to render
+                        loadingSpinner.style.display = 'none';
+                        errorMsg.textContent = data.error;
+                        errorMsg.style.display = 'block';
+                        askBtn.disabled = false;
+                        deepenBtn.disabled = false;
+                        return;
+                    }
+
+                    // --- Hold both panels: preload the image BEFORE rendering anything ---
+                    // Problem: text renders instantly but Pollinations image takes 3-8s,
+                    // so the user sees a blank right panel while the image generates.
+                    // Solution: keep the spinner visible, preload the image in a hidden
+                    // Image() object, then render BOTH panels simultaneously once loaded.
+
+                    // renderBothPanels — called once the image is ready (or on fallback)
+                    // Renders the answer text and image at the same time so the user
+                    // sees both panels appear together, not one-at-a-time
+                    function renderBothPanels(imageUrl) {
+                        // Hide spinner now that everything is ready
+                        loadingSpinner.style.display = 'none';
+
+                        ensurePanels();
+                        var answerPanel = document.getElementById('answerPanel');
+                        var imagePanel  = document.getElementById('imagePanel');
+
+                        // Build depth label if this is a deepen response
+                        var depthHtml = '';
+                        if (data.depth_level >= 1) {
+                            depthHtml = '<div class="qa-depth-label">Depth Level ' + data.depth_level + '/7</div>';
+                        }
+
+                        // Append the question + answer pair into the answer panel (questionnaire style)
+                        answerPanel.innerHTML += depthHtml +
+                            '<div class="qa-question">' + questionText.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>' +
+                            '<div class="qa-answer">' + data.answer + '</div>';
+                        scrollAnswerPanel();
+
+                        // Replace the image panel with the preloaded image + fullscreen button
+                        if (imageUrl) {
+                            imagePanel.innerHTML =
+                                '<button class="img-fullscreen-btn" title="View fullscreen" onclick="openImageOverlay(this)">' +
+                                '    <i class="fas fa-expand"></i>' +
+                                '</button>' +
+                                '<img src="' + imageUrl + '" alt="Generated image"/>';
+                        }
+
+                        // --- Add new thread to sidebar instantly (only for brand-new conversations) ---
+                        // Must check BEFORE updating ajaxState, because once sessionId is set
+                        // follow-up asks within the same thread should NOT create duplicate entries.
+                        if (!ajaxState.sessionId && data.session_id) {
+                            addSidebarThread(data.session_id, data.original_question || questionText);
+                        }
+
+                        // --- Update AJAX state so the next deepen call chains correctly ---
+                        ajaxState.sessionId        = data.session_id;
+                        ajaxState.originalQuestion = data.original_question;
+                        ajaxState.prevAnswer       = data.prev_answer;
+                        ajaxState.depthLevel       = data.depth_level;
+
+                        // Show the deepen button (hidden until first successful ask)
+                        // Hide it if we've hit max depth (7)
+                        if (data.depth_level < 7) {
+                            deepenBtn.style.display = 'inline-block';
+                        } else {
+                            deepenBtn.style.display = 'none';
+                        }
+
+                        // Show or update the depth badge
+                        if (data.depth_level >= 1) {
+                            depthBadge.textContent = 'Depth Level ' + data.depth_level + '/7';
+                            depthBadge.style.display = 'inline-block';
+                        } else {
+                            depthBadge.style.display = 'none';
+                        }
+
+                        // Re-enable buttons now that both panels are visible
+                        askBtn.disabled = false;
+                        deepenBtn.disabled = false;
+                    }
+
+                    // --- Preload the image before rendering ---
+                    // If there's an image URL, load it in a hidden Image() object.
+                    // Once loaded (or on error/timeout), call renderBothPanels().
+                    if (data.image) {
+                        var preloader = new Image();
+                        var imageLoaded = false;
+
+                        // Guard: prevent renderBothPanels from firing twice
+                        // (e.g. if timeout fires right after onload)
+                        function onImageReady() {
+                            if (imageLoaded) return;
+                            imageLoaded = true;
+                            clearTimeout(imageTimeout);
+                            renderBothPanels(data.image);
+                        }
+
+                        // Image loaded successfully — render both panels
+                        preloader.onload = onImageReady;
+
+                        // Image failed to load — render anyway with the URL
+                        // (browser will show broken-image icon, but text still appears)
+                        preloader.onerror = onImageReady;
+
+                        // Safety timeout: if Pollinations takes longer than 15s,
+                        // render both panels anyway so the user isn't stuck waiting forever
+                        var imageTimeout = setTimeout(onImageReady, 15000);
+
+                        // Start loading — this triggers the Pollinations generation
+                        preloader.src = data.image;
+                    } else {
+                        // No image URL — render the answer panel immediately
+                        renderBothPanels('');
+                    }
+                })
+                .catch(function (err) {
+                    // Network error or JSON parse failure
                     loadingSpinner.style.display = 'none';
-                    errorMsg.textContent = data.error;
+                    errorMsg.textContent = 'Request failed: ' + err.message;
                     errorMsg.style.display = 'block';
                     askBtn.disabled = false;
                     deepenBtn.disabled = false;
+                });
+            }
+
+            // ===========================================
+            // ASK button — sends a new question via AJAX
+            // ===========================================
+            askBtn.addEventListener('click', function () {
+                var query = queryInput.value.trim();
+                if (!query) {
+                    errorMsg.textContent = 'Please enter a question.';
+                    errorMsg.style.display = 'block';
                     return;
                 }
 
-                // --- Hold both panels: preload the image BEFORE rendering anything ---
-                // Problem: text renders instantly but Pollinations image takes 3-8s,
-                // so the user sees a blank right panel while the image generates.
-                // Solution: keep the spinner visible, preload the image in a hidden
-                // Image() object, then render BOTH panels simultaneously once loaded.
+                // Clear the textarea after sending and reset its height
+                queryInput.value = '';
+                autoResizeTextarea();
 
-                // renderBothPanels — called once the image is ready (or on fallback)
-                // Renders the answer text and image at the same time so the user
-                // sees both panels appear together, not one-at-a-time
-                function renderBothPanels(imageUrl) {
-                    // Hide spinner now that everything is ready
-                    loadingSpinner.style.display = 'none';
+                // Build form data for the Ask request
+                var formData = new FormData();
+                formData.append('ask', '1');
+                formData.append('query', query);
 
-                    ensurePanels();
-                    var answerPanel = document.getElementById('answerPanel');
-                    var imagePanel  = document.getElementById('imagePanel');
-
-                    // Build depth label if this is a deepen response
-                    var depthHtml = '';
-                    if (data.depth_level >= 1) {
-                        depthHtml = '<div class="qa-depth-label">Depth Level ' + data.depth_level + '/7</div>';
-                    }
-
-                    // Append the question + answer pair into the answer panel (questionnaire style)
-                    answerPanel.innerHTML += depthHtml +
-                        '<div class="qa-question">' + questionText.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>' +
-                        '<div class="qa-answer">' + data.answer + '</div>';
-                    scrollAnswerPanel();
-
-                    // Replace the image panel with the preloaded image + fullscreen button
-                    if (imageUrl) {
-                        imagePanel.innerHTML =
-                            '<button class="img-fullscreen-btn" title="View fullscreen" onclick="openImageOverlay(this)">' +
-                            '    <i class="fas fa-expand"></i>' +
-                            '</button>' +
-                            '<img src="' + imageUrl + '" alt="Generated image"/>';
-                    }
-
-                    // --- Add new thread to sidebar instantly (only for brand-new conversations) ---
-                    // Must check BEFORE updating ajaxState, because once sessionId is set
-                    // follow-up asks within the same thread should NOT create duplicate entries.
-                    if (!ajaxState.sessionId && data.session_id) {
-                        addSidebarThread(data.session_id, data.original_question || questionText);
-                    }
-
-                    // --- Update AJAX state so the next deepen call chains correctly ---
-                    ajaxState.sessionId        = data.session_id;
-                    ajaxState.originalQuestion = data.original_question;
-                    ajaxState.prevAnswer       = data.prev_answer;
-                    ajaxState.depthLevel       = data.depth_level;
-
-                    // Show the deepen button (hidden until first successful ask)
-                    // Hide it if we've hit max depth (7)
-                    if (data.depth_level < 7) {
-                        deepenBtn.style.display = 'inline-block';
-                    } else {
-                        deepenBtn.style.display = 'none';
-                    }
-
-                    // Show or update the depth badge
-                    if (data.depth_level >= 1) {
-                        depthBadge.textContent = 'Depth Level ' + data.depth_level + '/7';
-                        depthBadge.style.display = 'inline-block';
-                    } else {
-                        depthBadge.style.display = 'none';
-                    }
-
-                    // Re-enable buttons now that both panels are visible
-                    askBtn.disabled = false;
-                    deepenBtn.disabled = false;
+                // If we already have an active conversation, pass its session_id
+                // so the backend appends this follow-up to the same thread.
+                // If no session_id exists, the backend will create a new thread.
+                if (ajaxState.sessionId) {
+                    formData.append('session_id', ajaxState.sessionId);
                 }
 
-                // --- Preload the image before rendering ---
-                // If there's an image URL, load it in a hidden Image() object.
-                // Once loaded (or on error/timeout), call renderBothPanels().
-                if (data.image) {
-                    var preloader = new Image();
-                    var imageLoaded = false;
+                // Reset depth state — a new Ask is not a deepen, even within the same thread
+                ajaxState.depthLevel = 0;
+                depthBadge.style.display = 'none';
 
-                    // Guard: prevent renderBothPanels from firing twice
-                    // (e.g. if timeout fires right after onload)
-                    function onImageReady() {
-                        if (imageLoaded) return;
-                        imageLoaded = true;
-                        clearTimeout(imageTimeout);
-                        renderBothPanels(data.image);
-                    }
-
-                    // Image loaded successfully — render both panels
-                    preloader.onload = onImageReady;
-
-                    // Image failed to load — render anyway with the URL
-                    // (browser will show broken-image icon, but text still appears)
-                    preloader.onerror = onImageReady;
-
-                    // Safety timeout: if Pollinations takes longer than 15s,
-                    // render both panels anyway so the user isn't stuck waiting forever
-                    var imageTimeout = setTimeout(onImageReady, 15000);
-
-                    // Start loading — this triggers the Pollinations generation
-                    preloader.src = data.image;
-                } else {
-                    // No image URL — render the answer panel immediately
-                    renderBothPanels('');
-                }
-            })
-            .catch(function (err) {
-                // Network error or JSON parse failure
-                loadingSpinner.style.display = 'none';
-                errorMsg.textContent = 'Request failed: ' + err.message;
-                errorMsg.style.display = 'block';
-                askBtn.disabled = false;
-                deepenBtn.disabled = false;
+                // Pass the question text so sendAjax can render it in the answer panel
+                sendAjax(formData, query);
             });
-        }
 
-        // ===========================================
-        // ASK button — sends a new question via AJAX
-        // ===========================================
-        askBtn.addEventListener('click', function () {
-            var query = queryInput.value.trim();
-            if (!query) {
-                errorMsg.textContent = 'Please enter a question.';
-                errorMsg.style.display = 'block';
-                return;
-            }
+            // ===========================================
+            // DEEPEN button — deepens the current answer by one level via AJAX
+            // ===========================================
+            deepenBtn.addEventListener('click', function () {
+                // Safety: can't deepen without a prior conversation
+                if (!ajaxState.originalQuestion) {
+                    errorMsg.textContent = 'Ask a question first before deepening.';
+                    errorMsg.style.display = 'block';
+                    return;
+                }
 
-            // Clear the textarea after sending and reset its height
-            queryInput.value = '';
-            autoResizeTextarea();
-
-            // Build form data for the Ask request
-            var formData = new FormData();
-            formData.append('ask', '1');
-            formData.append('query', query);
-
-            // If we already have an active conversation, pass its session_id
-            // so the backend appends this follow-up to the same thread.
-            // If no session_id exists, the backend will create a new thread.
-            if (ajaxState.sessionId) {
+                // Build form data for the Deepen request
+                var formData = new FormData();
+                formData.append('deepen', '1');
+                formData.append('depth_level', ajaxState.depthLevel + 1);
+                formData.append('original_question', ajaxState.originalQuestion);
+                formData.append('prev_answer', ajaxState.prevAnswer);
                 formData.append('session_id', ajaxState.sessionId);
-            }
 
-            // Reset depth state — a new Ask is not a deepen, even within the same thread
-            ajaxState.depthLevel = 0;
-            depthBadge.style.display = 'none';
+                // Pass the original question so it appears in the answer panel
+                sendAjax(formData, 'Deepening: ' + ajaxState.originalQuestion);
+            });
 
-            // Pass the question text so sendAjax can render it in the answer panel
-            sendAjax(formData, query);
-        });
+            // ===========================================
+            // CLEAR button — resets the UI to fresh state
+            // ===========================================
+            clearBtn.addEventListener('click', function () {
+                queryInput.value = '';
+                // Reset textarea height back to default after clearing
+                autoResizeTextarea();
+                resultsRow.innerHTML = '';
+                deepenBtn.style.display = 'none';
+                depthBadge.style.display = 'none';
+                errorMsg.style.display = 'none';
+                loadingSpinner.style.display = 'none';
+                // Reset AJAX state
+                ajaxState = { sessionId: '', originalQuestion: '', prevAnswer: '', depthLevel: 0 };
+            });
 
-        // ===========================================
-        // DEEPEN button — deepens the current answer by one level via AJAX
-        // ===========================================
-        deepenBtn.addEventListener('click', function () {
-            // Safety: can't deepen without a prior conversation
-            if (!ajaxState.originalQuestion) {
-                errorMsg.textContent = 'Ask a question first before deepening.';
-                errorMsg.style.display = 'block';
-                return;
-            }
-
-            // Build form data for the Deepen request
-            var formData = new FormData();
-            formData.append('deepen', '1');
-            formData.append('depth_level', ajaxState.depthLevel + 1);
-            formData.append('original_question', ajaxState.originalQuestion);
-            formData.append('prev_answer', ajaxState.prevAnswer);
-            formData.append('session_id', ajaxState.sessionId);
-
-            // Pass the original question so it appears in the answer panel
-            sendAjax(formData, 'Deepening: ' + ajaxState.originalQuestion);
-        });
-
-        // ===========================================
-        // CLEAR button — resets the UI to fresh state
-        // ===========================================
-        clearBtn.addEventListener('click', function () {
-            queryInput.value = '';
-            // Reset textarea height back to default after clearing
-            autoResizeTextarea();
-            resultsRow.innerHTML = '';
-            deepenBtn.style.display = 'none';
-            depthBadge.style.display = 'none';
-            errorMsg.style.display = 'none';
-            loadingSpinner.style.display = 'none';
-            // Reset AJAX state
-            ajaxState = { sessionId: '', originalQuestion: '', prevAnswer: '', depthLevel: 0 };
-        });
-
-        // ===========================================
-        // Allow Enter key to submit the Ask (Shift+Enter for newline)
-        // ===========================================
-        queryInput.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                askBtn.click();
-            }
-        });
+            // ===========================================
+            // Allow Enter key to submit the Ask (Shift+Enter for newline)
+            // ===========================================
+            queryInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    askBtn.click();
+                }
+            });
+        } else {
+            console.info('Lesson view: demo question controls not present; toolbar icons remain active.');
+        }
 
         // ===========================================
         // ARCHIVE / DELETE — sidebar action icons
@@ -1646,7 +1760,7 @@ if (empty($_SESSION['csrf_token'])) {
                 return;
             }
 
-            // Build the AJAX request — reuses the same /center/ajax endpoint
+            // Build the AJAX request — reuses the same /demo/ajax endpoint
             var formData = new FormData();
             formData.append(isArchive ? 'archive' : 'delete', '1');
             formData.append('session_id', sessionId);
@@ -1655,7 +1769,7 @@ if (empty($_SESSION['csrf_token'])) {
             // Attach access key so backend can re-validate even if session expired
             if (accessKey) formData.append('access_key', accessKey);
 
-            fetch('<?php echo $centerAjaxEndpoint; ?>', {
+            fetch('<?php echo url("/demo/ajax"); ?>', {
                 method: 'POST',
                 body: formData
             })
@@ -1691,7 +1805,7 @@ if (empty($_SESSION['csrf_token'])) {
                 // If the user was viewing this conversation, redirect to fresh state
                 // so the main area doesn't show stale data for a now-archived thread
                 if (ajaxState.sessionId === sessionId) {
-                    window.location.href = '<?php echo $centerBaseUrl; ?>';
+                    window.location.href = '<?php echo url("/demo"); ?>';
                 }
             })
             .catch(function (err) {
@@ -1705,65 +1819,54 @@ if (empty($_SESSION['csrf_token'])) {
 
         // --- Share Button ---
         document.getElementById('shareButton').addEventListener('click', function () {
+            var ctx = guardLesson('Share');
+            if (!ctx) return;
+            var title = getLessonTitle();
+            var url = window.location.href;
             if (navigator.share) {
-                navigator.share({ title: 'Check out this link', url: window.location.href })
-                    .then(function () { console.log('URL shared'); })
+                navigator.share({ title: title, text: title, url: url })
                     .catch(function (error) { console.error('Error sharing URL', error); });
             } else {
-                // Fallback for browsers that don't support Web Share API
-                prompt('Copy this URL and share it manually', window.location.href);
+                writeTextToClipboard(title + '\n' + url)
+                    .then(function () { alert('Lesson link copied to clipboard.'); })
+                    .catch(function () { prompt('Copy this URL manually', url); });
             }
         });
 
         // --- Dark Mode / Light Mode ---
         document.getElementById('darkMode').addEventListener('click', function () {
-            document.body.classList.add('dark-mode');
+            applyTheme('dark');
         });
         document.getElementById('lightMode').addEventListener('click', function () {
-            document.body.classList.remove('dark-mode');
+            applyTheme('light');
         });
 
         // --- Font Size (increase / decrease on the text panel) ---
         document.getElementById('increaseFontSize').addEventListener('click', function () {
-            var contentDiv = document.querySelector('.content');
-            if (!contentDiv) return; // No answer panel yet
-            var currentSize = window.getComputedStyle(contentDiv).fontSize;
-            contentDiv.style.fontSize = (parseFloat(currentSize) * 1.2) + 'px';
+            adjustFontSize(1.15);
         });
         document.getElementById('decreaseFontSize').addEventListener('click', function () {
-            var contentDiv = document.querySelector('.content');
-            if (!contentDiv) return;
-            var currentSize = window.getComputedStyle(contentDiv).fontSize;
-            contentDiv.style.fontSize = (parseFloat(currentSize) / 1.2) + 'px';
+            adjustFontSize(1 / 1.15);
         });
 
         // --- Print Content ---
         document.getElementById('printContent').addEventListener('click', function () {
-            var contentDiv = document.querySelector('.content');
-            if (!contentDiv) { alert('No content to print yet.'); return; }
+            if (!guardLesson('Print')) return;
             window.print();
         });
 
         // --- Copy to Clipboard ---
         document.getElementById('copyToClipboard').addEventListener('click', function () {
-            var contentDiv = document.querySelector('.content');
-            if (!contentDiv) { alert('No content to copy yet.'); return; }
-            var textToCopy = contentDiv.innerText;
-            var textarea = document.createElement('textarea');
-            textarea.value = textToCopy;
-            textarea.setAttribute('readonly', '');
-            textarea.style.position = 'absolute';
-            textarea.style.left = '-9999px';
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-            alert('Content copied to clipboard!');
+            var textToCopy = getLessonText();
+            if (!textToCopy) { alert('No content to copy yet.'); return; }
+            writeTextToClipboard(textToCopy)
+                .then(function () { alert('Lesson copied to clipboard.'); })
+                .catch(function () { alert('Copy failed. Your browser blocked clipboard access.'); });
         });
 
         // ===========================================
         // Text-to-Speech — Edge TTS (natural neural voice)
-        // Uses a server-side PHP proxy (/center/tts) that calls
+        // Uses a server-side PHP proxy (/demo/tts) that calls
         // Microsoft Edge's free neural TTS service. Voice: en-US-GuyNeural.
         // No API key required. Returns MP3 audio + word boundary timestamps.
         // ===========================================
@@ -1775,13 +1878,18 @@ if (empty($_SESSION['csrf_token'])) {
         var ttsIsLoading = false;
 
         function ttsWrapWords() {
-            var cd = document.querySelector('.content');
-            if (!cd) return;
+            var ctx = guardLesson('Read aloud');
+            if (!ctx) return null;
+            var cd = ctx.panel;
+            if (cd.dataset.ttsWrapped === '1') {
+                return cd;
+            }
             ttsPlainText = cd.innerText;
             var wi = 0;
             var wk = document.createTreeWalker(cd, NodeFilter.SHOW_TEXT, null, false);
             var nodes = [];
             while (wk.nextNode()) nodes.push(wk.currentNode);
+
             nodes.forEach(function (nd) {
                 var parts = nd.textContent.split(/(\s+)/);
                 if (parts.length <= 1 && !nd.textContent.trim()) return;
@@ -1798,13 +1906,18 @@ if (empty($_SESSION['csrf_token'])) {
                         wi++;
                     }
                 });
-                nd.parentNode.replaceChild(fr, nd);
+                if (nd.parentNode) {
+                    nd.parentNode.replaceChild(fr, nd);
+                }
             });
+            cd.dataset.ttsWrapped = '1';
+            return cd;
         }
 
         function ttsUnwrapWords() {
-            var cd = document.querySelector('.content');
-            if (!cd) return;
+            var ctx = getLessonElements();
+            var cd = ctx ? ctx.panel : null;
+            if (!cd || cd.dataset.ttsWrapped !== '1') return;
             cd.querySelectorAll('.tts-word-highlight').forEach(function (el) {
                 el.classList.remove('tts-word-highlight');
             });
@@ -1812,14 +1925,17 @@ if (empty($_SESSION['csrf_token'])) {
                 sp.parentNode.replaceChild(document.createTextNode(sp.textContent), sp);
             });
             cd.normalize();
+            delete cd.dataset.ttsWrapped;
         }
 
         function ttsHighlightLoop() {
             if (!ttsAudio || ttsAudio.paused || !ttsBoundaries.length) return;
-            var cd = document.querySelector('.content');
+            var ctx = getLessonElements();
+            var cd = ctx ? ctx.panel : null;
             if (!cd) return;
             var ms = ttsAudio.currentTime * 1000;
             var idx = -1;
+
             for (var i = 0; i < ttsBoundaries.length; i++) {
                 if (ttsBoundaries[i].offset <= ms) idx = i; else break;
             }
@@ -1838,19 +1954,22 @@ if (empty($_SESSION['csrf_token'])) {
         }
 
         function ttsStart() {
-            var cd = document.querySelector('.content');
-            if (!cd || !cd.innerText.trim()) { alert('No content to read yet.'); return; }
+            var lessonText = getLessonText();
+            if (!lessonText) { alert('No content to read yet.'); return; }
             if (ttsIsLoading) return;
             ttsStop();
-            ttsWrapWords();
+            if (!ttsWrapWords()) return;
             ttsIsLoading = true;
             var fd = new FormData();
-            fd.append('text', ttsPlainText);
-            fd.append('csrf_token', csrfToken);
-            fetch('<?php echo $centerTtsEndpoint; ?>', { method: 'POST', body: fd })
+            fd.append('text', lessonText);
+            if (csrfToken) {
+                fd.append('csrf_token', csrfToken);
+            }
+            fetch(ttsEndpoint, { method: 'POST', body: fd })
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 ttsIsLoading = false;
+
                 if (data.error) {
                     console.error('TTS error: ' + data.error);
                     alert('Text-to-speech failed: ' + data.error);

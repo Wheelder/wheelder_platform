@@ -1,9 +1,11 @@
 <?php
 //session_start();
-$path = $_SERVER['DOCUMENT_ROOT'];
-require_once $path . '/wheelder/apps/edu/models/database.php';
+// Use __DIR__ relative paths so this file works when included from any context
+// (e.g. cms2/ajax.php, lessons/app.php, blogs/app.php, etc.)
+require_once __DIR__ . '/../models/database.php';
 // Include top.php for centralized url() helper that detects project base path
-require_once $path . '/wheelder/top.php';
+// __DIR__ = apps/edu/controllers, go up 3 levels to reach wheelder root
+require_once __DIR__ . '/../../../top.php';
 
 class Controller extends Database
 {

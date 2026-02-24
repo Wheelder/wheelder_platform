@@ -588,6 +588,22 @@ class AppController extends Controller
     }
 
     /**
+     * Persist an Ask/Deepen response so the sidebar loads instantly after refresh.
+     * WHY: production was missing this function, so ajax_handler.php died at line 232.
+     */
+    function storeConversation($sessionId, $question, $answer, $image, $depthLevel = 0)
+    {
+        if (empty($sessionId)) {
+            throw new InvalidArgumentException('session_id is required for storeConversation.');
+        }
+
+        try {
+            $db = new PDO('sqlite:' . $this->getDatabasePath());
+            $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $db->exec('PRAGMA busy_timeout = 5000');
+            $db->exec('PRAGMA journal_mode = WAL');
+
+            // Ensure table + index exist so first-run deploys don't fail to insert
             $db->exec("CREATE TABLE IF NOT EXISTS conversations (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 session_id TEXT NOT NULL,
@@ -597,16 +613,42 @@ class AppController extends Controller
                 depth_level INTEGER DEFAULT 0,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP
             )");
-
-            // Index on session_id for fast sidebar lookups
             $db->exec("CREATE INDEX IF NOT EXISTS idx_conv_session ON conversations(session_id)");
 
-            // Use prepared statement to prevent SQL injection
-            $stmt = $db->prepare("INSERT INTO conversations (session_id, question, answer, image, depth_level) VALUES (?, ?, ?, ?, ?)");
-            $stmt->execute([$sessionId, $question, $answer, $image, $depthLevel]);
+            $stmt = $db->prepare("INSERT INTO conversations (session_id, question, answer, image, depth_level)
+                                  VALUES (?, ?, ?, ?, ?)");
+            if (!$stmt->execute([$sessionId, $question, $answer, $image, $depthLevel])) {
+                throw new RuntimeException('Failed to insert conversation row.');
+            }
+        } catch (Exception $e) {
+            // Log full error for diagnosis but bubble a clean exception to the caller
+            error_log('storeConversation failed: ' . $e->getMessage());
+            throw $e;
+        }
+    }
 
-        } catch (PDOException $e) {
-            error_log("storeConversation failed: " . $e->getMessage());
+    /**
+     * Persist a regenerated image for an existing conversation row so reloads are not blank.
+     */
+    function updateConversationImage($rowId, $imageUrl)
+    {
+        if (empty($rowId) || empty($imageUrl)) {
+            throw new InvalidArgumentException('Conversation row id and image URL are required.');
+        }
+
+        try {
+            $db = new PDO('sqlite:' . $this->getDatabasePath());
+            $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $db->exec('PRAGMA busy_timeout = 5000');
+            $db->exec('PRAGMA journal_mode = WAL');
+
+            $stmt = $db->prepare('UPDATE conversations SET image = ? WHERE id = ?');
+            if (!$stmt->execute([$imageUrl, $rowId])) {
+                throw new RuntimeException('Failed to update conversation image.');
+            }
+        } catch (Exception $e) {
+            error_log('updateConversationImage failed: ' . $e->getMessage());
+            throw $e;
         }
     }
 

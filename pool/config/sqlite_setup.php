@@ -218,6 +218,46 @@ class SQLiteMigration
         ");
     }
 
+    public function lessons_table()
+    {
+        // Separate table for tech lessons so blog data is never mixed with lesson data
+        $this->createIfNotExists('lessons', "
+            CREATE TABLE lessons (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                category TEXT,
+                content TEXT,
+                image_url TEXT,
+                code_block TEXT,
+                status TEXT DEFAULT 'draft',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        ");
+    }
+
+    public function lessons_migrate_columns()
+    {
+        // ALTER TABLE is used (not DROP/CREATE) to preserve existing lesson rows
+        // when adding new columns to an already-created lessons table
+        $db = $this->connectDb();
+        // status column: 'draft' (AI-generated, unpublished) | 'published' | 'archived'
+        $cols = ['image_url TEXT', 'code_block TEXT', "status TEXT DEFAULT 'draft'"];
+        foreach ($cols as $col) {
+            $name = explode(' ', $col)[0];
+            // Check if column already exists before attempting to add it
+            $check = $db->query("PRAGMA table_info(lessons)");
+            $exists = false;
+            if ($check) {
+                while ($row = $check->fetch_assoc()) {
+                    if ($row['name'] === $name) { $exists = true; break; }
+                }
+            }
+            if (!$exists) {
+                $db->query("ALTER TABLE lessons ADD COLUMN $col");
+            }
+        }
+    }
+
     public function website_traffic_table()
     {
         $this->dropAndCreate('website_traffic', "
@@ -262,6 +302,25 @@ class SQLiteMigration
         ");
     }
 
+    public function magic_links_table()
+    {
+        // Magic links for passwordless authentication — replaces password-based login
+        $this->createIfNotExists('magic_links', "
+            CREATE TABLE magic_links (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                email TEXT NOT NULL,
+                token TEXT NOT NULL UNIQUE,
+                expires_at TEXT NOT NULL,
+                used INTEGER DEFAULT 0,
+                used_at TEXT,
+                ip_address TEXT,
+                user_agent TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        ");
+    }
+
     public function runAll()
     {
         echo "<h3>SQLite Migration — Creating Tables</h3>";
@@ -276,9 +335,12 @@ class SQLiteMigration
         $this->notes_data_table();
         $this->suggested_notes_table();
         $this->blogs_table();
+        $this->lessons_table();
+        $this->lessons_migrate_columns();
         $this->website_traffic_table();
         $this->files_table();
         $this->profiles_table();
+        $this->magic_links_table();
 
         echo "<hr>";
         echo "<p><strong>Migration complete.</strong></p>";

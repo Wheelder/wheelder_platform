@@ -344,6 +344,11 @@ $router->route('/lesson/cms', function() {
     require 'apps/edu/ui/views/lessons/cms/list.php';
 });
 
+
+$router->route('/edu', function() {
+    require 'apps/edu/ui/views/lessons/app_new.php';
+});
+
 $router->route('/lesson/cms/create', function() {
     require 'apps/edu/ui/views/lessons/cms/create.php';
 });

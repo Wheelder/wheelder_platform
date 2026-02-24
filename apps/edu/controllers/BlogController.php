@@ -1,6 +1,6 @@
 <?php
-$path = $_SERVER['DOCUMENT_ROOT'];
-require_once $path . '/wheelder/apps/edu/controllers/Controller.php';
+// Use __DIR__ relative path so this file works when included from any context
+require_once __DIR__ . '/Controller.php';
 
 class BlogController extends Controller
 {

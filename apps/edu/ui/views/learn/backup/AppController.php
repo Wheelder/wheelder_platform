@@ -1,6 +1,10 @@
 <?php
-// Use __DIR__ for reliable paths regardless of DOCUMENT_ROOT (works on XAMPP and production)
-require_once __DIR__ . '/../../../../../../pool/libs/controllers/Controller.php';
+// Only load Controller.php if it hasn't been declared yet — prevents fatal
+// "class Controller already declared" when cms2/ajax.php loads LessonController
+// (which includes apps/edu/controllers/Controller.php) before this file.
+if (!class_exists('Controller')) {
+    require_once __DIR__ . '/../../../../../../pool/libs/controllers/Controller.php';
+}
 
 // Load API keys from a separate config file so secrets stay out of version control.
 // config.local.php returns an associative array with GROQ_API_KEY, GROQ_API_ENDPOINT, GROQ_MODEL.
@@ -173,8 +177,18 @@ class AppController extends Controller
 
         // --- Step 4: Generate an image via Pollinations AI ---
         // Pollinations generates a custom image from the prompt — no API key needed.
-        // Falls back to a text placeholder if the URL can't be built.
         $imageUrl = $this->generatePollinationsImage($imagePrompt);
+        
+        // --- Step 5: Fallback to Wikimedia Commons if Pollinations failed or returned empty ---
+        // Pollinations may fail silently or return a broken URL. Wikimedia is a reliable fallback.
+        if (empty($imageUrl) || strpos($imageUrl, 'placehold') !== false) {
+            $imageUrl = $this->searchWikimediaImage($imagePrompt);
+        }
+        
+        // --- Step 6: Final fallback to placeholder if all else fails ---
+        if (empty($imageUrl)) {
+            $imageUrl = "https://placehold.co/1024x630?text=" . urlencode(mb_substr($imagePrompt, 0, 50));
+        }
 
         return ['answer' => $answer, 'image' => $imageUrl];
     }
