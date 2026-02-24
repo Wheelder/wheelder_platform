@@ -17,13 +17,31 @@ require_once 'Router.php';
 
 $router = new Router(); // Now auto-detects base path
 
+// Shareable demo key that must always be present when the root URL is used
+$rootDemoKey = '20eae05c4f4e';
+
 //include_once 'top.php';
 
 // --- Define routes cleanly using inline functions ---
 
 
-$router->route('/', function() {
-    require 'apps/edu/ui/views/center/record.php';
+$router->route('/', function() use ($rootDemoKey) {
+    // WHY: root should behave like /demo?key=... but keep the cleaner /?key= URL.
+    $query = $_GET;
+
+    $keyMissing = empty($query['key']);
+    $keyMismatch = !$keyMissing && !hash_equals($rootDemoKey, $query['key']);
+
+    if ($keyMissing || $keyMismatch) {
+        // Preserve any other query params while forcing the required key.
+        $query['key'] = $rootDemoKey;
+        $redirectQs = http_build_query($query);
+        header('Location: /' . ($redirectQs ? ('?' . $redirectQs) : ''), true, 302);
+        exit;
+    }
+
+    // Serve the same experience as /demo internally so users never see /demo in the URL.
+    require 'apps/edu/ui/views/learn/backup/record.php';
 });
 
 // Optional: legacy landing page remains reachable for marketing screenshots
