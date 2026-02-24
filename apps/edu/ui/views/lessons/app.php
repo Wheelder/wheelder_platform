@@ -3,11 +3,22 @@
 $path = $_SERVER['DOCUMENT_ROOT'];
 $host = $_SERVER['HTTP_HOST'];
 
-if ($host === 'localhost') {
-    $dir = '/wheelder';
-    require_once $path . $dir . '/apps/edu/controllers/LessonController.php';
+if (isset($GLOBALS['lessonControllerPath']) && file_exists($GLOBALS['lessonControllerPath'])) {
+    // WHY: router resolved the correct controller path already; re-use to avoid docroot drift bugs.
+    require_once $GLOBALS['lessonControllerPath'];
 } else {
-    include $path . '/apps/edu/controllers/LessonController.php';
+    if ($host === 'localhost') {
+        $dir = '/wheelder';
+        require_once $path . $dir . '/apps/edu/controllers/LessonController.php';
+    } else {
+        if (!file_exists($path . '/apps/edu/controllers/LessonController.php')) {
+            error_log('Lesson legacy bootstrap missing controller under ' . $path . '/apps/edu/controllers/LessonController.php');
+            http_response_code(500);
+            echo 'Lesson controller missing. Please contact Wheelder support.';
+            exit;
+        }
+        include $path . '/apps/edu/controllers/LessonController.php';
+    }
 }
 
 $lesson = new LessonController();

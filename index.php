@@ -324,6 +324,9 @@ $router->route('/lesson', function() use ($lessonAppPath) {
         error_log('Lesson route fatal: unable to locate lesson view file at ' . $lessonAppPath);
         return;
     }
+    // When the legacy app.php boots it expects LessonController.php under DOCUMENT_ROOT.
+    // Make sure we drop a resolver var it can reuse instead of duplicating the logic there.
+    $GLOBALS['lessonControllerPath'] = __DIR__ . '/apps/edu/controllers/LessonController.php';
     require $lessonAppPath;
 });
 
