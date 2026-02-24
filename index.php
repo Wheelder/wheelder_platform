@@ -309,8 +309,22 @@ $router->route('/blog/cms-new/delete', function() {
 });
 // --- Lesson app routes (mirrors /blog structure) ---
 
-$router->route('/lesson', function() {
-    require 'apps/edu/ui/views/lessons/app_new.php';
+$lessonAppPath = 'apps/edu/ui/views/lessons/app_new.php';
+if (!file_exists($lessonAppPath)) {
+    // WHY: prod is still on legacy file layout; fall back quietly so /lesson stays up.
+    error_log('Lesson route fallback: missing ' . $lessonAppPath . ', using legacy app.php');
+    $lessonAppPath = 'apps/edu/ui/views/lessons/app.php';
+}
+
+$router->route('/lesson', function() use ($lessonAppPath) {
+    if (!file_exists($lessonAppPath)) {
+        // Explicit guard surfaces clearer 500 instead of PHP warning when both files absent.
+        http_response_code(500);
+        echo 'Lesson route bootstrap missing. Please contact Wheelder support.';
+        error_log('Lesson route fatal: unable to locate lesson view file at ' . $lessonAppPath);
+        return;
+    }
+    require $lessonAppPath;
 });
 
 $router->route('/lesson/cms', function() {
