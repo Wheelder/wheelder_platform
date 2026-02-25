@@ -8,6 +8,16 @@
 
 require_once __DIR__ . '/Controller.php';
 
+// WHY: Magic link emailing depends on SMTP/API credentials defined in .env.
+// Load env loader locally because other controllers may be invoked before Stripe trait bootstrap runs.
+$envLoaderPath = dirname(dirname(__DIR__)) . '/config/env_loader.php';
+if (file_exists($envLoaderPath)) {
+    require_once $envLoaderPath;
+} else {
+    // Explicit logging helps diagnose missing configuration early instead of silent getenv failures.
+    error_log('Magic link env loader missing at ' . $envLoaderPath . ' — email sending will fail until .env is loaded.');
+}
+
 class MagicLinkController extends Controller
 {
     private $tokenLength = 32;  // 256-bit token (hex-encoded)

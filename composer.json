@@ -1,5 +1,6 @@
 {
     "require": {
-        "afaya/edge-tts": "^1.7"
+        "afaya/edge-tts": "^1.7",
+        "phpmailer/phpmailer": "^7.0"
     }
 }

@@ -1,4 +1,14 @@
 <?php
+// WHY: Composer autoload is required so PHPMailer classes can be discovered anywhere in the app tree.
+$mailAutoload = dirname(__DIR__, 3) . '/vendor/autoload.php';
+if (file_exists($mailAutoload)) {
+    require_once $mailAutoload;
+} else {
+    error_log('Magic link mailer bootstrap missing vendor autoload — run composer install.');
+}
+
+use PHPMailer\PHPMailer\Exception as PHPMailerException;
+use PHPMailer\PHPMailer\PHPMailer;
 /**
  * Email Service Interfaces and Implementations
  * 
@@ -53,30 +63,40 @@ class SMTPEmailService implements IEmailService
     public function sendMagicLink($email, $magicLink, $expiryMinutes)
     {
         try {
-            // Use PHP's built-in mail() with proper headers as fallback
-            // For production, use PHPMailer: composer require phpmailer/phpmailer
-            
-            $subject = 'Your Wheelder Magic Link';
-            $message = $this->buildEmailHtml($magicLink, $expiryMinutes);
-            
-            $headers = "MIME-Version: 1.0\r\n";
-            $headers .= "Content-type: text/html; charset=UTF-8\r\n";
-            $headers .= "From: {$this->fromName} <{$this->fromEmail}>\r\n";
-            $headers .= "Reply-To: {$this->fromEmail}\r\n";
-            $headers .= "X-Mailer: Wheelder/1.0\r\n";
-
-            // Send email
-            $sent = mail($email, $subject, $message, $headers);
-
-            if ($sent) {
-                error_log("Magic link sent to $email via SMTP");
-                return true;
-            } else {
-                error_log("Failed to send magic link to $email via SMTP");
+            if (empty($this->username) || empty($this->password)) {
+                // WHY: Gmail (and most SMTP providers) reject unauthenticated relays — fail fast with a diagnosable log.
+                error_log('SMTP credentials missing; aborting magic link send.');
                 return false;
             }
+
+            $mailer = new PHPMailer(true);
+            $mailer->isSMTP();
+            $mailer->Host = $this->host;
+            $mailer->Port = (int) $this->port;
+            $mailer->SMTPAuth = true;
+            $mailer->Username = $this->username;
+            $mailer->Password = $this->password;
+            // WHY: Google SMTP on port 587 requires STARTTLS; allow env override to disable only if explicitly set.
+            $mailer->SMTPSecure = getenv('SMTP_SECURE') ?: PHPMailer::ENCRYPTION_STARTTLS;
+            $mailer->CharSet = 'UTF-8';
+
+            $mailer->setFrom($this->fromEmail, $this->fromName);
+            $mailer->addAddress($email);
+            $mailer->Subject = 'Your Wheelder Magic Link';
+            $mailer->isHTML(true);
+
+            $bodyHtml = $this->buildEmailHtml($magicLink, $expiryMinutes);
+            $mailer->Body = $bodyHtml;
+            $mailer->AltBody = strip_tags($bodyHtml);
+
+            $mailer->send();
+            error_log("Magic link sent to $email via authenticated SMTP");
+            return true;
+        } catch (PHPMailerException $e) {
+            error_log('PHPMailer exception while sending magic link: ' . $e->getMessage());
+            return false;
         } catch (Exception $e) {
-            error_log("SMTP error: " . $e->getMessage());
+            error_log('SMTP runtime error: ' . $e->getMessage());
             return false;
         }
     }
