@@ -1,10 +1,23 @@
 <?php
+// WHY: EmailService is loaded before MagicLinkController, so bootstrap .env first to access SMTP_* settings reliably.
+$envLoaderPath = dirname(__DIR__, 2) . '/config/env_loader.php';
+if (file_exists($envLoaderPath)) {
+    require_once $envLoaderPath;
+} else {
+    // Fail fast so deployers know env vars were never loaded — prevents silent empty credentials.
+    throw new RuntimeException('Env loader missing at ' . $envLoaderPath . '; cannot read SMTP credentials.');
+}
+
 // WHY: Composer autoload is required so PHPMailer classes can be discovered anywhere in the app tree.
 $mailAutoload = dirname(__DIR__, 3) . '/vendor/autoload.php';
 if (file_exists($mailAutoload)) {
     require_once $mailAutoload;
 } else {
-    error_log('Magic link mailer bootstrap missing vendor autoload — run composer install.');
+    throw new RuntimeException('Composer autoload missing at ' . $mailAutoload . ' — run composer install on this server.');
+}
+
+if (!class_exists('PHPMailer\\PHPMailer\\PHPMailer')) {
+    throw new RuntimeException('PHPMailer library not available — ensure composer install completed successfully.');
 }
 
 use PHPMailer\PHPMailer\Exception as PHPMailerException;

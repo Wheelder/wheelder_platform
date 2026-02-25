@@ -196,7 +196,8 @@ $router->route('/verification', function() {
 
 // --- Dashboard — generate shareable access links for the Learn app ---
 $router->route('/dashboard', function() {
-    require 'apps/edu/ui/views/learn/backup/dashboard.php';
+    // WHY: Dashboard should expose the latest CMS2 experience so admins reach lesson builder directly.
+    require 'apps/edu/ui/views/lessons/cms2/index.php';
 });
 
 // --- LAB and Blog sections ---
