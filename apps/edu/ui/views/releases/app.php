@@ -3,7 +3,10 @@
 // Users can view release notes, features, and innovations with rich media support
 // Similar to /center layout with sidebar for quick navigation and main panel for content
 
-session_start();
+// WHY: only start session if one isn't already active — the router may have started it
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 $path = $_SERVER['DOCUMENT_ROOT'];
 $host = $_SERVER['HTTP_HOST'];
