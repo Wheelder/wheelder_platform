@@ -92,6 +92,9 @@ class SMTPEmailService implements IEmailService
             // WHY: Google SMTP on port 587 requires STARTTLS; allow env override to disable only if explicitly set.
             $mailer->SMTPSecure = getenv('SMTP_SECURE') ?: PHPMailer::ENCRYPTION_STARTTLS;
             $mailer->CharSet = 'UTF-8';
+            // WHY: Default PHPMailer timeout is 300s — if the SMTP port is blocked the request hangs until the browser gives up,
+            // producing a misleading "Network error". A short timeout lets PHP return a proper JSON error instead.
+            $mailer->Timeout = 10;
 
             $mailer->setFrom($this->fromEmail, $this->fromName);
             $mailer->addAddress($email);
@@ -106,7 +109,11 @@ class SMTPEmailService implements IEmailService
             error_log("Magic link sent to $email via authenticated SMTP");
             return true;
         } catch (PHPMailerException $e) {
+            // WHY: Connection-timeout errors usually mean the hosting provider blocks outbound SMTP ports.
             error_log('PHPMailer exception while sending magic link: ' . $e->getMessage());
+            if (stripos($e->getMessage(), 'Could not connect') !== false) {
+                error_log('SMTP hint: outbound port ' . $this->port . ' may be blocked by the hosting provider.');
+            }
             return false;
         } catch (Exception $e) {
             error_log('SMTP runtime error: ' . $e->getMessage());
