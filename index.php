@@ -63,6 +63,16 @@ $router->route('/login', function() {
     require 'pool/auth/login.php';
 });
 
+// --- Secondary login with password (alternative to magic link) ---
+$router->route('/login2', function() {
+    require 'pool/auth/login2.php';
+});
+
+// --- Password reset page ---
+$router->route('/password-reset', function() {
+    require 'pool/auth/password_reset.php';
+});
+
 // --- Signup disabled: single-user system, accounts created by code only ---
 $router->route('/signup', function() {
     http_response_code(404);
@@ -102,17 +112,23 @@ $router->route('/log_api', function() {
     require 'pool/api/logsAPI.php';
 });
 
-// --- Password reset disabled: single-user system, no self-service password reset ---
-$router->route('/forgot_pass', function() {
-    http_response_code(404);
-    echo '<h1>404 Not Found</h1>';
-    exit;
+// --- Login2 API endpoint ---
+$router->route('/api/login2', function() {
+    require 'pool/auth/login2_handler.php';
 });
 
-$router->route('/reset_pass', function() {
-    http_response_code(404);
-    echo '<h1>404 Not Found</h1>';
-    exit;
+// --- Password reset API endpoints ---
+$router->route('/api/password-reset-request', function() {
+    require 'pool/auth/password_reset_request_handler.php';
+});
+
+$router->route('/api/password-reset', function() {
+    require 'pool/auth/password_reset_handler.php';
+});
+
+// --- Initialize login2 system (admin only) ---
+$router->route('/init-login2', function() {
+    require 'pool/auth/init_login2.php';
 });
 
 $router->route('/logout', function() {
