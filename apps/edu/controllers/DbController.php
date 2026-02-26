@@ -182,6 +182,91 @@ class Db extends Database
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'
         );
     }
+
+    // ---------------------------------------------------------------
+    //  PORTFOLIO TABLES
+    // ---------------------------------------------------------------
+
+    /**
+     * WHY: Stores editable content sections (hero, about, contact info, etc.).
+     * Each row is identified by a unique section_key so the front-end can
+     * fetch exactly the block it needs. sort_order controls display sequence.
+     */
+    public function portfolio_sections($table = "portfolio_sections")
+    {
+        $this->createTable(
+            $table,
+            '
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            section_key VARCHAR(100) UNIQUE NOT NULL,
+            title VARCHAR(255) NULL,
+            content TEXT NULL,
+            sort_order INT DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
+        );
+    }
+
+    /**
+     * WHY: Normalized skill list — each skill has a category (Languages,
+     * Frameworks, Cloud, AI) so the public view can group them visually.
+     */
+    public function portfolio_skills($table = "portfolio_skills")
+    {
+        $this->createTable(
+            $table,
+            '
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name VARCHAR(255) NOT NULL,
+            category VARCHAR(100) NULL,
+            sort_order INT DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
+        );
+    }
+
+    /**
+     * WHY: Each project row holds structured fields (problem, solution,
+     * result, technologies, links) so the public view renders rich cards.
+     * is_visible lets you draft projects before publishing.
+     */
+    public function portfolio_projects($table = "portfolio_projects")
+    {
+        $this->createTable(
+            $table,
+            '
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title VARCHAR(255) NOT NULL,
+            description TEXT NULL,
+            technologies TEXT NULL,
+            role_text TEXT NULL,
+            problem TEXT NULL,
+            solution TEXT NULL,
+            result_text TEXT NULL,
+            demo_url VARCHAR(500) NULL,
+            github_url VARCHAR(500) NULL,
+            image_url VARCHAR(500) NULL,
+            sort_order INT DEFAULT 0,
+            is_visible INT DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
+        );
+    }
+
+    /**
+     * WHY: Stores visitor contact form submissions so the site owner
+     * can review messages from potential recruiters or collaborators.
+     */
+    public function portfolio_contacts($table = "portfolio_contacts")
+    {
+        $this->createTable(
+            $table,
+            '
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            subject VARCHAR(255) NULL,
+            message TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
+        );
+    }
 }
 
 

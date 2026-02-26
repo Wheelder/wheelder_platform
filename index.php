@@ -408,6 +408,49 @@ $router->route('/teach_api', function() {
     require 'apps/edu/api/teachAPI.php';
 });
 
+// --- Portfolio — public developer portfolio page (no auth) ---
+$router->route('/portfolio', function() {
+    require 'apps/edu/ui/views/portfolio/app.php';
+});
+
+// --- Portfolio CMS — admin routes (auth required inside each view) ---
+$router->route('/portfolio/cms', function() {
+    require 'apps/edu/ui/views/portfolio/cms/index.php';
+});
+
+$router->route('/portfolio/cms/sections', function() {
+    require 'apps/edu/ui/views/portfolio/cms/sections.php';
+});
+
+$router->route('/portfolio/cms/sections/edit', function() {
+    require 'apps/edu/ui/views/portfolio/cms/sections_edit.php';
+});
+
+$router->route('/portfolio/cms/skills', function() {
+    require 'apps/edu/ui/views/portfolio/cms/skills.php';
+});
+
+$router->route('/portfolio/cms/projects', function() {
+    require 'apps/edu/ui/views/portfolio/cms/projects.php';
+});
+
+$router->route('/portfolio/cms/projects/create', function() {
+    require 'apps/edu/ui/views/portfolio/cms/projects_create.php';
+});
+
+$router->route('/portfolio/cms/projects/edit', function() {
+    require 'apps/edu/ui/views/portfolio/cms/projects_edit.php';
+});
+
+$router->route('/portfolio/cms/contacts', function() {
+    require 'apps/edu/ui/views/portfolio/cms/contacts.php';
+});
+
+// --- Portfolio API — handles all portfolio CMS form submissions ---
+$router->route('/portfolio_api', function() {
+    require 'apps/edu/api/portfolioAPI.php';
+});
+
 // --- Handle the current request ---
 $router->handleRequest($_SERVER['REQUEST_URI']);
 

@@ -8,7 +8,15 @@ class Router
     public function __construct($basePath = '')
     {
         if (empty($basePath)) {
-            $this->basePath = $this->detectBasePath();
+            // WHY: Check for explicit base path in environment first (for XAMPP DocumentRoot scenarios)
+            // If XAMPP DocumentRoot points to wheelder folder, we need to know the actual base path
+            $basePath = getenv('APP_BASE_PATH') ?: '';
+            
+            if (empty($basePath)) {
+                $this->basePath = $this->detectBasePath();
+            } else {
+                $this->basePath = rtrim($basePath, '/');
+            }
         } else {
             $this->basePath = rtrim($basePath, '/');
         }
@@ -19,8 +27,15 @@ class Router
         $scriptName = $_SERVER['SCRIPT_NAME']; // Example: /wheelder/index.php or /index.php
         $scriptDir = dirname($scriptName);     // Example: /wheelder or /
         
-        // If script is in root, return empty string
+        // WHY: If script is in root, check if we're in a subdirectory project
+        // This handles both localhost/wheelder/ and localhost/ (via DocumentRoot change)
         if ($scriptDir === '/' || $scriptDir === '\\') {
+            // Check if this is a named project by looking at the directory structure
+            // If we find a wheelder-specific marker file, assume we're in /wheelder
+            $projectMarker = __DIR__ . '/.wheelder_project';
+            if (file_exists($projectMarker)) {
+                return '/wheelder';
+            }
             return '';
         }
         

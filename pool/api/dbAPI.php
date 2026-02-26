@@ -17,6 +17,14 @@ if($_GET['key']=="createdb") {
 
 }
 
+// WHY: Separate key so portfolio tables can be created without touching existing data
+if($_GET['key']=="portfolio_setup") {
+    $db->portfolio_sections();
+    $db->portfolio_skills();
+    $db->portfolio_projects();
+    $db->portfolio_contacts();
+}
+
 
 
 ?>
