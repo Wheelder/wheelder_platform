@@ -29,6 +29,11 @@ try {
     
     // WHY: get all published releases ordered by newest first
     $releases = $releaseController->getAllReleases();
+    error_log('Releases app: Found ' . count($releases) . ' published releases');
+    
+    // WHY: also check all releases (including unpublished) for debugging
+    $allReleases = $releaseController->getAllReleasesForCMS();
+    error_log('Releases app: Found ' . count($allReleases) . ' total releases (including unpublished)');
     
     // WHY: determine which release to display (latest by default, or specific by ID)
     $displayRelease = null;
