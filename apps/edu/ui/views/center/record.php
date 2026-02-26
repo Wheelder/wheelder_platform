@@ -1160,6 +1160,13 @@ if (empty($_SESSION['csrf_token'])) {
                             </a>
                         </li>
 
+                        <!-- "Latest Features" link to releases page -->
+                        <li class="nav-item">
+                            <a href="/releases" class="nav-link">
+                                <i class="fas fa-rocket"></i> Latest Features
+                            </a>
+                        </li>
+
                         <?php
                         // Loop through all past conversations and display them as clickable nav items
                         foreach ($conversations as $conv):

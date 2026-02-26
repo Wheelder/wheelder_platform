@@ -1,6 +1,9 @@
 <?php
-// WHY: Releases page displays all published releases in a blog-like format
+// WHY: Releases home page displays all published releases with sidebar navigation
 // Users can view release notes, features, and innovations with rich media support
+// Similar to /center layout with sidebar for quick navigation and main panel for content
+
+session_start();
 
 $path = $_SERVER['DOCUMENT_ROOT'];
 $host = $_SERVER['HTTP_HOST'];
@@ -282,6 +285,9 @@ if (!empty($_GET['id'])) {
                 <i class="fas fa-rocket"></i> Wheelder Releases
             </a>
             <div class="d-flex gap-2">
+                <a href="/center" class="btn btn-sm btn-outline-light" title="Back to Ask to Learn">
+                    <i class="fas fa-arrow-left"></i> Back to Center
+                </a>
                 <?php if (!empty($_SESSION['user_id'])): ?>
                     <a href="/releases/cms" class="btn btn-sm btn-outline-light">
                         <i class="fas fa-edit"></i> Manage
