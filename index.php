@@ -28,10 +28,11 @@ $isLocalDev = in_array($_SERVER['HTTP_HOST'] ?? '', ['localhost', '127.0.0.1'], 
 
 
 $router->route('/', function() use ($rootDemoKey, $isLocalDev) {
-    // WHY: root should behave like /demo?key=... but keep the cleaner /?key= URL.
+    // WHY: root redirects to /center (the new prompt modal experience) with the demo key.
+    // This ensures all users see the latest enhanced UI with the spinning prompt modal.
     if ($isLocalDev) {
-        // Dev-mode toggle — skip the redirect entirely so localhost/wheelder/lesson stays reachable.
-        require 'apps/edu/ui/views/learn/backup/record.php';
+        // Dev-mode toggle — skip the redirect entirely so localhost/wheelder/center stays reachable.
+        require 'apps/edu/ui/views/center/record.php';
         return;
     }
 
@@ -44,12 +45,13 @@ $router->route('/', function() use ($rootDemoKey, $isLocalDev) {
         // Preserve any other query params while forcing the required key.
         $query['key'] = $rootDemoKey;
         $redirectQs = http_build_query($query);
-        header('Location: /' . ($redirectQs ? ('?' . $redirectQs) : ''), true, 302);
+        // WHY: redirect to /center instead of /demo so users see the new prompt modal experience.
+        header('Location: /center' . ($redirectQs ? ('?' . $redirectQs) : ''), true, 302);
         exit;
     }
 
-    // Serve the same experience as /demo internally so users never see /demo in the URL.
-    require 'apps/edu/ui/views/learn/backup/record.php';
+    // WHY: serve /center directly so the new prompt modal is available immediately.
+    require 'apps/edu/ui/views/center/record.php';
 });
 
 // Optional: legacy landing page remains reachable for marketing screenshots
