@@ -918,7 +918,8 @@ if (empty($_SESSION['csrf_token'])) {
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.55);
+            /* WHY: darker overlay grabs user attention and forces focus on the modal */
+            background: rgba(0,0,0,0.75);
             z-index: 1050;
             /* WHY: fade-in backdrop so the transition feels intentional, not jarring */
             opacity: 0;
@@ -1192,10 +1193,10 @@ if (empty($_SESSION['csrf_token'])) {
                 <!-- Page title — centered -->
                 <h2 class="text-center mb-4 pt-3">Ask to Learn</h2>
 
-                <!-- Compact prompt trigger — shifted left (col-md-7 + ms-md-2) so it's not dead-center.
-                     WHY: clicking or typing here opens the full prompt modal for focused writing. -->
-                <div class="row">
-                    <div class="col-md-7 ms-md-2">
+                <!-- Prompt trigger — centered on the page.
+                     WHY: clicking here opens the full prompt modal for focused writing. -->
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
                         <textarea class="form-control mb-3" id="queryInput" rows="2"
                             readonly
                             style="overflow-y:hidden; resize:none; min-height:60px; max-height:240px; cursor:pointer;"
@@ -1209,13 +1210,17 @@ if (empty($_SESSION['csrf_token'])) {
                     </div>
                 </div>
 
-                <!-- Buttons row: Ask | Deeper | Clear | Depth badge — aligned with the shifted prompt -->
-                <div class="row">
-                    <div class="col-md-7 ms-md-2">
+                <!-- Buttons row: Deepen + Depth badge only.
+                     WHY: Ask and Clear are removed from here because they live inside the prompt modal now.
+                     The hidden askBtn and clearBtn are kept in the DOM (display:none) so existing JS handlers still work. -->
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
                         <div class="d-flex gap-2 mb-3 flex-wrap">
-                            <button type="button" id="askBtn" class="btn btn-dark">Ask</button>
+                            <!-- WHY: hidden but still in DOM so modal Ask can trigger askBtn.click() -->
+                            <button type="button" id="askBtn" class="btn btn-dark" style="display:none;">Ask</button>
                             <button type="button" id="deepenBtn" class="btn btn-outline-dark" style="display:none;">Circular Search/Deep Research</button>
-                            <button type="button" id="clearBtn" class="btn btn-dark">Clear</button>
+                            <!-- WHY: hidden but still in DOM so modal Clear and page Clear logic still works -->
+                            <button type="button" id="clearBtn" class="btn btn-dark" style="display:none;">Clear</button>
                             <span id="depthBadge" class="badge bg-dark fs-6 ms-auto align-self-center" style="display:none;"></span>
                         </div>
                     </div>
@@ -1569,18 +1574,22 @@ if (empty($_SESSION['csrf_token'])) {
             queryInput.value = promptTextarea.value;
             autoResizeTextarea();
 
-            // Fade out backdrop
+            // WHY: fade out backdrop by removing .show (CSS transition handles opacity → 0)
             promptBackdrop.classList.remove('show');
 
             // WHY: spin-out animation plays before hiding the modal
             promptModal.classList.remove('spin-in');
             promptModal.classList.add('spin-out');
 
-            // WHY: hide elements after animations complete (matched to CSS durations)
+            // WHY: hide elements after animations complete (matched to CSS durations).
+            // Also reset inline styles to prevent stale display:block from keeping
+            // the backdrop visible if the timeout was somehow interrupted on a previous close.
             setTimeout(function () {
                 promptModal.classList.remove('spin-out');
-                promptModal.style.display = 'none';
-                promptBackdrop.style.display = 'none';
+                // WHY: removeAttribute clears any inline display left from openPromptModal,
+                // letting the CSS default (display:none) take effect cleanly
+                promptModal.removeAttribute('style');
+                promptBackdrop.removeAttribute('style');
                 document.body.style.overflow = '';
             }, 500);
         }
