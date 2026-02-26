@@ -318,6 +318,18 @@ $router->route('/blog/cms-new/view', function() {
 $router->route('/blog/cms-new/delete', function() {
     require 'apps/edu/ui/views/blogs/cms-new/delete.php';
 });
+
+// --- Releases / Changelog — dynamic system for features and innovations ---
+// WHY: /releases displays published releases with rich media (text, images, videos)
+// Similar to blog but focused on release notes and feature announcements
+$router->route('/releases', function() {
+    require 'apps/edu/ui/views/releases/app.php';
+});
+
+// WHY: /releases/cms allows authenticated admins to manage releases
+$router->route('/releases/cms', function() {
+    require 'apps/edu/ui/views/releases/cms.php';
+});
 // --- Lesson app routes (mirrors /blog structure) ---
 
 $router->route('/lesson/cms', function() {
