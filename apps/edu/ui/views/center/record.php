@@ -907,6 +907,191 @@ if (empty($_SESSION['csrf_token'])) {
 
         /* --- Large screens (desktops, 992px+) — defaults apply --- */
 
+        /* =========================================================
+           Prompt Modal — full-screen overlay with spinning open animation
+           WHY: Forces the user to pay ultimate attention to writing their prompt
+           by expanding into a large, focused writing area.
+           ========================================================= */
+
+        /* Backdrop — semi-transparent dark overlay behind the modal */
+        #promptModalBackdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            z-index: 1050;
+            /* WHY: fade-in backdrop so the transition feels intentional, not jarring */
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        #promptModalBackdrop.show {
+            opacity: 1;
+        }
+
+        /* Modal container — centered, responsive width */
+        #promptModal {
+            display: none;
+            position: fixed;
+            z-index: 1060;
+            /* WHY: center vertically and horizontally regardless of viewport size */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(0deg) scale(0);
+            /* WHY: mobile-first — nearly full width on small screens, capped on desktop */
+            width: 92vw;
+            max-width: 720px;
+            max-height: 90vh;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+            padding: 24px;
+            overflow-y: auto;
+            /* WHY: will-change hints the GPU to prepare for the transform animation */
+            will-change: transform, opacity;
+        }
+
+        /* WHY: spin-in keyframes — the modal rotates 720° (two full spins) while
+           scaling from 0 to 1, creating a fun "circulating" entrance effect */
+        @keyframes promptSpinIn {
+            0%   { transform: translate(-50%, -50%) rotate(0deg)   scale(0);   opacity: 0; }
+            60%  { transform: translate(-50%, -50%) rotate(540deg) scale(1.05); opacity: 1; }
+            80%  { transform: translate(-50%, -50%) rotate(700deg) scale(0.97); opacity: 1; }
+            100% { transform: translate(-50%, -50%) rotate(720deg) scale(1);    opacity: 1; }
+        }
+
+        /* WHY: spin-out keyframes — reverse animation so the close feels symmetrical */
+        @keyframes promptSpinOut {
+            0%   { transform: translate(-50%, -50%) rotate(0deg)   scale(1);  opacity: 1; }
+            100% { transform: translate(-50%, -50%) rotate(-360deg) scale(0); opacity: 0; }
+        }
+
+        #promptModal.spin-in {
+            display: block;
+            animation: promptSpinIn 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        #promptModal.spin-out {
+            display: block;
+            animation: promptSpinOut 0.45s ease-in forwards;
+        }
+
+        /* Modal header */
+        #promptModal .prompt-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        #promptModal .prompt-modal-header h4 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        /* WHY: close button uses a clean × character — no icon library dependency */
+        #promptModalClose {
+            background: none;
+            border: none;
+            font-size: 1.6rem;
+            cursor: pointer;
+            color: #333;
+            line-height: 1;
+            padding: 4px 8px;
+        }
+        #promptModalClose:hover {
+            color: #000;
+        }
+
+        /* WHY: large textarea inside modal gives the user room to think and write */
+        #promptModalTextarea {
+            width: 100%;
+            min-height: 220px;
+            max-height: 55vh;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 14px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        #promptModalTextarea:focus {
+            border-color: #333;
+            box-shadow: 0 0 0 3px rgba(0,0,0,0.08);
+        }
+
+        /* Modal footer — action buttons */
+        #promptModal .prompt-modal-footer {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+        #promptModal .prompt-modal-footer .btn {
+            min-height: 44px;
+            font-size: 15px;
+        }
+
+        /* Character counter — subtle, right-aligned below the textarea */
+        #promptCharCount {
+            text-align: right;
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        /* WHY: dark mode support — match the existing dark mode toggle in the app */
+        .dark-mode #promptModal {
+            background: #1e1e1e;
+            color: #e0e0e0;
+        }
+        .dark-mode #promptModalTextarea {
+            background: #2a2a2a;
+            color: #e0e0e0;
+            border-color: #555;
+        }
+        .dark-mode #promptModalTextarea:focus {
+            border-color: #aaa;
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.08);
+        }
+        .dark-mode #promptModalClose {
+            color: #ccc;
+        }
+        .dark-mode #promptModalClose:hover {
+            color: #fff;
+        }
+
+        /* WHY: reduce animation duration on mobile to feel snappier on slower GPUs */
+        @media (max-width: 767.98px) {
+            #promptModal {
+                width: 96vw;
+                padding: 16px;
+                border-radius: 12px;
+            }
+            #promptModal.spin-in {
+                animation-duration: 0.6s;
+            }
+            #promptModalTextarea {
+                min-height: 180px;
+                font-size: 15px;
+            }
+            #promptModal .prompt-modal-header h4 {
+                font-size: 1.1rem;
+            }
+        }
+
+        /* WHY: respect user preference for reduced motion (accessibility) */
+        @media (prefers-reduced-motion: reduce) {
+            #promptModal.spin-in {
+                animation: none;
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+            #promptModal.spin-out {
+                animation: none;
+                display: none;
+            }
+        }
+
     </style>
 
 </head>
@@ -1007,11 +1192,13 @@ if (empty($_SESSION['csrf_token'])) {
                 <!-- Page title — centered -->
                 <h2 class="text-center mb-4 pt-3">Ask to Learn</h2>
 
-                <!-- Big textarea at top center — AJAX reads the value directly, no <form> needed -->
-                <div class="row justify-content-center">
-                    <div class="col-md-8">
+                <!-- Compact prompt trigger — shifted left (col-md-7 + ms-md-2) so it's not dead-center.
+                     WHY: clicking or typing here opens the full prompt modal for focused writing. -->
+                <div class="row">
+                    <div class="col-md-7 ms-md-2">
                         <textarea class="form-control mb-3" id="queryInput" rows="2"
-                            style="overflow-y:hidden; resize:none; min-height:60px; max-height:240px;"
+                            readonly
+                            style="overflow-y:hidden; resize:none; min-height:60px; max-height:240px; cursor:pointer;"
                             placeholder="Type your question here..."><?php
                             // Pre-fill from viewed conversation so the user sees what was asked
                             if (!empty($viewConversation)) {
@@ -1022,9 +1209,9 @@ if (empty($_SESSION['csrf_token'])) {
                     </div>
                 </div>
 
-                <!-- Buttons row: Ask | Deeper | Clear | Depth badge -->
-                <div class="row justify-content-center">
-                    <div class="col-md-8">
+                <!-- Buttons row: Ask | Deeper | Clear | Depth badge — aligned with the shifted prompt -->
+                <div class="row">
+                    <div class="col-md-7 ms-md-2">
                         <div class="d-flex gap-2 mb-3 flex-wrap">
                             <button type="button" id="askBtn" class="btn btn-dark">Ask</button>
                             <button type="button" id="deepenBtn" class="btn btn-outline-dark" style="display:none;">Circular Search/Deep Research</button>
@@ -1098,6 +1285,32 @@ if (empty($_SESSION['csrf_token'])) {
     <div class="text-overlay" id="textOverlay">
         <button class="text-overlay-close" title="Close" onclick="closeTextOverlay()">&times;</button>
         <div class="text-overlay-content" id="textOverlayContent"></div>
+    </div>
+
+    <!-- Prompt Modal — spins open when user clicks the prompt trigger.
+         WHY: large focused writing area forces the user to craft thoughtful prompts.
+         spellcheck + lang="en" enable browser-native spell/grammar checking.
+    -->
+    <div id="promptModalBackdrop"></div>
+    <div id="promptModal" role="dialog" aria-labelledby="promptModalTitle" aria-modal="true">
+        <div class="prompt-modal-header">
+            <h4 id="promptModalTitle">Write Your Prompt</h4>
+            <button type="button" id="promptModalClose" aria-label="Close">&times;</button>
+        </div>
+        <!-- WHY: spellcheck + lang enable browser-native spell and grammar checking -->
+        <textarea id="promptModalTextarea"
+            spellcheck="true"
+            lang="en"
+            autocomplete="off"
+            autocorrect="on"
+            placeholder="Take your time... write a clear, detailed prompt to get the best answer."
+        ></textarea>
+        <div id="promptCharCount">0 characters</div>
+        <div class="prompt-modal-footer">
+            <button type="button" id="promptModalAskBtn" class="btn btn-dark">Ask</button>
+            <button type="button" id="promptModalClearBtn" class="btn btn-outline-secondary">Clear</button>
+            <button type="button" id="promptModalCancelBtn" class="btn btn-outline-dark">Cancel</button>
+        </div>
     </div>
 
     <!-- Bottom spacing so content doesn't crowd the page end -->
@@ -1303,6 +1516,147 @@ if (empty($_SESSION['csrf_token'])) {
         queryInput.addEventListener('input', autoResizeTextarea);
         // Run once on load in case the textarea is pre-filled (viewing past conversation)
         autoResizeTextarea();
+
+        // ===========================================
+        // Prompt Modal — spinning overlay for focused prompt writing
+        // WHY: forces user to pay attention to crafting a quality prompt
+        // ===========================================
+        var promptBackdrop  = document.getElementById('promptModalBackdrop');
+        var promptModal     = document.getElementById('promptModal');
+        var promptTextarea  = document.getElementById('promptModalTextarea');
+        var promptCharCount = document.getElementById('promptCharCount');
+        var promptCloseBtn  = document.getElementById('promptModalClose');
+        var promptAskBtn    = document.getElementById('promptModalAskBtn');
+        var promptClearBtn  = document.getElementById('promptModalClearBtn');
+        var promptCancelBtn = document.getElementById('promptModalCancelBtn');
+
+        // WHY: track whether modal is open to prevent double-open and stale state
+        var _promptModalOpen = false;
+
+        function openPromptModal() {
+            if (_promptModalOpen) return;
+            _promptModalOpen = true;
+
+            // WHY: sync current queryInput value into the modal textarea so prior text carries over
+            promptTextarea.value = queryInput.value;
+            updatePromptCharCount();
+
+            // Show backdrop with fade-in, then trigger the spin-in animation
+            promptBackdrop.style.display = 'block';
+            // WHY: rAF ensures display:block paints before adding the class triggers the CSS transition
+            requestAnimationFrame(function () {
+                promptBackdrop.classList.add('show');
+            });
+
+            // Remove any leftover spin-out class, then add spin-in
+            promptModal.classList.remove('spin-out');
+            promptModal.classList.add('spin-in');
+
+            // WHY: lock body scroll so the page doesn't move behind the modal
+            document.body.style.overflow = 'hidden';
+
+            // WHY: focus the textarea after animation finishes so the cursor is ready
+            setTimeout(function () {
+                promptTextarea.focus();
+            }, 850);
+        }
+
+        function closePromptModal() {
+            if (!_promptModalOpen) return;
+            _promptModalOpen = false;
+
+            // WHY: sync modal text back to the hidden queryInput so the Ask flow still works
+            queryInput.value = promptTextarea.value;
+            autoResizeTextarea();
+
+            // Fade out backdrop
+            promptBackdrop.classList.remove('show');
+
+            // WHY: spin-out animation plays before hiding the modal
+            promptModal.classList.remove('spin-in');
+            promptModal.classList.add('spin-out');
+
+            // WHY: hide elements after animations complete (matched to CSS durations)
+            setTimeout(function () {
+                promptModal.classList.remove('spin-out');
+                promptModal.style.display = 'none';
+                promptBackdrop.style.display = 'none';
+                document.body.style.overflow = '';
+            }, 500);
+        }
+
+        function updatePromptCharCount() {
+            var len = promptTextarea.value.length;
+            promptCharCount.textContent = len + ' character' + (len !== 1 ? 's' : '');
+        }
+
+        // WHY: clicking the readonly trigger textarea opens the modal instead of typing inline
+        queryInput.addEventListener('click', openPromptModal);
+        queryInput.addEventListener('focus', function () {
+            // WHY: keyboard-tab focus also opens the modal for accessibility
+            openPromptModal();
+            // WHY: blur immediately so the cursor doesn't flash in the readonly field
+            queryInput.blur();
+        });
+
+        // WHY: the Ask button on the page also opens the modal if the queryInput is empty,
+        // so the user is guided to the focused writing experience
+        askBtn.addEventListener('click', function (e) {
+            if (!queryInput.value.trim() && !_promptModalOpen) {
+                e.stopImmediatePropagation();
+                openPromptModal();
+            }
+        }, true);
+
+        // Modal close triggers
+        promptCloseBtn.addEventListener('click', closePromptModal);
+        promptCancelBtn.addEventListener('click', closePromptModal);
+        promptBackdrop.addEventListener('click', closePromptModal);
+
+        // WHY: Escape closes the prompt modal (extends existing Escape handler)
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && _promptModalOpen) {
+                closePromptModal();
+            }
+        });
+
+        // WHY: live character counter helps user gauge prompt length
+        promptTextarea.addEventListener('input', updatePromptCharCount);
+
+        // Modal Clear — empties only the modal textarea
+        promptClearBtn.addEventListener('click', function () {
+            promptTextarea.value = '';
+            promptTextarea.focus();
+            updatePromptCharCount();
+        });
+
+        // Modal Ask — copies text to queryInput, closes modal, then triggers the real Ask
+        promptAskBtn.addEventListener('click', function () {
+            var text = promptTextarea.value.trim();
+            if (!text) {
+                // WHY: shake the textarea briefly to indicate empty input
+                promptTextarea.style.borderColor = '#dc3545';
+                setTimeout(function () { promptTextarea.style.borderColor = ''; }, 600);
+                promptTextarea.focus();
+                return;
+            }
+            // WHY: sync text back to the main queryInput before closing
+            queryInput.value = text;
+            autoResizeTextarea();
+            closePromptModal();
+            // WHY: small delay lets close animation start before the AJAX call takes over the UI
+            setTimeout(function () {
+                askBtn.click();
+            }, 150);
+        });
+
+        // WHY: Ctrl+Enter / Cmd+Enter submits from inside the modal (power-user shortcut)
+        promptTextarea.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                promptAskBtn.click();
+            }
+        });
 
         // ===========================================
         // addSidebarThread — inserts a new conversation into the sidebar immediately
@@ -1601,6 +1955,9 @@ if (empty($_SESSION['csrf_token'])) {
         // ===========================================
         clearBtn.addEventListener('click', function () {
             queryInput.value = '';
+            // WHY: also clear the modal textarea so re-opening shows a blank slate
+            promptTextarea.value = '';
+            updatePromptCharCount();
             // Reset textarea height back to default after clearing
             autoResizeTextarea();
             resultsRow.innerHTML = '';
