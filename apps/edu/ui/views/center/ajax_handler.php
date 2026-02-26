@@ -214,6 +214,17 @@ try {
         $answer = $result['answer'];
         $image  = $result['image'];
 
+        // WHY: check if the API returned an error (encoded as JSON string in $answer)
+        // This happens when Groq API fails — we need to catch it and return a clean error
+        if (!empty($answer) && $answer[0] === '{') {
+            $errorData = json_decode($answer, true);
+            if (isset($errorData['error'])) {
+                http_response_code(500);
+                echo json_encode(['error' => 'Failed to generate answer: ' . $errorData['error']]);
+                exit;
+            }
+        }
+
         // Convert markdown to HTML so numbered lists, bullets, bold, etc. render properly
         $content = formatMarkdown($answer);
 
