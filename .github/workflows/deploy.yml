@@ -1,4 +1,4 @@
-name: Deploy to Droplet
+name: Deploy to Production
 
 on:
   push:
@@ -9,25 +9,13 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    
+    environment:
+      name: production
+      url: https://wheelder.com
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Upload repo files to Droplet
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DROPLET_HOST }}
-          username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.DROPLET_KEY }}
-          port: 22
-          source: "."
-          target: "/var/www/wheelder"
-          overwrite: true
-          rm: true
-          strip_components: 1
-
-      - name: Run deploy commands on Droplet
+      - name: Deploy to DigitalOcean Droplet
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DROPLET_HOST }}
@@ -35,8 +23,36 @@ jobs:
           key: ${{ secrets.DROPLET_KEY }}
           port: 22
           script: |
-            cd /var/www/wheelder
+            echo "🚀 Starting deployment to wheelder.com..."
+            
+            # Navigate to project directory
+            cd /var/www/wheelder || { echo "❌ Directory not found"; exit 1; }
+            
+            # Stash any local changes (safety measure)
+            git stash
+            
+            # Fetch latest changes from GitHub
+            echo "📥 Fetching latest code from main branch..."
+            git fetch origin main
+            
+            # Pull latest code
+            echo "⬇️ Pulling latest code..."
+            git pull origin main || { echo "❌ Git pull failed"; exit 1; }
+            
+            # Set correct ownership
+            echo "🔐 Setting file permissions..."
             chown -R www-data:www-data /var/www/wheelder
+            
+            # Set correct permissions
             find /var/www/wheelder -type f -exec chmod 644 {} \;
             find /var/www/wheelder -type d -exec chmod 755 {} \;
+            
+            # Make specific files executable if needed
+            chmod +x /var/www/wheelder/deploy.php 2>/dev/null || true
+            
+            # Restart Apache to apply changes
+            echo "🔄 Restarting Apache..."
             systemctl reload apache2 || systemctl restart apache2
+            
+            echo "✅ Deployment completed successfully!"
+            echo "🌐 Site: https://wheelder.com"
