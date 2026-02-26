@@ -8,33 +8,47 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$path = $_SERVER['DOCUMENT_ROOT'];
-$host = $_SERVER['HTTP_HOST'];
-
-if ($host === "localhost") {
-    $dir = '/wheelder';
-    require_once $path . $dir . '/apps/edu/controllers/ReleaseController.php';
-} else {
-    require_once $path . '/apps/edu/controllers/ReleaseController.php';
-}
-
-$releaseController = new ReleaseController();
-
-// WHY: get all published releases ordered by newest first
-$releases = $releaseController->getAllReleases();
-
-// WHY: determine which release to display (latest by default, or specific by ID)
-$displayRelease = null;
-if (!empty($_GET['id'])) {
-    $releaseId = intval($_GET['id']);
-    $displayRelease = $releaseController->getReleaseById($releaseId);
-    // WHY: only show if published or user is admin
-    if ($displayRelease && !$displayRelease['is_published'] && empty($_SESSION['user_id'])) {
-        $displayRelease = null;
+// WHY: wrap initialization in try-catch to catch and log any errors during controller setup
+try {
+    // WHY: use __DIR__ instead of $_SERVER['DOCUMENT_ROOT'] for reliable relative paths
+    // This works regardless of how the script is called (localhost, production, subdirectory)
+    $controllerPath = __DIR__ . '/../../controllers/ReleaseController.php';
+    
+    if (!file_exists($controllerPath)) {
+        throw new Exception("ReleaseController not found at: $controllerPath");
     }
-} elseif (!empty($releases)) {
-    // WHY: show latest release by default
-    $displayRelease = $releases[0];
+    
+    require_once $controllerPath;
+    
+    if (!class_exists('ReleaseController')) {
+        throw new Exception("ReleaseController class not defined after requiring file");
+    }
+    
+    $releaseController = new ReleaseController();
+    
+    // WHY: get all published releases ordered by newest first
+    $releases = $releaseController->getAllReleases();
+    
+    // WHY: determine which release to display (latest by default, or specific by ID)
+    $displayRelease = null;
+    if (!empty($_GET['id'])) {
+        $releaseId = intval($_GET['id']);
+        $displayRelease = $releaseController->getReleaseById($releaseId);
+        // WHY: only show if published or user is admin
+        if ($displayRelease && !$displayRelease['is_published'] && empty($_SESSION['user_id'])) {
+            $displayRelease = null;
+        }
+    } elseif (!empty($releases)) {
+        // WHY: show latest release by default
+        $displayRelease = $releases[0];
+    }
+} catch (Exception $e) {
+    // WHY: log the error for debugging and show a user-friendly message
+    error_log('Releases app initialization error: ' . $e->getMessage());
+    $releaseController = null;
+    $releases = [];
+    $displayRelease = null;
+    $initError = $e->getMessage();
 }
 ?>
 <!DOCTYPE html>
@@ -304,6 +318,14 @@ if (!empty($_GET['id'])) {
     </nav>
 
     <div class="container-fluid mt-4">
+        <!-- WHY: display initialization errors if any occurred during controller setup -->
+        <?php if (!empty($initError)): ?>
+            <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                <strong>Error loading releases:</strong> <?php echo htmlspecialchars($initError); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
+
         <div class="row">
             <!-- Releases list sidebar -->
             <div class="col-lg-3">
