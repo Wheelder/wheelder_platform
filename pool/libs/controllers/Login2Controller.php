@@ -130,8 +130,12 @@ class Login2Controller extends Controller
     private function getUserByEmail($email)
     {
         // WHY: Use prepared statement to prevent SQL injection
+        $db = $this->connectDb();
         $sql = "SELECT id, email, password, first_name, last_name, user_type, role FROM users WHERE email = ?";
-        $result = $this->run_query_prepared($sql, [$email]);
+        $stmt = $db->prepare($sql);
+        $stmt->bind_param('s', $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
         
         if ($result && $result->num_rows > 0) {
             return $result->fetch_assoc();
@@ -164,10 +168,13 @@ class Login2Controller extends Controller
         $_SESSION['last_activity'] = time();
 
         // WHY: Update last login in database
+        $db = $this->connectDb();
         $sql = "UPDATE users SET last_login = ?, last_login_ip = ? WHERE id = ?";
+        $stmt = $db->prepare($sql);
         $now = date('Y-m-d H:i:s');
         $ipAddress = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-        $this->run_query_prepared($sql, [$now, $ipAddress, $user['id']]);
+        $stmt->bind_param('ssi', $now, $ipAddress, $user['id']);
+        $stmt->execute();
     }
 
     /**
@@ -188,13 +195,16 @@ class Login2Controller extends Controller
         $expiryDate = date('Y-m-d H:i:s', time() + ($this->rememberMeDays * 86400));
         
         // WHY: Store token hash in database
+        $db = $this->connectDb();
         $sql = "INSERT INTO remember_tokens (user_id, token_hash, expires_at, ip_address, user_agent, created_at) 
                 VALUES (?, ?, ?, ?, ?, ?)";
+        $stmt = $db->prepare($sql);
         $now = date('Y-m-d H:i:s');
         $ipAddress = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
         
-        $this->run_query_prepared($sql, [$userId, $tokenHash, $expiryDate, $ipAddress, $userAgent, $now]);
+        $stmt->bind_param('isssss', $userId, $tokenHash, $expiryDate, $ipAddress, $userAgent, $now);
+        $stmt->execute();
         
         // WHY: Set secure HTTP-only cookie (prevents JavaScript access)
         setcookie(
@@ -234,9 +244,13 @@ class Login2Controller extends Controller
         $tokenHash = hash('sha256', $token);
 
         // WHY: Retrieve token from database with prepared statement
+        $db = $this->connectDb();
         $sql = "SELECT * FROM remember_tokens WHERE user_id = ? AND token_hash = ? AND expires_at > ? LIMIT 1";
+        $stmt = $db->prepare($sql);
         $now = date('Y-m-d H:i:s');
-        $result = $this->run_query_prepared($sql, [$userId, $tokenHash, $now]);
+        $stmt->bind_param('iss', $userId, $tokenHash, $now);
+        $stmt->execute();
+        $result = $stmt->get_result();
 
         if (!$result || $result->num_rows === 0) {
             return ['success' => false];
@@ -261,8 +275,12 @@ class Login2Controller extends Controller
      */
     private function getUserById($userId)
     {
+        $db = $this->connectDb();
         $sql = "SELECT id, email, first_name, last_name, user_type, role FROM users WHERE id = ?";
-        $result = $this->run_query_prepared($sql, [$userId]);
+        $stmt = $db->prepare($sql);
+        $stmt->bind_param('i', $userId);
+        $stmt->execute();
+        $result = $stmt->get_result();
         
         if ($result && $result->num_rows > 0) {
             return $result->fetch_assoc();
@@ -292,8 +310,11 @@ class Login2Controller extends Controller
         
         if ($user) {
             // WHY: Update existing user password
+            $db = $this->connectDb();
             $sql = "UPDATE users SET password = ? WHERE id = ?";
-            $result = $this->run_query_prepared($sql, [$hashedPassword, $user['id']]);
+            $stmt = $db->prepare($sql);
+            $stmt->bind_param('si', $hashedPassword, $user['id']);
+            $result = $stmt->execute();
             
             if ($result) {
                 return ['success' => true, 'message' => 'Password updated successfully.'];
@@ -302,10 +323,13 @@ class Login2Controller extends Controller
             }
         } else {
             // WHY: Create new user with hardcoded email
+            $db = $this->connectDb();
             $sql = "INSERT INTO users (email, password, user_type, user_status, date_created) 
                     VALUES (?, ?, 'admin', 'active', ?)";
+            $stmt = $db->prepare($sql);
             $now = date('Y-m-d H:i:s');
-            $result = $this->run_query_prepared($sql, [$this->allowedEmail, $hashedPassword, $now]);
+            $stmt->bind_param('sss', $this->allowedEmail, $hashedPassword, $now);
+            $result = $stmt->execute();
             
             if ($result) {
                 return ['success' => true, 'message' => 'User created with password successfully.'];

@@ -26,7 +26,7 @@ class PasswordResetController extends Controller
      * Ensure password_reset_tokens table exists
      * WHY: Creates table for password reset tokens if it doesn't exist
      */
-    private function ensurePasswordResetTableExists()
+    public function ensurePasswordResetTableExists()
     {
         try {
             $db = $this->connectDb();
@@ -158,8 +158,12 @@ class PasswordResetController extends Controller
         $tokenHash = hash('sha256', $token);
 
         // WHY: Retrieve token from database
+        $db = $this->connectDb();
         $sql = "SELECT * FROM password_reset_tokens WHERE token_hash = ? AND used = 0";
-        $result = $this->run_query_prepared($sql, [$tokenHash]);
+        $stmt = $db->prepare($sql);
+        $stmt->bind_param('s', $tokenHash);
+        $stmt->execute();
+        $result = $stmt->get_result();
         
         if (!$result || $result->num_rows === 0) {
             return ['success' => false, 'error' => 'Invalid or expired reset link.'];
@@ -177,7 +181,9 @@ class PasswordResetController extends Controller
 
         // WHY: Update user password
         $sql = "UPDATE users SET password = ? WHERE id = ?";
-        $updated = $this->run_query_prepared($sql, [$hashedPassword, $tokenRecord['user_id']]);
+        $stmt = $db->prepare($sql);
+        $stmt->bind_param('si', $hashedPassword, $tokenRecord['user_id']);
+        $updated = $stmt->execute();
 
         if (!$updated) {
             return ['success' => false, 'error' => 'Failed to update password.'];
@@ -201,8 +207,12 @@ class PasswordResetController extends Controller
      */
     private function getUserByEmail($email)
     {
+        $db = $this->connectDb();
         $sql = "SELECT id, email FROM users WHERE email = ?";
-        $result = $this->run_query_prepared($sql, [$email]);
+        $stmt = $db->prepare($sql);
+        $stmt->bind_param('s', $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
         
         if ($result && $result->num_rows > 0) {
             return $result->fetch_assoc();
@@ -219,9 +229,12 @@ class PasswordResetController extends Controller
      */
     private function createUser($email)
     {
+        $db = $this->connectDb();
         $sql = "INSERT INTO users (email, user_type, user_status, date_created) VALUES (?, 'admin', 'active', ?)";
+        $stmt = $db->prepare($sql);
         $now = date('Y-m-d H:i:s');
-        $result = $this->run_query_prepared($sql, [$email, $now]);
+        $stmt->bind_param('ss', $email, $now);
+        $result = $stmt->execute();
 
         if (!$result) {
             return null;
@@ -242,17 +255,19 @@ class PasswordResetController extends Controller
      */
     private function storeResetToken($userId, $email, $tokenHash, $expiresAt)
     {
+        $db = $this->connectDb();
         $ipAddress = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
         $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'unknown';
 
         $sql = "INSERT INTO password_reset_tokens (user_id, email, token_hash, expires_at, ip_address, user_agent, created_at) 
                 VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $stmt = $db->prepare($sql);
         $now = date('Y-m-d H:i:s');
 
-        $result = $this->run_query_prepared($sql, [$userId, $email, $tokenHash, $expiresAt, $ipAddress, $userAgent, $now]);
+        $stmt->bind_param('isssss', $userId, $email, $tokenHash, $expiresAt, $ipAddress, $userAgent, $now);
+        $result = $stmt->execute();
         
         if (!$result) {
-            $db = $this->connectDb();
             $error = $db ? $db->error : 'Database connection failed';
             error_log("Password reset token storage failed: $error");
         }
@@ -269,9 +284,12 @@ class PasswordResetController extends Controller
      */
     private function markTokenAsUsed($tokenId)
     {
+        $db = $this->connectDb();
         $sql = "UPDATE password_reset_tokens SET used = 1, used_at = ? WHERE id = ?";
+        $stmt = $db->prepare($sql);
         $now = date('Y-m-d H:i:s');
-        return $this->run_query_prepared($sql, [$now, $tokenId]) ? true : false;
+        $stmt->bind_param('si', $now, $tokenId);
+        return $stmt->execute() ? true : false;
     }
 
     /**
@@ -369,9 +387,12 @@ class PasswordResetController extends Controller
      */
     public function cleanupExpiredTokens()
     {
+        $db = $this->connectDb();
         $sql = "DELETE FROM password_reset_tokens WHERE expires_at < ? AND used = 0";
+        $stmt = $db->prepare($sql);
         $now = date('Y-m-d H:i:s');
-        return $this->run_query_prepared($sql, [$now]);
+        $stmt->bind_param('s', $now);
+        return $stmt->execute();
     }
 }
 ?>
