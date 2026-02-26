@@ -12,7 +12,8 @@ if (session_status() === PHP_SESSION_NONE) {
 try {
     // WHY: use __DIR__ instead of $_SERVER['DOCUMENT_ROOT'] for reliable relative paths
     // This works regardless of how the script is called (localhost, production, subdirectory)
-    $controllerPath = __DIR__ . '/../../controllers/ReleaseController.php';
+    // Path: apps/edu/ui/views/releases/app.php → go up 3 levels to apps/edu/controllers/
+    $controllerPath = __DIR__ . '/../../../controllers/ReleaseController.php';
     
     if (!file_exists($controllerPath)) {
         throw new Exception("ReleaseController not found at: $controllerPath");
