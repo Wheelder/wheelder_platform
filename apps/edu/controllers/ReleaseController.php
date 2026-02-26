@@ -12,22 +12,21 @@ class ReleaseController extends Controller
     }
 
     // WHY: create releases table on first use if it doesn't exist
-    // Includes fields for title, description, content (HTML), images, videos, and timestamps
+    // Uses SQLite-compatible syntax (AUTOINCREMENT, TEXT instead of LONGTEXT, INTEGER instead of BOOLEAN)
+    // JSON fields are stored as TEXT in SQLite and decoded in PHP
     private function ensureReleasesTable()
     {
         $sql = "CREATE TABLE IF NOT EXISTS releases (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            title VARCHAR(255) NOT NULL,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
             description TEXT,
-            content LONGTEXT,
-            images JSON,
-            videos JSON,
-            version VARCHAR(50),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            is_published BOOLEAN DEFAULT 1,
-            INDEX idx_created_at (created_at),
-            INDEX idx_published (is_published)
+            content TEXT,
+            images TEXT DEFAULT '[]',
+            videos TEXT DEFAULT '[]',
+            version TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            is_published INTEGER DEFAULT 1
         )";
         
         try {
