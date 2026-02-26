@@ -57,11 +57,15 @@ class ReleaseController extends Controller
         
         $stmt = $this->run_query($sql);
         $releases = [];
-        while ($row = $stmt->fetch_assoc()) {
-            // WHY: decode JSON fields for images and videos
-            $row['images'] = json_decode($row['images'] ?? '[]', true);
-            $row['videos'] = json_decode($row['videos'] ?? '[]', true);
-            $releases[] = $row;
+        
+        // WHY: check if query succeeded before trying to fetch results
+        if ($stmt && is_object($stmt)) {
+            while ($row = $stmt->fetch_assoc()) {
+                // WHY: decode JSON fields for images and videos
+                $row['images'] = json_decode($row['images'] ?? '[]', true);
+                $row['videos'] = json_decode($row['videos'] ?? '[]', true);
+                $releases[] = $row;
+            }
         }
         return $releases;
     }
@@ -72,11 +76,16 @@ class ReleaseController extends Controller
         $id = intval($id);
         $sql = "SELECT * FROM releases WHERE id = $id";
         $stmt = $this->run_query($sql);
-        $release = $stmt->fetch_assoc();
+        $release = null;
         
-        if ($release) {
-            $release['images'] = json_decode($release['images'] ?? '[]', true);
-            $release['videos'] = json_decode($release['videos'] ?? '[]', true);
+        // WHY: check if query succeeded before trying to fetch results
+        if ($stmt && is_object($stmt)) {
+            $release = $stmt->fetch_assoc();
+            
+            if ($release) {
+                $release['images'] = json_decode($release['images'] ?? '[]', true);
+                $release['videos'] = json_decode($release['videos'] ?? '[]', true);
+            }
         }
         return $release;
     }
@@ -176,8 +185,12 @@ class ReleaseController extends Controller
         $sql = "SELECT id, title, version, created_at, is_published FROM releases ORDER BY created_at DESC";
         $stmt = $this->run_query($sql);
         $releases = [];
-        while ($row = $stmt->fetch_assoc()) {
-            $releases[] = $row;
+        
+        // WHY: check if query succeeded before trying to fetch results
+        if ($stmt && is_object($stmt)) {
+            while ($row = $stmt->fetch_assoc()) {
+                $releases[] = $row;
+            }
         }
         return $releases;
     }
