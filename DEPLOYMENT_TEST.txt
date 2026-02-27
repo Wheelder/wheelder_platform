@@ -1,0 +1,2 @@
+Automated deployment test - timestamp: 2026-02-27 10:25 AM
+This file confirms GitHub Actions deployment is working correctly.
