@@ -47,6 +47,12 @@ jobs:
             find /var/www/environments/production/wheelder.com -type f -exec chmod 644 {} \;
             find /var/www/environments/production/wheelder.com -type d -exec chmod 755 {} \;
             
+            # WHY: SQLite WAL mode needs writable DB files (664) AND writable parent
+            # directories (775) so PHP-FPM (www-data) can create -wal and -shm companions.
+            # The generic chmod above resets these to 644/755 which blocks writes.
+            find /var/www/environments/production/wheelder.com -name "*.sqlite" -exec chmod 664 {} \;
+            find /var/www/environments/production/wheelder.com -name "*.sqlite" -exec sh -c 'chmod 775 "$(dirname "$1")"' _ {} \;
+            
             # Restart Nginx to apply changes
             echo "Restarting Nginx..."
             systemctl reload nginx || systemctl restart nginx
