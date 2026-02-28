@@ -451,6 +451,57 @@ $router->route('/portfolio_api', function() {
     require 'apps/edu/api/portfolioAPI.php';
 });
 
+// ============================================================
+// TEMPORARY: Versioned routes for reviewing all historical app versions
+// WHY: lets us browse every generation side-by-side before restructuring
+// REMOVE after restructuring is complete
+// ============================================================
+
+// --- v0: Notes App (Aug 2025 — the earliest, inline CSS/JS) ---
+$router->route('/v0/notes', function() {
+    require 'apps/edu/ui/views/notes/app.php';
+});
+$router->route('/v0/notes/cms', function() {
+    require 'apps/edu/ui/views/notes/cms/list.php';
+});
+// WHY: learn.php is the TRUE original AI chat — note_g.php is a near-identical copy
+$router->route('/v0/notes/cms/learn', function() {
+    require 'apps/edu/ui/views/notes/cms/learn.php';
+});
+$router->route('/v0/notes/cms/note-g', function() {
+    require 'apps/edu/ui/views/notes/cms/note_g.php';
+});
+$router->route('/v0/notes/cms/topic', function() {
+    require 'apps/edu/ui/views/notes/cms/topic.php';
+});
+$router->route('/v0/notes/cms/view', function() {
+    require 'apps/edu/ui/views/notes/cms/view.php';
+});
+$router->route('/v0/notes/cms/create', function() {
+    require 'apps/edu/ui/views/notes/cms/create.php';
+});
+$router->route('/v0/notes/cms/edit', function() {
+    require 'apps/edu/ui/views/notes/cms/edit.php';
+});
+$router->route('/v0/notes/cms/delete', function() {
+    require 'apps/edu/ui/views/notes/cms/delete.php';
+});
+
+// --- v1: Learn App (Aug 2025 — controller pattern, form POST, no AJAX) ---
+$router->route('/v1/learn', function() {
+    require 'apps/edu/ui/views/learn/app_main.php';
+});
+
+// --- v2: Learn Backup (Jan 2026 — AJAX two-panel chat, Ask + Deepen) ---
+$router->route('/v2/learn', function() {
+    require 'apps/edu/ui/views/learn/backup/record.php';
+});
+
+// --- v3: Center (Feb 2026 — current production, enhanced from v2) ---
+$router->route('/v3/center', function() {
+    require 'apps/edu/ui/views/center/record.php';
+});
+
 // --- Handle the current request ---
 $router->handleRequest($_SERVER['REQUEST_URI']);
 
