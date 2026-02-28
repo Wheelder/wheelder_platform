@@ -409,7 +409,32 @@ class AppController extends Controller
         // on Retina/HiDPI displays. Same 1.63:1 aspect ratio as the panel.
         // enhance=true applies server-side upscaling/sharpening.
         // nologo=true removes the Pollinations watermark.
-        return "https://image.pollinations.ai/prompt/{$encodedPrompt}?width=2048&height=1260&seed={$seed}&nologo=true&enhance=true";
+        $url = "https://image.pollinations.ai/prompt/{$encodedPrompt}?width=2048&height=1260&seed={$seed}&nologo=true&enhance=true";
+
+        // WHY: Pollinations returns a URL that looks valid but may fail at load time
+        // (e.g. error 1033 when the service is down). A HEAD request detects this
+        // server-side so we can fall back to Wikimedia before sending a broken URL
+        // to the browser. Timeout is 8s — Pollinations typically responds in 3-6s.
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_NOBODY, true);        // HEAD request — no body download
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 8);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true); // follow redirects
+        curl_setopt($ch, CURLOPT_USERAGENT, 'WheelderApp/1.0');
+        curl_exec($ch);
+
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlErr  = curl_errno($ch);
+        curl_close($ch);
+
+        // WHY: only accept HTTP 200 — anything else (403, 500, 1033, timeout) means
+        // the image won't render in the browser, so return empty to trigger fallback
+        if ($curlErr || $httpCode !== 200) {
+            error_log("Pollinations HEAD check failed: HTTP {$httpCode}, cURL error {$curlErr} for prompt: " . mb_substr($prompt, 0, 80));
+            return '';
+        }
+
+        return $url;
     }
 
     /**
