@@ -212,14 +212,18 @@ class AppController extends Controller
         $imageUrl = $this->generatePollinationsImage($imagePrompt);
         
         // --- Step 5: Fallback to Wikimedia Commons if Pollinations failed or returned empty ---
-        // Pollinations may fail silently or return a broken URL. Wikimedia is a reliable fallback.
+        // WHY: Wikimedia search works best with short keyword phrases (2-3 words), not
+        // the descriptive AI prompts we built for Pollinations. Extract keywords from
+        // the original question for a more relevant Wikimedia result.
         if (empty($imageUrl) || strpos($imageUrl, 'placehold') !== false) {
-            $imageUrl = $this->searchWikimediaImage($imagePrompt);
+            $wikiKeywords = $this->extractKeywords($imageQuery ?? $userInput);
+            $imageUrl = $this->searchWikimediaImage($wikiKeywords);
         }
         
         // --- Step 6: Final fallback to placeholder if all else fails ---
         if (empty($imageUrl)) {
-            $imageUrl = "https://placehold.co/1024x630?text=" . urlencode(mb_substr($imagePrompt, 0, 50));
+            $fallbackKeywords = $this->extractKeywords($imageQuery ?? $userInput);
+            $imageUrl = "https://placehold.co/1024x630?text=" . urlencode(mb_substr($fallbackKeywords, 0, 50));
         }
 
         return ['answer' => $answer, 'image' => $imageUrl];
