@@ -42,7 +42,8 @@ require_once __DIR__ . '/../../../layouts/nav.php';
                         <td><?php echo htmlspecialchars(substr($row['content'], 0, 60), ENT_QUOTES, 'UTF-8') . '...'; ?></td>
                         <td>
                             <!-- View opens the reader with the lesson pre-selected -->
-                            <a href="<?php echo url('/lesson?t=' . urlencode(str_replace(' ', '_', strtolower($row['title'])))); ?>"
+                            <!-- WHY: route is /edu not /lesson — /lesson has no route and returns 404 -->
+                            <a href="<?php echo url('/edu?t=' . urlencode(str_replace(' ', '_', strtolower($row['title'])))); ?>"
                                class="btn btn-success btn-sm">View</a>
                             <a href="<?php echo url('/lesson/cms/edit?id=' . (int)$row['id']); ?>"
                                class="btn btn-warning btn-sm">Edit</a>

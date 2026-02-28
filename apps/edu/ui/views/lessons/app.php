@@ -989,7 +989,8 @@ function formatMarkdown($text) {
                         $label   = htmlspecialchars($r['title'], ENT_QUOTES, 'UTF-8');
                         // Highlight the currently viewed lesson so the user knows where they are
                         $active  = ($row && $row['id'] == $r['id']) ? ' active' : '';
-                        echo '<a class="nav-link' . $active . '" href="' . url('/lesson') . '?t=' . $slug . '">' . $label . '</a>';
+                        // WHY: route is /edu not /lesson — /lesson has no route and returns 404
+                        echo '<a class="nav-link' . $active . '" href="' . url('/edu') . '?t=' . $slug . '">' . $label . '</a>';
                     }
                 } else {
                     echo '<p class="px-3 text-muted" style="font-size:.8rem">No lessons yet.</p>';
