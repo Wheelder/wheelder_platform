@@ -71,7 +71,7 @@ if (!hash_equals($_SESSION['csrf_token'], $csrfToken)) {
 // --- Rate limiting (sliding window) ---
 // Only rate-limit Ask and Deepen — these hit the Groq API and cost quota.
 // Archive/Delete are cheap DB operations, no need to throttle them.
-if (isset($_POST['ask']) || isset($_POST['deepen'])) {
+if (isset($_POST['ask']) || isset($_POST['deepen']) || isset($_POST['regenerate_image'])) {
 
     // Max 10 API requests per 60 seconds per session — enough for normal use,
     // but stops bots and spam-clickers from burning through the Groq free tier
@@ -390,8 +390,45 @@ try {
         echo json_encode(['success' => true, 'action' => 'deleted', 'session_id' => $sessionId]);
         exit;
 
+    // --- REGENERATE_IMAGE handler: fetch a new image for an existing conversation ---
+    } elseif (isset($_POST['regenerate_image'])) {
+
+        $question  = trim($_POST['original_question'] ?? '');
+        $sessionId = trim($_POST['session_id'] ?? '');
+        $rowId     = (int)($_POST['row_id'] ?? 0);
+
+        // WHY: need the original question to derive relevant image keywords
+        if (empty($question)) {
+            echo json_encode(['error' => 'No question provided for image regeneration.']);
+            exit;
+        }
+
+        // Generate a fresh image using the same pipeline as Ask/Deepen
+        $newImage = $note->generateImage($question);
+
+        if (empty($newImage)) {
+            echo json_encode(['error' => 'Image regeneration returned no result. Please try again.']);
+            exit;
+        }
+
+        // WHY: persist the new image URL so page reloads show the updated image
+        if ($rowId > 0 && method_exists($note, 'updateConversationImage')) {
+            try {
+                $note->updateConversationImage($rowId, $newImage);
+            } catch (Throwable $imgErr) {
+                // WHY: log but don't fail — the user still gets the new image in the UI
+                error_log('center/ajax regenerate_image DB update failed: ' . $imgErr->getMessage());
+            }
+        }
+
+        echo json_encode([
+            'success' => true,
+            'image'   => $newImage
+        ]);
+        exit;
+
     } else {
-        // Neither ask, deepen, archive, nor delete was sent — bad request
+        // No recognised action parameter — bad request
         echo json_encode(['error' => 'Invalid request. Missing action parameter.']);
         exit;
     }

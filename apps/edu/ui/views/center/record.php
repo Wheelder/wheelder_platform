@@ -1275,6 +1275,10 @@ if (empty($_SESSION['csrf_token'])) {
                                 <button class="img-fullscreen-btn" title="View fullscreen" onclick="openImageOverlay(this)">
                                     <i class="fas fa-expand"></i>
                                 </button>
+                                <!-- WHY: lets the user fetch a different image if the current one is irrelevant -->
+                                <button class="img-fullscreen-btn" id="regenerateImageBtn" title="Regenerate image" style="right:60px;" onclick="regenerateImage()">
+                                    <i class="fas fa-redo"></i>
+                                </button>
                                 <img src="<?php echo htmlspecialchars($lastEntry['image']); ?>" alt="Generated image"/>
                             <?php endif; ?>
                         </div>
@@ -1354,7 +1358,8 @@ if (empty($_SESSION['csrf_token'])) {
             sessionId:        '',   // Groups all entries in one conversation thread
             originalQuestion: '',   // The first question the user asked
             prevAnswer:       '',   // Raw answer from the last call (fed into the next deepen prompt)
-            depthLevel:       0     // Current depth (0 = initial ask, 1-7 = deepen levels)
+            depthLevel:       0,    // Current depth (0 = initial ask, 1-7 = deepen levels)
+            lastRowId:        0     // DB row id of the latest entry — used to persist regenerated images
         };
 
         // CSRF token — generated server-side, sent with every AJAX POST
@@ -1374,6 +1379,7 @@ if (empty($_SESSION['csrf_token'])) {
         ajaxState.originalQuestion = <?php echo json_encode($lastEntry['question'] ?? ''); ?>;
         ajaxState.prevAnswer       = <?php echo json_encode($lastEntry['answer'] ?? ''); ?>;
         ajaxState.depthLevel       = 0;
+        ajaxState.lastRowId        = <?php echo (int)($lastEntry['id'] ?? 0); ?>;
         <?php endif; ?>
 
         // --- DOM references (cached once so we don't query the DOM repeatedly) ---
@@ -1507,6 +1513,94 @@ if (empty($_SESSION['csrf_token'])) {
                 closeTextOverlay();
             }
         });
+
+        // ===========================================
+        // regenerateImage — fetches a new image for the current conversation
+        // WHY: lets the user get a different image if the auto-generated one is irrelevant
+        // Mirrors the lessons/cms2 regenerate_image pattern but adapted for the center app
+        // ===========================================
+        function regenerateImage() {
+            // WHY: need a question to derive image keywords from
+            if (!ajaxState.originalQuestion) {
+                alert('No question available to regenerate image for.');
+                return;
+            }
+
+            var imgPanel = document.getElementById('imagePanel');
+            var regenBtn = document.getElementById('regenerateImageBtn');
+            if (!imgPanel) return;
+
+            // WHY: swap icon to spinner so user knows something is happening
+            if (regenBtn) {
+                regenBtn.disabled = true;
+                regenBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            }
+
+            var formData = new FormData();
+            formData.append('regenerate_image', '1');
+            formData.append('original_question', ajaxState.originalQuestion);
+            formData.append('session_id', ajaxState.sessionId);
+            formData.append('row_id', ajaxState.lastRowId || 0);
+            formData.append('csrf_token', csrfToken);
+            if (accessKey) formData.append('access_key', accessKey);
+
+            fetch('<?php echo $centerAjaxEndpoint; ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(function (response) {
+                return response.text().then(function (text) {
+                    return { text: text, status: response.status, ct: response.headers.get('content-type') || '' };
+                });
+            })
+            .then(function (res) {
+                if (!res.text || !res.text.trim()) {
+                    throw new Error('Server returned an empty response (HTTP ' + res.status + ').');
+                }
+                if (res.ct.indexOf('application/json') === -1) {
+                    throw new Error('Server returned HTML instead of JSON (HTTP ' + res.status + ').');
+                }
+                try {
+                    return JSON.parse(res.text);
+                } catch (e) {
+                    throw new Error('Server returned invalid JSON (HTTP ' + res.status + ').');
+                }
+            })
+            .then(function (data) {
+                if (data.error) {
+                    alert('Image regeneration failed: ' + data.error);
+                    return;
+                }
+                // WHY: swap the <img> src directly so the fullscreen + regenerate buttons stay intact
+                if (data.image) {
+                    var imgEl = imgPanel.querySelector('img');
+                    if (imgEl) {
+                        imgEl.src = data.image;
+                    } else {
+                        // WHY: image element missing (edge case) — rebuild the full panel
+                        imgPanel.innerHTML =
+                            '<button class="img-fullscreen-btn" title="View fullscreen" onclick="openImageOverlay(this)">' +
+                            '    <i class="fas fa-expand"></i>' +
+                            '</button>' +
+                            '<button class="img-fullscreen-btn" id="regenerateImageBtn" title="Regenerate image" style="right:60px;" onclick="regenerateImage()">' +
+                            '    <i class="fas fa-redo"></i>' +
+                            '</button>' +
+                            '<img src="' + data.image + '" alt="Generated image"/>';
+                    }
+                }
+            })
+            .catch(function (err) {
+                alert('Image regeneration error: ' + err.message);
+            })
+            .finally(function () {
+                // WHY: restore the redo icon and re-enable the button regardless of outcome
+                var btn = document.getElementById('regenerateImageBtn');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-redo"></i>';
+                }
+            });
+        }
 
         // Auto-scroll on page load if viewing a past conversation
         scrollAnswerPanel();
@@ -1821,11 +1915,14 @@ if (empty($_SESSION['csrf_token'])) {
                         '<div class="qa-answer">' + data.answer + '</div>';
                     scrollAnswerPanel();
 
-                    // Replace the image panel with the preloaded image + fullscreen button
+                    // Replace the image panel with the preloaded image + fullscreen + regenerate buttons
                     if (imageUrl) {
                         imagePanel.innerHTML =
                             '<button class="img-fullscreen-btn" title="View fullscreen" onclick="openImageOverlay(this)">' +
                             '    <i class="fas fa-expand"></i>' +
+                            '</button>' +
+                            '<button class="img-fullscreen-btn" id="regenerateImageBtn" title="Regenerate image" style="right:60px;" onclick="regenerateImage()">' +
+                            '    <i class="fas fa-redo"></i>' +
                             '</button>' +
                             '<img src="' + imageUrl + '" alt="Generated image"/>';
                     }
@@ -1982,7 +2079,7 @@ if (empty($_SESSION['csrf_token'])) {
             errorMsg.style.display = 'none';
             loadingSpinner.style.display = 'none';
             // Reset AJAX state
-            ajaxState = { sessionId: '', originalQuestion: '', prevAnswer: '', depthLevel: 0 };
+            ajaxState = { sessionId: '', originalQuestion: '', prevAnswer: '', depthLevel: 0, lastRowId: 0 };
         });
 
         // ===========================================

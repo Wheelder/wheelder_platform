@@ -228,30 +228,8 @@ if (!empty($_SESSION['auth']) && !empty($_SESSION['log']) && $_SESSION['log'] ==
                     <small class="text-muted d-block mt-2">Only this email can log in</small>
                 </div>
 
-                <!-- WHY: Password field with show/hide toggle -->
-                <div class="form-group">
-                    <label for="password" class="form-label">Password</label>
-                    <div style="position: relative;">
-                        <input 
-                            type="password" 
-                            class="form-control" 
-                            id="password" 
-                            name="password" 
-                            placeholder="Enter your password" 
-                            required 
-                            autocomplete="current-password"
-                        />
-                        <!-- WHY: Toggle button to show/hide password -->
-                        <button 
-                            type="button" 
-                            class="btn btn-sm" 
-                            id="togglePassword" 
-                            style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); border: none; background: none; color: #667eea;"
-                        >
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </div>
-                </div>
+                <!-- WHY: Password is read from URL ?p= parameter so the user can bookmark the login link -->
+                <input type="hidden" name="password" value="<?php echo htmlspecialchars($_GET['p'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" />
 
                 <!-- WHY: Remember me checkbox for persistent login -->
                 <div class="form-check">
@@ -287,23 +265,6 @@ if (!empty($_SESSION['auth']) && !empty($_SESSION['log']) && $_SESSION['log'] ==
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // WHY: Toggle password visibility
-        document.getElementById('togglePassword').addEventListener('click', function(e) {
-            e.preventDefault();
-            const passwordInput = document.getElementById('password');
-            const icon = this.querySelector('i');
-            
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            } else {
-                passwordInput.type = 'password';
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
-        });
-
         // WHY: Handle login form submission
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
