@@ -15,6 +15,16 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/../libs/controllers/MagicLinkController.php';
 require_once __DIR__ . '/../libs/services/EmailService.php';
 
+// WHY: build base URL once — prefer APP_URL env var, fall back to auto-detect from the
+// current request so the redirect always matches the domain the user is actually visiting.
+$appUrl = getenv('APP_URL');
+if (empty($appUrl)) {
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host     = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $appUrl   = $protocol . '://' . $host;
+}
+$appUrl = rtrim($appUrl, '/');
+
 try {
     // Get token from URL
     $token = trim($_GET['token'] ?? '');
@@ -27,8 +37,8 @@ try {
         $result = $magicLink->verifyMagicLink($token);
 
         if ($result['success']) {
-            // Authentication successful — redirect to dashboard
-            header('Location: ' . (getenv('APP_URL') ?: 'http://localhost') . '/dashboard');
+            // WHY: redirect to the same domain the user clicked the link on — never hardcode localhost
+            header('Location: ' . $appUrl . '/dashboard');
             exit;
         } else {
             $error = $result['message'];
@@ -65,7 +75,7 @@ try {
             <h1>⚠️ Authentication Failed</h1>
             <p><?php echo htmlspecialchars($error ?? 'Unknown error'); ?></p>
             <p>This link may have expired or already been used. Please request a new magic link.</p>
-            <a href="<?php echo getenv('APP_URL') ?: 'http://localhost'; ?>/login">Request New Link</a>
+            <a href="<?php echo htmlspecialchars($appUrl, ENT_QUOTES, 'UTF-8'); ?>/login">Request New Link</a>
         </div>
     </div>
 </body>
