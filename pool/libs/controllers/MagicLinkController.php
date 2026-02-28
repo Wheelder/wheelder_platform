@@ -81,7 +81,9 @@ class MagicLinkController extends Controller
     {
         $provider = getenv('EMAIL_PROVIDER') ?: 'smtp';
         
-        if ($provider === 'sendgrid') {
+        if ($provider === 'resend') {
+            $this->emailService = new ResendEmailService();
+        } elseif ($provider === 'sendgrid') {
             $this->emailService = new SendGridEmailService();
         } elseif ($provider === 'mailgun') {
             $this->emailService = new MailgunEmailService();

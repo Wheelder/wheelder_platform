@@ -336,3 +336,102 @@ class MailgunEmailService implements IEmailService
         ";
     }
 }
+
+/**
+ * Resend Email Service
+ * WHY: Modern email API with high deliverability and simple integration (https://resend.com)
+ */
+class ResendEmailService implements IEmailService
+{
+    private $apiKey;
+    private $fromEmail;
+    private $fromName;
+
+    public function __construct()
+    {
+        // WHY: read from env so the API key is never committed to source control
+        $this->apiKey    = getenv('RESEND_API_KEY') ?: '';
+        $this->fromEmail = getenv('RESEND_FROM_EMAIL') ?: 'onboarding@resend.dev';
+        $this->fromName  = getenv('RESEND_FROM_NAME') ?: 'Wheelder';
+
+        if (empty($this->apiKey)) {
+            error_log('Resend API key not configured in RESEND_API_KEY env var');
+        }
+    }
+
+    /**
+     * Send magic link via Resend API
+     * WHY: Single POST to https://api.resend.com/emails — no SDK required
+     */
+    public function sendMagicLink($email, $magicLink, $expiryMinutes)
+    {
+        try {
+            if (empty($this->apiKey)) {
+                error_log('Resend: API key missing — cannot send magic link.');
+                return false;
+            }
+
+            $appName = getenv('APP_NAME') ?: 'Wheelder';
+
+            $payload = json_encode([
+                'from'    => "{$this->fromName} <{$this->fromEmail}>",
+                'to'      => [$email],
+                'subject' => "Your $appName Magic Link",
+                'html'    => $this->buildEmailHtml($magicLink, $expiryMinutes, $appName)
+            ]);
+
+            $ch = curl_init('https://api.resend.com/emails');
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST           => true,
+                CURLOPT_POSTFIELDS     => $payload,
+                CURLOPT_HTTPHEADER     => [
+                    'Authorization: Bearer ' . $this->apiKey,
+                    'Content-Type: application/json'
+                ],
+                // WHY: short timeout so the user isn't stuck waiting if the API is down
+                CURLOPT_TIMEOUT        => 15,
+                CURLOPT_CONNECTTIMEOUT => 10
+            ]);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+            if (curl_errno($ch)) {
+                error_log('Resend cURL error: ' . curl_error($ch));
+                curl_close($ch);
+                return false;
+            }
+            curl_close($ch);
+
+            // WHY: Resend returns HTTP 200 on success with a JSON body containing the email id
+            if ($httpCode === 200) {
+                error_log("Magic link sent to $email via Resend");
+                return true;
+            } else {
+                error_log("Resend error (HTTP $httpCode): $response");
+                return false;
+            }
+        } catch (Exception $e) {
+            error_log('Resend exception: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function buildEmailHtml($magicLink, $expiryMinutes, $appName)
+    {
+        return "
+        <html>
+        <body style='font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif;'>
+            <div style='max-width: 600px; margin: 0 auto; padding: 20px;'>
+                <h1 style='color: #1a1a1a;'>$appName</h1>
+                <p>Hi there!</p>
+                <p>Click the button below to sign in. This link is valid for <strong>$expiryMinutes minutes</strong>.</p>
+                <a href='$magicLink' style='display: inline-block; background: #007bff; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0;'>Sign In</a>
+                <p style='color: #666; font-size: 12px;'>If you didn't request this, you can safely ignore this email.</p>
+            </div>
+        </body>
+        </html>
+        ";
+    }
+}
