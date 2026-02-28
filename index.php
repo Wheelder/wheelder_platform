@@ -457,6 +457,72 @@ $router->route('/portfolio_api', function() {
 // REMOVE after restructuring is complete
 // ============================================================
 
+// --- legacy: April 2024 backup — the original "wheeleder" platform before it became "wheelder" ---
+// WHY: these are extracted from the wheeleder_latest_update_and_backup_04_02_2024 repo
+$router->route('/legacy/notes', function() {
+    require 'apps/edu/ui/views/_legacy_2024/notes/app.php';
+});
+$router->route('/legacy/notes/cms', function() {
+    require 'apps/edu/ui/views/_legacy_2024/notes/cms/list.php';
+});
+$router->route('/legacy/notes/cms/learn', function() {
+    require 'apps/edu/ui/views/_legacy_2024/notes/cms/learn.php';
+});
+$router->route('/legacy/notes/cms/note-g', function() {
+    require 'apps/edu/ui/views/_legacy_2024/notes/cms/note_g.php';
+});
+$router->route('/legacy/notes/cms/topic', function() {
+    require 'apps/edu/ui/views/_legacy_2024/notes/cms/topic.php';
+});
+$router->route('/legacy/notes/cms/view', function() {
+    require 'apps/edu/ui/views/_legacy_2024/notes/cms/view.php';
+});
+$router->route('/legacy/notes/cms/create', function() {
+    require 'apps/edu/ui/views/_legacy_2024/notes/cms/create.php';
+});
+$router->route('/legacy/notes/cms/edit', function() {
+    require 'apps/edu/ui/views/_legacy_2024/notes/cms/edit.php';
+});
+$router->route('/legacy/notes/cms/delete', function() {
+    require 'apps/edu/ui/views/_legacy_2024/notes/cms/delete.php';
+});
+$router->route('/legacy/blogs', function() {
+    require 'apps/edu/ui/views/_legacy_2024/blogs/app.php';
+});
+$router->route('/legacy/blogs/cms', function() {
+    require 'apps/edu/ui/views/_legacy_2024/blogs/cms/list.php';
+});
+$router->route('/legacy/blogs/cms/create', function() {
+    require 'apps/edu/ui/views/_legacy_2024/blogs/cms/create.php';
+});
+$router->route('/legacy/blogs/cms/edit', function() {
+    require 'apps/edu/ui/views/_legacy_2024/blogs/cms/edit.php';
+});
+$router->route('/legacy/blogs/cms/view', function() {
+    require 'apps/edu/ui/views/_legacy_2024/blogs/cms/view.php';
+});
+$router->route('/legacy/blogs/cms/delete', function() {
+    require 'apps/edu/ui/views/_legacy_2024/blogs/cms/delete.php';
+});
+$router->route('/legacy/blogs/cms/topic', function() {
+    require 'apps/edu/ui/views/_legacy_2024/blogs/cms/topic.php';
+});
+$router->route('/legacy/search', function() {
+    require 'apps/edu/ui/views/_legacy_2024/search/search.php';
+});
+$router->route('/legacy/profile', function() {
+    require 'apps/edu/ui/views/_legacy_2024/profile/profile.php';
+});
+$router->route('/legacy/settings', function() {
+    require 'apps/edu/ui/views/_legacy_2024/settings/settings.php';
+});
+$router->route('/legacy/pricing', function() {
+    require 'apps/edu/ui/views/_legacy_2024/subscription/pricing.php';
+});
+$router->route('/legacy/read', function() {
+    require 'apps/edu/ui/views/_legacy_2024/read/index.html';
+});
+
 // --- v0: Notes App (Aug 2025 — the earliest, inline CSS/JS) ---
 $router->route('/v0/notes', function() {
     require 'apps/edu/ui/views/notes/app.php';
