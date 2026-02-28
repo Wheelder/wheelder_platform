@@ -24,6 +24,7 @@ class Login2Controller extends Controller
     {
         parent::__construct();
         $this->ensurePasswordFieldExists();
+        $this->ensureRememberTokensTableExists();
     }
 
     /**
