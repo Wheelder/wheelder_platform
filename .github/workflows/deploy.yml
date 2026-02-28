@@ -23,36 +23,33 @@ jobs:
           key: ${{ secrets.DROPLET_KEY }}
           port: 22
           script: |
-            echo "🚀 Starting deployment to wheelder.com..."
+            echo "Starting deployment to wheelder.com..."
             
             # Navigate to project directory
-            cd /var/www/wheelder || { echo "❌ Directory not found"; exit 1; }
+            cd /var/www/environments/production/wheelder.com || { echo "Directory not found"; exit 1; }
             
             # Stash any local changes (safety measure)
-            git stash
+            git stash 2>/dev/null || true
             
             # Fetch latest changes from GitHub
-            echo "📥 Fetching latest code from main branch..."
+            echo "Fetching latest code from main branch..."
             git fetch origin main
             
             # Pull latest code
-            echo "⬇️ Pulling latest code..."
-            git pull origin main || { echo "❌ Git pull failed"; exit 1; }
+            echo "Pulling latest code..."
+            git pull origin main || { echo "Git pull failed"; exit 1; }
             
             # Set correct ownership
-            echo "🔐 Setting file permissions..."
-            chown -R www-data:www-data /var/www/wheelder
+            echo "Setting file permissions..."
+            chown -R www-data:www-data /var/www/environments/production/wheelder.com
             
             # Set correct permissions
-            find /var/www/wheelder -type f -exec chmod 644 {} \;
-            find /var/www/wheelder -type d -exec chmod 755 {} \;
+            find /var/www/environments/production/wheelder.com -type f -exec chmod 644 {} \;
+            find /var/www/environments/production/wheelder.com -type d -exec chmod 755 {} \;
             
-            # Make specific files executable if needed
-            chmod +x /var/www/wheelder/deploy.php 2>/dev/null || true
+            # Restart Nginx to apply changes
+            echo "Restarting Nginx..."
+            systemctl reload nginx || systemctl restart nginx
             
-            # Restart Apache to apply changes
-            echo "🔄 Restarting Apache..."
-            systemctl reload apache2 || systemctl restart apache2
-            
-            echo "✅ Deployment completed successfully!"
-            echo "🌐 Site: https://wheelder.com"
+            echo "Deployment completed successfully!"
+            echo "Site: https://wheelder.com"
