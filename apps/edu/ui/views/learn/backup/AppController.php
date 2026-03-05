@@ -151,6 +151,9 @@ class AppController extends Controller
             }
         }
         curl_close($chText);
+        
+        // WHY: Log answer generation to diagnose API failures
+        error_log("[IMG-GEN-STEP1] Answer length: " . strlen($answer) . " | Is error: " . (strpos($answer, 'error') !== false ? 'YES' : 'NO'));
 
         // --- Step 2: Summarize the answer into 1-2 focused sentences ---
         // The full answer is too long and noisy for image prompt generation.
@@ -160,6 +163,9 @@ class AppController extends Controller
         if (!empty($answer) && $answer[0] !== '{') {
             $summary = $this->summarizeAnswer($answer);
         }
+        
+        // WHY: Log summary to diagnose if summarization is failing
+        error_log("[IMG-GEN-STEP2] Summary: " . mb_substr($summary, 0, 100) . " | Length: " . strlen($summary));
 
         // --- Step 3: Translate summary into an AI image generation prompt ---
         // The LLM converts the summary into a descriptive visual prompt suitable
@@ -173,20 +179,34 @@ class AppController extends Controller
         if (empty($imagePrompt)) {
             $fallbackSource = $imageQuery ?? $userInput;
             $imagePrompt = $this->extractKeywords($fallbackSource);
+            error_log("[IMG-GEN-STEP3-FALLBACK] Using keyword extraction: $imagePrompt");
+        } else {
+            error_log("[IMG-GEN-STEP3] Image prompt from LLM: $imagePrompt");
         }
 
         // --- Step 4: Generate an image via Pollinations AI ---
         // Pollinations generates a custom image from the prompt — no API key needed.
         $imageUrl = $this->generatePollinationsImage($imagePrompt);
+        error_log("[IMG-GEN-STEP4] Pollinations URL: " . mb_substr($imageUrl, 0, 100));
         
         // --- Step 5: Fallback to Wikimedia Commons if Pollinations failed or returned empty ---
         // Pollinations may fail silently or return a broken URL. Wikimedia is a reliable fallback.
         if (empty($imageUrl) || strpos($imageUrl, 'placehold') !== false) {
+            error_log("[IMG-GEN-STEP5] Pollinations failed, trying Wikimedia with: $imagePrompt");
             $imageUrl = $this->searchWikimediaImage($imagePrompt);
+            error_log("[IMG-GEN-STEP5-RESULT] Wikimedia URL: " . mb_substr($imageUrl, 0, 100));
         }
         
         // --- Step 6: Final fallback to placeholder if all else fails ---
         if (empty($imageUrl)) {
+            $imageUrl = "https://placehold.co/1024x630?text=" . urlencode(mb_substr($imagePrompt, 0, 50));
+            error_log("[IMG-GEN-STEP6] Using placeholder: $imageUrl");
+        }
+        
+        // --- Step 7: Validate final image URL before returning ---
+        // WHY: Ensures no broken/truncated URLs are stored in database
+        if (!$this->isValidImageUrl($imageUrl)) {
+            error_log("[IMG-GEN-STEP7-VALIDATE] Invalid final URL, using placeholder: $imageUrl");
             $imageUrl = "https://placehold.co/1024x630?text=" . urlencode(mb_substr($imagePrompt, 0, 50));
         }
 
@@ -205,8 +225,58 @@ class AppController extends Controller
         if (empty($imageUrl)) {
             $imageUrl = "https://placehold.co/1024x630?text=" . urlencode($keywords);
         }
+        
+        // WHY: Validate image URL is safe and reachable before returning
+        // Prevents broken/truncated URLs from being stored in database
+        if (!$this->isValidImageUrl($imageUrl)) {
+            error_log("[IMG-VALIDATE] Invalid URL, using placeholder: $imageUrl");
+            $imageUrl = "https://placehold.co/1024x630?text=" . urlencode($keywords);
+        }
 
         return $imageUrl;
+    }
+    
+    /**
+     * Validate that an image URL is safe and likely reachable.
+     * 
+     * WHY: Prevents broken/truncated URLs from being stored. Some APIs return
+     * incomplete URLs or error pages that look like images but fail to load.
+     * 
+     * @param string $url Image URL to validate
+     * @return bool True if URL is valid and safe
+     */
+    private function isValidImageUrl($url)
+    {
+        // WHY: Empty URL is always invalid
+        if (empty($url)) {
+            return false;
+        }
+        
+        // WHY: Must start with http/https (no relative paths, data URIs, etc.)
+        if (strpos($url, 'http://') !== 0 && strpos($url, 'https://') !== 0) {
+            return false;
+        }
+        
+        // WHY: URL must be under 2048 chars (prevents truncation/corruption)
+        if (strlen($url) > 2048) {
+            return false;
+        }
+        
+        // WHY: Reject URLs that contain error indicators
+        $errorPatterns = ['error', 'null', 'undefined', 'failed', '404', '500'];
+        foreach ($errorPatterns as $pattern) {
+            if (stripos($url, $pattern) !== false) {
+                return false;
+            }
+        }
+        
+        // WHY: Validate URL structure (must have domain)
+        $parsed = parse_url($url);
+        if (!isset($parsed['host']) || empty($parsed['host'])) {
+            return false;
+        }
+        
+        return true;
     }
 
     /**

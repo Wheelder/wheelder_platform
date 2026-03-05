@@ -607,15 +607,39 @@ if (!empty($_GET['id'])) {
                 if (data.image) {
                     var imgPanel = document.getElementById('imagePanel');
                     if (imgPanel) {
-                        imgPanel.innerHTML =
+                        // WHY: Create img element separately to attach proper error handler
+                        // that can retry with fallback if image fails to load
+                        var imgEl = document.createElement('img');
+                        imgEl.src = data.image;
+                        imgEl.alt = 'Lesson diagram';
+                        imgEl.style.width = '100%';
+                        imgEl.style.height = '100%';
+                        imgEl.style.objectFit = 'cover';
+                        
+                        // WHY: Fallback to placeholder if image fails to load
+                        // This handles broken URLs, network errors, or invalid image formats
+                        var fallbackAttempts = 0;
+                        imgEl.onerror = function() {
+                            fallbackAttempts++;
+                            if (fallbackAttempts === 1) {
+                                // First attempt: try placeholder with generic text
+                                imgEl.src = 'https://placehold.co/1024x630?text=Image+failed+to+load';
+                            } else if (fallbackAttempts === 2) {
+                                // Second attempt: try placeholder with lesson topic
+                                var topic = ajaxState.originalQuestion ? ajaxState.originalQuestion.substring(0, 30) : 'Lesson';
+                                imgEl.src = 'https://placehold.co/1024x630?text=' + encodeURIComponent(topic);
+                            }
+                            // After 2 attempts, stop trying to prevent infinite loops
+                        };
+                        
+                        imgPanel.innerHTML = 
                             '<button class="img-fullscreen-btn" title="View fullscreen" onclick="openImageOverlay(this)">' +
                             '  <i class="fas fa-expand"></i>' +
                             '</button>' +
                             '<button class="img-fullscreen-btn" id="retryImageBtn" title="Regenerate image" style="right:60px;">' +
                             '  <i class="fas fa-redo"></i>' +
-                            '</button>' +
-                            '<img src="' + data.image + '" alt="Lesson diagram" ' +
-                            '     onerror="this.src=\'https://placehold.co/1024x630?text=Image+failed+to+load\';" />';
+                            '</button>';
+                        imgPanel.appendChild(imgEl);
                     }
                 }
 

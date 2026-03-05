@@ -154,6 +154,9 @@ try {
         $answer  = $result['answer'];
         $image   = $result['image'];
         $content = formatMarkdown($answer);
+        
+        // WHY: Log image generation to diagnose mismatches between topic and image
+        error_log("[CMS2-ASK] Question: $q | Image URL: $image | Image length: " . strlen($image));
 
         // Derive a lesson title from the first 60 chars of the question
         $title    = ucwords(mb_substr(trim($q), 0, 60));
