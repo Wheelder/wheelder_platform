@@ -455,9 +455,190 @@ try {
                 <?php endif; ?>
             </div>
         </div>
+
+        <!-- GitHub Repositories Section -->
+        <div class="row mt-5 mb-4">
+            <div class="col-12">
+                <div class="release-content" id="github-repos">
+                    <div class="release-header" style="border-bottom:2px solid #dee2e6; padding-bottom:1.5rem; margin-bottom:2rem;">
+                        <h2 style="font-weight:700;"><i class="fab fa-github"></i> Open Source Repositories</h2>
+                        <p style="color:var(--secondary-color); margin:0;">
+                            All Wheelder source code, proof of innovation, and project history — publicly available on GitHub.
+                        </p>
+                    </div>
+                    <div class="row g-3" id="repoCards">
+                        <!-- Populated by JavaScript -->
+                        <div class="text-center py-4 text-muted" id="repoLoading">
+                            <i class="fas fa-spinner fa-spin fa-2x"></i>
+                            <p class="mt-2">Loading repositories...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <style>
+        .repo-card {
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 1.25rem;
+            height: 100%;
+            transition: all 0.25s ease;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+        }
+        .dark-mode .repo-card {
+            background: #2a2a2a;
+            border-color: #444;
+        }
+        .repo-card:hover {
+            border-color: var(--accent-color);
+            box-shadow: 0 4px 12px rgba(13,110,253,0.15);
+            transform: translateY(-2px);
+        }
+        .repo-card h5 {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .repo-card h5 a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+        .repo-card h5 a:hover {
+            text-decoration: underline;
+        }
+        .repo-card .repo-desc {
+            color: var(--secondary-color);
+            font-size: 0.9rem;
+            flex-grow: 1;
+        }
+        .repo-card .repo-meta {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--secondary-color);
+            flex-wrap: wrap;
+        }
+        .repo-card .repo-meta span {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .repo-badge {
+            display: inline-block;
+            font-size: 0.7rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+        .repo-badge.public {
+            background: #e6f4ea;
+            color: #137333;
+        }
+        .dark-mode .repo-badge.public {
+            background: #1b3a26;
+            color: #81c995;
+        }
+    </style>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    // Fetch Wheelder org repos from GitHub API
+    (function() {
+        const container = document.getElementById('repoCards');
+        const loading = document.getElementById('repoLoading');
+
+        // Define repos in desired display order with custom descriptions
+        const repoMeta = {
+            'deep-research-founding-proof': {
+                icon: 'fas fa-shield-alt',
+                color: '#d63384',
+                priority: 1
+            },
+            'wheelder-circular': {
+                icon: 'fas fa-circle-notch',
+                color: '#6f42c1',
+                priority: 2
+            },
+            'wheelder_platform': {
+                icon: 'fas fa-layer-group',
+                color: '#0d6efd',
+                priority: 3
+            },
+            'relearn': {
+                icon: 'fas fa-history',
+                color: '#fd7e14',
+                priority: 4
+            },
+            'wheelder-releases': {
+                icon: 'fas fa-tags',
+                color: '#198754',
+                priority: 5
+            },
+            '.github': {
+                icon: 'fab fa-github',
+                color: '#6c757d',
+                priority: 6
+            }
+        };
+
+        fetch('https://api.github.com/orgs/Wheelder/repos?per_page=30&sort=updated')
+            .then(r => r.json())
+            .then(repos => {
+                loading.remove();
+
+                // Sort by priority
+                repos.sort((a, b) => {
+                    const pa = (repoMeta[a.name] || {}).priority || 99;
+                    const pb = (repoMeta[b.name] || {}).priority || 99;
+                    return pa - pb;
+                });
+
+                repos.forEach(repo => {
+                    const meta = repoMeta[repo.name] || { icon: 'fab fa-github', color: '#6c757d', priority: 99 };
+                    const updated = new Date(repo.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+                    const col = document.createElement('div');
+                    col.className = 'col-md-6 col-lg-4';
+                    col.innerHTML = `
+                        <div class="repo-card">
+                            <h5>
+                                <i class="${meta.icon}" style="color:${meta.color}"></i>
+                                <a href="${repo.html_url}" target="_blank">${repo.name}</a>
+                                <span class="repo-badge public">Public</span>
+                            </h5>
+                            <div class="repo-desc">${repo.description || 'No description'}</div>
+                            <div class="repo-meta">
+                                ${repo.language ? `<span><i class="fas fa-code"></i> ${repo.language}</span>` : ''}
+                                <span><i class="fas fa-star"></i> ${repo.stargazers_count}</span>
+                                <span><i class="fas fa-code-branch"></i> ${repo.forks_count}</span>
+                                <span><i class="fas fa-clock"></i> ${updated}</span>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(col);
+                });
+
+                // Add "View All on GitHub" link
+                const viewAll = document.createElement('div');
+                viewAll.className = 'col-12 text-center mt-3';
+                viewAll.innerHTML = `
+                    <a href="https://github.com/Wheelder" target="_blank" class="btn btn-outline-primary">
+                        <i class="fab fa-github"></i> View All on GitHub
+                    </a>
+                `;
+                container.appendChild(viewAll);
+            })
+            .catch(err => {
+                loading.innerHTML = '<p class="text-danger">Failed to load repositories. <a href="https://github.com/Wheelder" target="_blank">View on GitHub</a></p>';
+                console.error('GitHub API error:', err);
+            });
+    })();
+    </script>
     <script>
         // WHY: dark mode toggle persists in localStorage
         const darkModeToggle = document.getElementById('darkModeToggle');
