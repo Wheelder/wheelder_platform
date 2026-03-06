@@ -90,6 +90,7 @@ class ReleaseController extends Controller
     }
 
     // WHY: create a new release with validation
+    // Uses PDO prepared statements to safely handle content with quotes and special characters
     public function createRelease($title, $description, $content, $version = null, $images = [], $videos = [])
     {
         // WHY: validate required fields
@@ -97,20 +98,27 @@ class ReleaseController extends Controller
             return ['success' => false, 'message' => 'Title and content are required.'];
         }
 
-        // WHY: sanitize inputs to prevent XSS and SQL injection
+        // WHY: sanitize title/description to prevent XSS (content kept as HTML for rich formatting)
         $title = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
         $description = htmlspecialchars($description, ENT_QUOTES, 'UTF-8');
         $version = $version ? htmlspecialchars($version, ENT_QUOTES, 'UTF-8') : null;
         
-        // WHY: content is kept as HTML for rich formatting but should be sanitized server-side
         $images_json = json_encode($images);
         $videos_json = json_encode($videos);
 
-        $sql = "INSERT INTO releases (title, description, content, version, images, videos) 
-                VALUES ('$title', '$description', '$content', '$version', '$images_json', '$videos_json')";
-        
         try {
-            $this->run_query($sql);
+            $pdo = $this->connectDbPDO();
+            $sql = "INSERT INTO releases (title, description, content, version, images, videos) 
+                    VALUES (:title, :description, :content, :version, :images, :videos)";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([
+                ':title' => $title,
+                ':description' => $description,
+                ':content' => $content,
+                ':version' => $version,
+                ':images' => $images_json,
+                ':videos' => $videos_json
+            ]);
             return ['success' => true, 'message' => 'Release created successfully.'];
         } catch (Exception $e) {
             error_log('ReleaseController: Failed to create release: ' . $e->getMessage());
@@ -119,6 +127,7 @@ class ReleaseController extends Controller
     }
 
     // WHY: update an existing release
+    // Uses PDO prepared statements to safely handle content with quotes and special characters
     public function updateRelease($id, $title, $description, $content, $version = null, $images = [], $videos = [])
     {
         $id = intval($id);
@@ -134,13 +143,22 @@ class ReleaseController extends Controller
         $images_json = json_encode($images);
         $videos_json = json_encode($videos);
 
-        $sql = "UPDATE releases 
-                SET title = '$title', description = '$description', content = '$content', 
-                    version = '$version', images = '$images_json', videos = '$videos_json'
-                WHERE id = $id";
-        
         try {
-            $this->run_query($sql);
+            $pdo = $this->connectDbPDO();
+            $sql = "UPDATE releases 
+                    SET title = :title, description = :description, content = :content, 
+                        version = :version, images = :images, videos = :videos
+                    WHERE id = :id";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([
+                ':title' => $title,
+                ':description' => $description,
+                ':content' => $content,
+                ':version' => $version,
+                ':images' => $images_json,
+                ':videos' => $videos_json,
+                ':id' => $id
+            ]);
             return ['success' => true, 'message' => 'Release updated successfully.'];
         } catch (Exception $e) {
             error_log('ReleaseController: Failed to update release: ' . $e->getMessage());
