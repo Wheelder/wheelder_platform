@@ -342,6 +342,11 @@ $router->route('/releases', function() {
     require 'apps/edu/ui/views/releases/app.php';
 });
 
+// WHY: /release_new is a standalone hardcoded release page (no database dependency)
+$router->route('/release_new', function() {
+    require 'apps/edu/ui/views/releases/release_new.php';
+});
+
 // WHY: /releases/cms allows authenticated admins to manage releases
 $router->route('/releases/cms', function() {
     require 'apps/edu/ui/views/releases/cms.php';
