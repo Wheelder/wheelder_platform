@@ -1,404 +1,119 @@
-# 🌐 Wheelder Circular: The Meta-AI Orchestrator
-
-**Release Date:** March 5, 2026  
-**Version:** 1.0 MVP  
-**Status:** 🚀 Production Ready
-
----
-
-## Executive Summary
-
-**Wheelder Circular** is the ultimate solution to AI platform fragmentation. It's a **meta-AI orchestrator** that acts as a central hub for all AI tools, chatbots, agents, and automation platforms. Instead of being locked into individual platforms, users now have **one unified interface** that analyzes their queries and intelligently routes them to the best external tools while keeping the conversation as the base.
-
-This is the **defining innovation for the AI age** — solving the critical problem of platform dependency that has plagued users since the explosion of AI tools in 2023-2026.
-
----
-
-## The Problem We Solve
-
-### Platform Fragmentation Crisis
-
-The AI revolution created an explosion of specialized tools:
-- **ChatGPT** for general conversation
-- **Claude** for deep analysis
-- **GitHub Copilot** for coding
-- **Midjourney** for image generation
-- **Perplexity** for research
-- **NotebookLM** for document synthesis
-- **Cursor** for AI-powered development
-- **Windsurf** for autonomous coding
-- **And 100+ more...**
-
-**The Problem:** Users are forced to:
-1. ❌ Jump between 5-10 different platforms for a single project
-2. ❌ Lose conversation context when switching tools
-3. ❌ Waste time deciding which tool to use
-4. ❌ Pay for multiple subscriptions
-5. ❌ Learn different interfaces and workflows
-6. ❌ Miss out on tools they don't know about
-
-**The Cost:** Productivity loss, context fragmentation, decision paralysis, and vendor lock-in.
-
----
-
-## The Solution: Wheelder Circular
-
-### What Is It?
-
-**Wheelder Circular** is a unified AI orchestrator that:
-
-1. **Analyzes Your Query** - Understands what you're trying to accomplish
-2. **Provides Base Answer** - Gives you an immediate, helpful response using Groq LLM
-3. **Recommends Tools** - Suggests the best external AI tools for your specific task
-4. **Provides Instructions** - Shows you exactly how to use each recommended tool
-5. **Keeps Conversation as Base** - Maintains your session and context while coordinating with external tools
-
-### Key Features
-
-#### 🎯 Intelligent Query Analysis
-- Automatically classifies queries by type (coding, research, creative, learning, writing, automation, data analysis)
-- Determines complexity level (simple, medium, complex)
-- Identifies relevant keywords and intent
-- Maps to appropriate tool categories
-
-#### 🔧 Smart Tool Recommendations
-- **5 recommended tools** per query, ranked by relevance
-- Tools include:
-  - **Chatbots:** ChatGPT, Claude, Gemini, Grok
-  - **Coding:** GitHub Copilot, Cursor, Windsurf, v0, Replit, Bolt.new
-  - **Research:** Perplexity, NotebookLM
-  - **Creative:** Midjourney, DALL-E, Stable Diffusion
-  - **Writing:** Jasper, Copy.ai, Grammarly
-  - **Audio:** ElevenLabs
-  - **Video:** RunwayML
-  - **And 20+ more...**
-
-#### 📊 Query Classification
-- **Learning:** "Explain quantum computing" → NotebookLM, Perplexity, ChatGPT
-- **Coding:** "Build a REST API" → GitHub Copilot, Cursor, Claude Code
-- **Creative:** "Design a logo" → Midjourney, DALL-E, Stable Diffusion
-- **Research:** "Latest AI breakthroughs" → Perplexity, NotebookLM, Claude
-- **Writing:** "Write a blog post" → Jasper, Copy.ai, Grammarly
-
-#### 💾 Session Management
-- Maintains conversation history across multiple queries
-- Tracks which tools were recommended for each question
-- Allows follow-up questions within the same session
-- Preserves context for multi-step workflows
-
-#### 🔄 Workflow Deepening
-- **"Deepen" button** generates step-by-step workflows
-- Shows which tool to use for each step
-- Provides instructions for tool integration
-- Supports up to 7 depth levels for complex projects
-
-#### 🌍 Unified Interface
-- Single, clean interface for all AI interactions
-- Sidebar for conversation history
-- Real-time tool recommendations
-- Direct links to external tools
-- No context switching required
-
----
-
-## Why This Matters: The AI Age Problem
-
-### Before Wheelder Circular
-```
-User Query
-    ↓
-"Which tool should I use?"
-    ↓
-Jump to ChatGPT → Get answer → Realize need Cursor → Jump to Cursor
-    ↓
-Lose context → Repeat query → Different answer → Confusion
-    ↓
-Productivity Loss
-```
-
-### After Wheelder Circular
-```
-User Query (in Circular)
-    ↓
-Instant Answer + Tool Recommendations
-    ↓
-Click "Visit Tool" → Use recommended tool → Return to Circular
-    ↓
-Conversation preserved → Context maintained → Workflow tracked
-    ↓
-Maximum Productivity
-```
-
----
-
-## Use Cases
-
-### 1. Full-Stack Development
-**Query:** "Build a real-time collaborative document editor with offline support"
-
-**Circular Provides:**
-- Base architecture overview
-- Recommends: Cursor, Claude Code, GitHub Copilot, Windsurf, v0
-- Workflow: Design → Frontend → Backend → Testing → Deployment
-
-### 2. Content Creation
-**Query:** "Write a marketing blog post about AI trends with images"
-
-**Circular Provides:**
-- Content framework
-- Recommends: Jasper, Copy.ai, Grammarly, Midjourney, DALL-E
-- Workflow: Outline → Draft → Polish → Images → Publish
-
-### 3. Research & Analysis
-**Query:** "Research latest machine learning techniques and implement sentiment analysis"
-
-**Circular Provides:**
-- Research summary
-- Recommends: Perplexity, NotebookLM, Claude, Cursor
-- Workflow: Research → Learn → Code → Test → Deploy
-
-### 4. Learning & Education
-**Query:** "Explain how neural networks work with visual examples"
-
-**Circular Provides:**
-- Clear explanation
-- Recommends: NotebookLM, Perplexity, ChatGPT, Midjourney
-- Workflow: Learn → Visualize → Practice → Deepen
-
-### 5. Automation & Integration
-**Query:** "Automate my email processing and organize by category"
-
-**Circular Provides:**
-- Automation strategy
-- Recommends: Zapier, Make, Claude Code, Cursor
-- Workflow: Design → Build → Test → Deploy → Monitor
-
----
-
-## Technical Architecture
-
-### Core Components
-
-**CircularController** - Meta-AI orchestration engine
-- Query analysis and classification
-- Tool recommendation logic
-- Session management
-- Workflow generation
-
-**Database Schema**
-- `circular_sessions` - Conversation tracking
-- `circular_messages` - Message history
-- `circular_tools` - Tool database (20+ tools)
-- `circular_workflows` - Multi-step workflows
-
-**Frontend**
-- Real-time AJAX for instant responses
-- Tool recommendation panel with clickable links
-- Session sidebar for conversation history
-- Deepen workflow generator
-
-**APIs**
-- **Groq API** - Fast LLM for base answers (Llama 3.1 8B)
-- **DuckDuckGo API** - Tool discovery and information
-- **External Tool APIs** - Direct links to recommended tools
-
-### Technology Stack
-- **Backend:** PHP 8+ with PDO SQLite
-- **Frontend:** Vanilla JavaScript (no jQuery)
-- **Database:** SQLite (portable, zero-config)
-- **LLM:** Groq (fast, free tier available)
-- **Search:** DuckDuckGo (no API key required)
-
----
-
-## Benefits
-
-### For Users
-✅ **Save Time** - No more jumping between platforms  
-✅ **Better Decisions** - AI recommends the best tool for your task  
-✅ **Preserve Context** - Conversation stays in Circular as your base  
-✅ **Discover Tools** - Learn about tools you didn't know existed  
-✅ **Unified Experience** - One interface for all AI interactions  
-✅ **Cost Optimization** - Use the right tool for each task, not one tool for everything  
-✅ **Workflow Automation** - Get step-by-step instructions for complex projects  
-
-### For Developers
-✅ **Open Architecture** - Built on PHP, SQLite, and open standards  
-✅ **Extensible** - Easy to add new tools to the database  
-✅ **MCP Ready** - Foundation for Model Context Protocol integrations  
-✅ **Plugin System** - Planned for automatic tool interaction  
-✅ **Zero Dependencies** - No heavy frameworks, pure PHP  
-✅ **Production Ready** - Tested and optimized for performance  
-
-### For Organizations
-✅ **Reduce Tool Sprawl** - Consolidate AI tool usage  
-✅ **Improve Productivity** - Eliminate context switching overhead  
-✅ **Better ROI** - Get more value from existing AI subscriptions  
-✅ **Compliance** - Keep conversations in-house with Circular  
-✅ **Scalability** - Supports unlimited users and conversations  
-✅ **Future-Proof** - Easily add new AI tools as they emerge  
-
----
-
-## MVP Features (v1.0)
-
-### ✅ Implemented
-- Query analysis and classification
-- Tool recommendation engine
-- Session management
-- Conversation history
-- 20+ pre-loaded AI tools
-- Groq LLM integration
-- SQLite database
-- Clean, responsive UI
-- AJAX-powered interactions
-- CSRF protection
-- Rate limiting
-
-### 🔜 Planned (v2.0+)
-- **MCP Integration** - Automatic tool interaction via Model Context Protocol
-- **Plugins System** - Community-built tool connectors
-- **Custom Tools** - Users can add their own tools
-- **Workflow Builder** - Visual workflow creation
-- **Team Collaboration** - Shared sessions and workflows
-- **Analytics** - Track tool usage and recommendations
-- **API** - RESTful API for external integrations
-- **Mobile App** - Native iOS/Android apps
-- **Voice Interface** - Ask questions by voice
-- **Multi-language** - Support for 50+ languages
-
----
-
-## Getting Started
-
-### Installation
-```bash
-# 1. Visit setup page
-http://localhost/circular/setup_direct.php
-
-# 2. Initialize database and populate tools
-# (Automatic - takes 30 seconds)
-
-# 3. Access Circular
-http://localhost/circular
-```
-
-### First Query
-```
-Ask: "Explain quantum computing in simple terms"
-
-Circular will:
-1. Analyze query → "learning" type
-2. Generate answer → Clear explanation
-3. Recommend tools → NotebookLM, Perplexity, ChatGPT
-4. Show links → Click to visit each tool
-5. Save session → For future reference
-```
-
-### Deepen Workflow
-```
-Click "Deepen" to get:
-1. Step-by-step workflow
-2. Which tool for each step
-3. How to use each tool
-4. Integration instructions
-```
-
----
-
-## Comparison: Circular vs Traditional Approach
-
-| Feature | Traditional | Circular |
-|---------|-----------|----------|
-| **Interface** | Multiple platforms | Single unified hub |
-| **Context** | Lost when switching | Preserved in Circular |
-| **Tool Discovery** | Manual research | AI-recommended |
-| **Decision Making** | User guesses | AI analyzes & suggests |
-| **Workflow** | Fragmented | Integrated |
-| **Time to Productivity** | 10-15 minutes | 30 seconds |
-| **Learning Curve** | Steep (per tool) | Minimal (one interface) |
-| **Cost** | Multiple subscriptions | One Wheelder subscription |
-
----
-
-## The Future: AI Orchestration
-
-Wheelder Circular is just the beginning. As AI tools proliferate, the need for orchestration becomes critical. We're building:
-
-1. **Smart Routing** - AI learns your preferences and routes automatically
-2. **Bidirectional Integration** - Tools send results back to Circular
-3. **Autonomous Workflows** - AI executes multi-step workflows without user intervention
-4. **Context Preservation** - Full conversation history across all tools
-5. **Unified Analytics** - See all your AI tool usage in one dashboard
-
----
-
-## Why Now?
-
-The AI landscape in 2026 is:
-- **Fragmented** - 100+ specialized tools
-- **Overwhelming** - Users don't know which tool to use
-- **Inefficient** - Context lost between platforms
-- **Expensive** - Multiple subscriptions required
-- **Isolated** - Tools don't communicate with each other
-
-**Wheelder Circular solves all of this.**
-
----
-
-## Testimonials
-
-> "Circular is a game-changer. I used to spend 30% of my time switching between tools. Now I get recommendations instantly and stay in one place." — Developer
-
-> "Finally, a central hub for all my AI needs. This is how AI tools should work." — Content Creator
-
-> "The workflow deepening feature saved me hours on my last project. Highly recommended." — Project Manager
-
----
-
-## Support & Documentation
-
-- **Setup Guide:** `CIRCULAR_SETUP_GUIDE.md`
-- **README:** `WHEELDER_CIRCULAR_README.md`
-- **Test Prompts:** `CIRCULAR_TEST_PROMPTS.md`
-- **GitHub:** Coming soon
-- **Community:** Join our Discord for tips and workflows
-
----
-
-## Pricing
-
-**Wheelder Circular MVP:** Free (Open Source)
-
-**Future Tiers:**
-- **Free:** Basic tool recommendations
-- **Pro:** Advanced workflows, team collaboration
-- **Enterprise:** Custom tools, API access, SLA
-
----
-
-## Call to Action
-
-**Try Wheelder Circular Today:**
-1. Visit `http://localhost/circular`
-2. Ask any question
-3. Get instant answer + tool recommendations
-4. Click "Deepen" for workflows
-5. Experience the future of AI
-
----
-
-## About Wheelder
-
-Wheelder is building the infrastructure for the AI age. Our mission: **Make AI accessible, coordinated, and productive for everyone.**
-
-Wheelder Circular is our first step toward a world where AI tools work together seamlessly, and users stay in control.
-
----
-
-**Version:** 1.0 MVP  
-**Release Date:** March 5, 2026  
-**Status:** Production Ready  
-**License:** Open Source (Coming Soon)
-
-🚀 **Welcome to the future of AI orchestration.**
+=====================================================
+CMS FIELDS — Copy each section into the matching field
+=====================================================
+
+
+RELEASE TITLE:
+Wheelder Circular — The Master of All AI Innovation Tools
+
+
+VERSION:
+1.0-poc
+
+
+DESCRIPTION:
+Wheelder Circular is a Proof of Concept for the ultimate AI age invention — a meta-AI orchestrator that unifies DeepSeek, Kimi2, Qwen, LangChain, n8n, ChatGPT, Claude, Gemini, Grok, Perplexity , and 50+ more tools into one intelligent interface. Early stage, committed, and rapidly evolving.
+
+
+CONTENT (paste into the rich text editor):
+=====================================================
+
+
+Wheelder Circular
+The Ultimate Invention of the AI Age
+The Master of All AI Innovation Tools
+
+This is a Proof of Concept (PoC) — a very new and early-stage innovation. Wheelder Circular is immature by design at this stage. It is a committed, rapidly evolving project with a clear vision and an ambitious roadmap. What you see today is the seed of something much larger: the operating system for the AI age.
+
+
+What Is Wheelder Circular?
+
+Wheelder Circular is a meta-AI orchestrator, a unified home where every brilliant AI platform, chatbot, agent, automation framework, and creative engine comes together under one roof.
+
+We live in a golden age of AI. Incredible tools have been built by extraordinary teams around the world: DeepSeek, Kimi2, Qwen,ChatGPT, Claude, Gemini, Grok ,OpenClaw,n8n,Claude Code,Claude Cowork and many more. Each of these platforms is remarkable on its own. Wheelder Circular celebrates all of them by creating the first unified orchestration layer that brings their collective power to every user through a single, intelligent interface.
+
+Circular analyzes what you need, gives you an immediate answer, and then recommends the best combination of these amazing tools for your specific task, all while keeping your conversation and context intact. It is the orchestrator that amplifies the brilliance of the entire AI ecosystem.
+
+
+How It Works
+
+1. You ask a question inside Circular
+2. Circular provides an immediate, helpful base answer powered by Groq LLM
+3. It recommends the best external AI tools for your specific task, ranked by relevance
+4. It shows you step-by-step instructions for how to use each recommended tool
+5. Your conversation, context, and workflow history stay preserved as your home base
+
+Circular intelligently classifies every query by type (coding, research, creative, learning, writing, automation, data analysis), determines complexity, and maps it to the right tools across the entire AI landscape.
+
+
+The AI Tools We Celebrate and Connect
+
+Circular's tool database spans every major category of AI innovation:
+
+Chatbots and Reasoning: ChatGPT by OpenAI, Claude and Claude Cowork by Anthropic, Gemini by Google, Grok by xAI, DeepSeek, Kimi2 by Moonshot AI, Qwen by Alibaba, Baichuan, Yi by 01.AI, ChatGLM by Zhipu AI, Ernie Bot by Baidu
+
+Coding and Development: GitHub Copilot, Cursor, Windsurf (Cascade), v0 by Vercel, Replit, Bolt.new, OpenClaw
+
+Research and Knowledge: Tavily, NotebookLM by Google, Consensus
+
+Creative and Design: Midjourney, DALL-E by OpenAI, Stable Diffusion by Stability AI, Pollinations
+
+Writing and Content: Jasper, Copy.ai, Grammarly
+
+Audio, Voice, and Video: ElevenLabs, RunwayML
+
+Agent Frameworks: LangChain, LangGraph, CrewAI, AutoGen
+
+Automation Platforms: n8n, Zapier, Make
+
+Open Source Ecosystem: Hugging Face, Ollama, vLLM, LocalAI
+
+And 50+ more tools continuously being added.
+
+Every one of these tools represents extraordinary innovation. Circular exists to help users get the most out of all of them.
+
+
+Key Features
+
+Smart Tool Recommendations: 5 tools per query, ranked by relevance, with direct visit links.
+
+Query Classification: "Explain quantum computing" routes to NotebookLM, Tavily, and ChatGPT. "Build a REST API" routes to GitHub Copilot, Cursor, and Claude Code. "Design a logo" routes to Midjourney, DALL-E, and Stable Diffusion. "Build a data pipeline" routes to n8n, LangChain, and Make.
+
+Session Management: Full conversation history across multiple queries. Follow-up questions within the same session. Context preserved for multi-step workflows.
+
+Workflow Deepening: The Deepen button generates step-by-step workflows showing which tool to use at each step, with instructions for tool integration, up to 7 depth levels.
+
+Unified Interface: One clean interface for all AI interactions with a sidebar for history, real-time recommendations, and direct links to every tool.
+
+Appreciation and Acknowledgments
+
+Wheelder Circular would not exist without the extraordinary open-source community and the visionary companies that have made AI accessible to everyone. We express our deepest gratitude.
+
+To Groq and NVIDIA: Thank you for providing blazing-fast LLM inference infrastructure. Groq's LPU technology powers the real-time responses at the heart of Circular. NVIDIA's GPU ecosystem has made the entire AI revolution possible. Your commitment to speed and accessibility is the backbone of what we have built.
+
+To Meta and Ollama: Thank you to Meta for releasing the Llama family of models as open source, fundamentally democratizing access to world-class language models. Thank you to Ollama for making it effortless to run these models locally. The Llama models are the engine inside Circular's intelligence.
+
+To Pollinations: Thank you for providing open-source AI image generation APIs that make creative AI accessible to everyone without friction.
+
+To Hugging Face: Thank you for building the home of open-source AI. Your model hub, datasets, and community have accelerated AI development for millions of developers worldwide.
+
+To LangChain, LangGraph, and n8n: Thank you for creating the definitive frameworks for LLM-powered applications, multi-agent systems, and open-source workflow automation. Circular builds on the principles you pioneered.
+
+To vLLM, LocalAI, and the broader open-source community: Thank you to every contributor, maintainer, and researcher who has published a paper, released a model, shared a dataset, or written documentation. Tools like CrewAI, AutoGen, Haystack, txtai, PrivateGPT, Jan, LM Studio, and GPT4All have collectively built the ecosystem that makes Circular possible.
+
+To the AI platform pioneers: Thank you to OpenAI for ChatGPT, to Anthropic for Claude and Claude Cowork, to Google for Gemini and NotebookLM, to xAI for Grok, to DeepSeek for advancing the frontiers of reasoning, to Moonshot AI for Kimi2, to Alibaba for Qwen, to Baidu for Ernie, to Zhipu AI for ChatGLM, to 01.AI for Yi, to GitHub for Copilot, to Vercel for v0, to Replit, Cursor, Windsurf, Midjourney, Stability AI, ElevenLabs, RunwayML, Jasper, Copy.ai, Grammarly, Zapier, Make, and to every AI company and team building tools that move humanity forward. Your innovations inspire everything we do. Wheelder Circular exists to amplify and honor the work of every one of you.
+
+
+About Wheelder
+
+Wheelder is building the infrastructure for the AI age. The mission is to make AI accessible, coordinated, and productive for everyone. Wheelder Circular does not replace any tool. It elevates all of them. like father. 
+Every platform that exists, and every platform yet to be built, finds its place inside the Circular ecosystem.
+
+This is a Proof of Concept today. It is the operating system for the AI age tomorrow.
+
+Version: 1.0-poc
+Release Date: March 5, 2026
+Status: Proof of Concept, Rapidly Evolving
+License: Freemium (Coming Soon)
+
+The future of AI orchestration is here...

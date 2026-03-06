@@ -8,14 +8,15 @@ if (!function_exists('renderLegacySplitLayout')) {
         $sidebarHtml      = $payload['sidebar'] ?? '';
         $leftPaneHtml     = $payload['left'] ?? '';
         $rightPaneHtml    = $payload['right'] ?? '';
+        $abovePanelsHtml  = $payload['above_panels'] ?? '';
         $extraHead        = $payload['head'] ?? '';
         $extraScripts     = $payload['scripts'] ?? '';
         $bodyClass        = trim(($payload['body_class'] ?? '') . ' legacy-shell');
         $sidebarHidden    = $payload['sidebar_hidden'] ?? true;
         $brandLabel       = $payload['brand_label'] ?? 'Wheelder';
 
-        $cssBase = '/apps/edu/ui/assets/css/legacy-split.css?v=20260228';
-        $jsBase  = '/apps/edu/ui/assets/js/legacy-split.js?v=20260228';
+        $cssBase = function_exists('url') ? url('/apps/edu/ui/assets/css/legacy-split.css') . '?v=20260306b' : '/apps/edu/ui/assets/css/legacy-split.css?v=20260306b';
+        $jsBase  = function_exists('url') ? url('/apps/edu/ui/assets/js/legacy-split.js') . '?v=20260306b' : '/apps/edu/ui/assets/js/legacy-split.js?v=20260306b';
 
         ?>
 <!DOCTYPE html>
@@ -40,10 +41,13 @@ if (!function_exists('renderLegacySplitLayout')) {
             <strong class="legacy-toolbar-title">Ask Wheelder</strong>
             <span class="legacy-created-badge"><?php echo htmlspecialchars($createdLabel, ENT_QUOTES, 'UTF-8'); ?></span>
             <?php echo $toolbarHtml; ?>
-            <button class="legacy-toggle-btn" type="button" data-legacy-toggle="#legacySidebar" aria-expanded="<?php echo $sidebarHidden ? 'false' : 'true'; ?>">
-                Sidebar
-            </button>
         </div>
+
+        <?php if ($abovePanelsHtml): ?>
+        <div class="legacy-above-panels">
+            <?php echo $abovePanelsHtml; ?>
+        </div>
+        <?php endif; ?>
 
         <div class="legacy-body">
             <aside id="legacySidebar" class="legacy-sidebar<?php echo $sidebarHidden ? ' is-hidden' : ''; ?>">

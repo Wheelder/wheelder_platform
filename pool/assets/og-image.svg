@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a0a"/>
+      <stop offset="100%" style="stop-color:#1a1a2e"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#0d6efd"/>
+      <stop offset="100%" style="stop-color:#6610f2"/>
+    </linearGradient>
+    <linearGradient id="titleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ffffff"/>
+      <stop offset="50%" style="stop-color:#0d6efd"/>
+      <stop offset="100%" style="stop-color:#ffffff"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Subtle grid pattern -->
+  <g opacity="0.05">
+    <line x1="0" y1="100" x2="1200" y2="100" stroke="white" stroke-width="0.5"/>
+    <line x1="0" y1="200" x2="1200" y2="200" stroke="white" stroke-width="0.5"/>
+    <line x1="0" y1="300" x2="1200" y2="300" stroke="white" stroke-width="0.5"/>
+    <line x1="0" y1="400" x2="1200" y2="400" stroke="white" stroke-width="0.5"/>
+    <line x1="0" y1="500" x2="1200" y2="500" stroke="white" stroke-width="0.5"/>
+    <line x1="200" y1="0" x2="200" y2="630" stroke="white" stroke-width="0.5"/>
+    <line x1="400" y1="0" x2="400" y2="630" stroke="white" stroke-width="0.5"/>
+    <line x1="600" y1="0" x2="600" y2="630" stroke="white" stroke-width="0.5"/>
+    <line x1="800" y1="0" x2="800" y2="630" stroke="white" stroke-width="0.5"/>
+    <line x1="1000" y1="0" x2="1000" y2="630" stroke="white" stroke-width="0.5"/>
+  </g>
+
+  <!-- Accent line at top -->
+  <rect x="0" y="0" width="1200" height="4" fill="url(#accent)"/>
+
+  <!-- Title -->
+  <text x="600" y="200" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-weight="800" font-size="72" fill="url(#titleGrad)" letter-spacing="-2">WHEELDER</text>
+
+  <!-- Subtitle -->
+  <text x="600" y="260" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-weight="400" font-size="28" fill="#888888" letter-spacing="4">RESEARCH PLATFORM</text>
+
+  <!-- Timeline graphic -->
+  <line x1="200" y1="340" x2="1000" y2="340" stroke="#333333" stroke-width="2"/>
+
+  <!-- Timeline dots with labels -->
+  <!-- 2023 -->
+  <circle cx="250" cy="340" r="8" fill="#ffd700"/>
+  <text x="250" y="320" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-weight="700" font-size="16" fill="#ffd700">2023</text>
+  <text x="250" y="370" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#666666">Genesis</text>
+
+  <!-- Mar 2024 -->
+  <circle cx="400" cy="340" r="8" fill="#5fd07e"/>
+  <text x="400" y="320" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-weight="700" font-size="16" fill="#5fd07e">2024</text>
+  <text x="400" y="370" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#666666">First Commit</text>
+
+  <!-- Aug 2025 -->
+  <circle cx="575" cy="340" r="8" fill="#6fadff"/>
+  <text x="575" y="320" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-weight="700" font-size="16" fill="#6fadff">Aug 2025</text>
+  <text x="575" y="370" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#666666">Rewrite</text>
+
+  <!-- Nov 2025 -->
+  <circle cx="725" cy="340" r="8" fill="#c77dff"/>
+  <text x="725" y="320" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-weight="700" font-size="16" fill="#c77dff">Nov 2025</text>
+  <text x="725" y="370" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#666666">Deployed</text>
+
+  <!-- Feb 2026 -->
+  <circle cx="900" cy="340" r="10" fill="#0d6efd"/>
+  <circle cx="900" cy="340" r="14" fill="none" stroke="#0d6efd" stroke-width="2" opacity="0.5"/>
+  <text x="900" y="320" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-weight="700" font-size="16" fill="#0d6efd">Feb 2026</text>
+  <text x="900" y="370" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#666666">Current</text>
+
+  <!-- Bottom tagline -->
+  <text x="600" y="460" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-weight="600" font-size="22" fill="#e0e0e0">Innovating Since 2023</text>
+  <text x="600" y="495" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-weight="400" font-size="16" fill="#666666">Circular Search &bull; Deep Research &bull; AI-Powered Learning</text>
+
+  <!-- Evidence badges -->
+  <rect x="310" y="530" width="130" height="30" rx="15" fill="rgba(40,167,69,0.2)" stroke="#5fd07e" stroke-width="1"/>
+  <text x="375" y="550" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-weight="600" font-size="13" fill="#5fd07e">166+ Commits</text>
+
+  <rect x="460" y="530" width="130" height="30" rx="15" fill="rgba(255,193,7,0.2)" stroke="#ffd700" stroke-width="1"/>
+  <text x="525" y="550" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-weight="600" font-size="13" fill="#ffd700">45 Archives</text>
+
+  <rect x="610" y="530" width="130" height="30" rx="15" fill="rgba(13,110,253,0.2)" stroke="#6fadff" stroke-width="1"/>
+  <text x="675" y="550" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-weight="600" font-size="13" fill="#6fadff">7 Repositories</text>
+
+  <rect x="760" y="530" width="130" height="30" rx="15" fill="rgba(199,125,255,0.2)" stroke="#c77dff" stroke-width="1"/>
+  <text x="825" y="550" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-weight="600" font-size="13" fill="#c77dff">MD5 Verified</text>
+
+  <!-- Bottom accent line -->
+  <rect x="0" y="626" width="1200" height="4" fill="url(#accent)"/>
+</svg>

@@ -4,6 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wheelder</title>
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Wheelder — Research Platform">
+    <meta property="og:description" content="AI-powered research platform with Circular Search, Deep Research, and Text-to-Speech. Innovating since 2023.">
+    <meta property="og:image" content="https://wheelder.com/pool/assets/og-image.php">
+    <meta property="og:url" content="https://wheelder.com">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Wheelder">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Wheelder — Research Platform">
+    <meta name="twitter:description" content="AI-powered research platform with Circular Search, Deep Research, and Text-to-Speech. Innovating since 2023.">
+    <meta name="twitter:image" content="https://wheelder.com/pool/assets/og-image.php">
+
     <style>
         * {
             margin: 0;

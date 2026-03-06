@@ -1,0 +1,137 @@
+/* Legacy split layout shared styles */
+:root {
+    --legacy-bg: #f1f1f1;
+    --legacy-panel-shadow: 8px 8px 8px #ccc;
+    --legacy-border: #ccc;
+    --legacy-dark-bg: #000;
+}
+
+body.legacy-shell {
+    min-height: 100vh;
+    background: var(--legacy-bg);
+}
+
+.legacy-brand-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    max-width: 220px;
+}
+
+.legacy-brand-icon {
+    width: 28px;
+    height: 28px;
+    background: #111;
+    border-radius: 6px;
+    box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.25);
+}
+
+.legacy-brand-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #111;
+}
+
+.legacy-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: #fff;
+    border: 1px solid var(--legacy-border);
+    border-radius: 8px;
+    box-shadow: var(--legacy-panel-shadow);
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.legacy-toolbar-title {
+    font-weight: 600;
+    font-size: 1.2rem;
+    margin-right: auto;
+}
+
+.legacy-created-badge {
+    font-size: .9rem;
+    color: #555;
+}
+
+.legacy-above-panels {
+    margin-bottom: 12px;
+}
+
+.legacy-body {
+    display: flex;
+    gap: 12px;
+}
+
+.legacy-sidebar {
+    width: 250px;
+    min-width: 250px;
+    flex-shrink: 0;
+    max-width: 35vw;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    border: 1px solid var(--legacy-border);
+    border-radius: 10px;
+    box-shadow: var(--legacy-panel-shadow);
+    background: #fff;
+}
+
+.legacy-sidebar.is-hidden {
+    display: none;
+}
+
+.legacy-split-main {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.legacy-panel {
+    border: 1px solid var(--legacy-border);
+    border-radius: 10px;
+    box-shadow: var(--legacy-panel-shadow);
+    background: #fff;
+    padding: 10px;
+    min-height: 480px;
+}
+
+.legacy-panel textarea,
+.legacy-panel input[type="text"] {
+    width: 100%;
+    border: 2px solid var(--legacy-border);
+    border-radius: 10px;
+    padding: 12px;
+    box-shadow: var(--legacy-panel-shadow);
+}
+
+.legacy-panel-scrollable {
+    height: 600px;
+    overflow-y: auto;
+}
+
+.dark-mode .legacy-panel {
+    background: var(--legacy-dark-bg);
+    color: #fff;
+}
+
+@media (max-width: 992px) {
+    .legacy-body {
+        flex-direction: column;
+    }
+
+    .legacy-sidebar {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        max-height: 40vh;
+    }
+
+    .legacy-split-main {
+        grid-template-columns: 1fr;
+    }
+}

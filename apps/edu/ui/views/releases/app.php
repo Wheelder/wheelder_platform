@@ -63,6 +63,19 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Releases & Changelog - Wheelder</title>
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Wheelder Releases & Changelog">
+    <meta property="og:description" content="Latest features, updates, and innovations from the Wheelder research platform. Innovating since 2023.">
+    <meta property="og:image" content="https://wheelder.com/pool/assets/og-image.php">
+    <meta property="og:url" content="https://wheelder.com/releases">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Wheelder">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Wheelder Releases & Changelog">
+    <meta name="twitter:description" content="Latest features, updates, and innovations from the Wheelder research platform. Innovating since 2023.">
+    <meta name="twitter:image" content="https://wheelder.com/pool/assets/og-image.php">
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
