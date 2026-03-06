@@ -224,9 +224,10 @@ $router->route('/demo', function() {
     require 'apps/edu/ui/views/learn/backup/record.php';
 });
 
-// Center app — cloned from /demo but served as the primary experience
+// Center app — redirect to /circular for now
 $router->route('/center', function() {
-    require 'apps/edu/ui/views/center/record.php';
+    header('Location: /circular');
+    exit;
 });
 
 // AJAX endpoint for the /demo page — handles Ask and Deepen requests without page reload
