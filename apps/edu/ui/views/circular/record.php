@@ -1121,7 +1121,7 @@ if (empty($_SESSION['csrf_token'])) {
                         <!-- "New Research" link resets the page to a fresh state -->
                         <li class="nav-item">
                             <a href="<?php echo htmlspecialchars($newResearchUrl, ENT_QUOTES, 'UTF-8'); ?>" class="nav-link <?php echo empty($_GET['view']) && empty($_POST['ask']) && empty($_POST['deepen']) ? 'active' : ''; ?>">
-                                <i class="fas fa-plus"></i> New Research
+                                <i class="fas fa-plus"></i> New Circle
                             </a>
                         </li>
 
@@ -1163,7 +1163,7 @@ if (empty($_SESSION['csrf_token'])) {
             <main class="col-md-10 ms-sm-auto col-lg-10 px-md-4">
 
                 <!-- Page title — centered -->
-                <h2 class="text-center mb-4 pt-3">Ask to Learn</h2>
+                <h2 class="text-center mb-4 pt-3">Ask to Reach</h2>
 
                 <!-- Prompt trigger — centered on the page.
                      WHY: clicking here opens the full prompt modal for focused writing. -->
@@ -1192,7 +1192,7 @@ if (empty($_SESSION['csrf_token'])) {
                             <!-- WHY: hidden but still in DOM so modal Ask can trigger askBtn.click() -->
                             <button type="button" id="askBtn" class="btn btn-dark" style="display:none;">Ask</button>
                             <!-- WHY: Deepen button appears after first successful query. Shows step-by-step workflow for current question -->
-                            <button type="button" id="deepenBtn" class="btn btn-outline-dark" style="display:none;">🔍 Deepen / Workflow</button>
+                            <button type="button" id="deepenBtn" class="btn btn-outline-dark" style="display:none;">🔍 Deepen Circle</button>
                             <!-- WHY: hidden but still in DOM so modal Clear and page Clear logic still works -->
                             <button type="button" id="clearBtn" class="btn btn-dark" style="display:none;">Clear</button>
                             <!-- WHY: depth badge shows current depth level (1-7) when deepening -->
@@ -1890,7 +1890,7 @@ if (empty($_SESSION['csrf_token'])) {
                         
                         var toolsHtml = '<div style="padding: 15px; overflow-y: auto; height: 100%;">' +
                             '<div style="margin-bottom: 15px;">' +
-                            '<button id="deepenBtnPanel" style="display: ' + showDeepenBtn + '; width: 100%; padding: 10px 16px; background: #dc3545; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; transition: all 0.3s ease;">🔍 Deepen / Get Workflow</button>' +
+                            '<button id="deepenBtnPanel" style="display: ' + showDeepenBtn + '; width: 100%; padding: 10px 16px; background: #dc3545; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; transition: all 0.3s ease;">🔍 Deepen Circle</button>' +
                             '</div>' +
                             '<h3 style="margin-top: 0; color: #333;">🔧 Recommended Tools</h3>' +
                             '<p style="color: #666; font-size: 13px;">For: <strong>' + (data.query_type || 'general') + '</strong></p>';
