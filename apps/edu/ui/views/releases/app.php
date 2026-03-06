@@ -179,6 +179,29 @@ try {
             color: rgba(255,255,255,0.8);
         }
 
+        /* Pinned Open Source item — always blue accent */
+        .release-item-pinned {
+            border-left: 4px solid var(--accent-color) !important;
+            background-color: rgba(13,110,253,0.05);
+        }
+        .release-item-pinned:hover {
+            background-color: rgba(13,110,253,0.12) !important;
+        }
+        .release-item-pinned.active-blue {
+            background-color: var(--accent-color) !important;
+            color: white !important;
+            border-color: var(--accent-color) !important;
+        }
+        .release-item-pinned.active-blue .release-date {
+            color: rgba(255,255,255,0.85);
+        }
+        .dark-mode .release-item-pinned {
+            background-color: rgba(13,110,253,0.15);
+        }
+        .dark-mode .release-item-pinned.active-blue {
+            background-color: var(--accent-color) !important;
+        }
+
         /* Release content area */
         .release-content {
             background-color: #fff;
@@ -345,6 +368,10 @@ try {
             </div>
         <?php endif; ?>
 
+        <?php
+            // Determine active view: 'repos' (default) or a release ID
+            $showRepos = empty($_GET['id']);
+        ?>
         <div class="row">
             <!-- Releases list sidebar -->
             <div class="col-lg-3">
@@ -353,13 +380,22 @@ try {
                         <h5 class="mb-0"><i class="fas fa-list"></i> All Releases</h5>
                     </div>
                     <div class="releases-sidebar">
+                        <!-- Pinned Open Source item — always first, always blue -->
+                        <div class="release-item release-item-pinned <?php echo $showRepos ? 'active-blue' : ''; ?>"
+                             onclick="window.location.href='/releases'">
+                            <div class="fw-bold"><i class="fab fa-github"></i> Open Source Repositories</div>
+                            <div class="release-date">
+                                <i class="fas fa-code-branch"></i> github.com/Wheelder
+                            </div>
+                        </div>
+
                         <?php if (empty($releases)): ?>
                             <div class="p-3 text-center text-muted">
                                 <p>No releases yet.</p>
                             </div>
                         <?php else: ?>
                             <?php foreach ($releases as $release): ?>
-                                <div class="release-item <?php echo ($displayRelease && $displayRelease['id'] === $release['id']) ? 'active' : ''; ?>"
+                                <div class="release-item <?php echo (!$showRepos && $displayRelease && $displayRelease['id'] === $release['id']) ? 'active' : ''; ?>"
                                      onclick="window.location.href='?id=<?php echo $release['id']; ?>'">
                                     <?php if ($release['version']): ?>
                                         <span class="version-badge"><?php echo htmlspecialchars($release['version']); ?></span>
@@ -376,9 +412,26 @@ try {
                 </div>
             </div>
 
-            <!-- Release content area -->
+            <!-- Main content area -->
             <div class="col-lg-9">
-                <?php if ($displayRelease): ?>
+                <?php if ($showRepos): ?>
+                    <!-- DEFAULT: GitHub Repositories -->
+                    <div class="release-content" id="github-repos">
+                        <div class="release-header" style="border-bottom:2px solid #dee2e6; padding-bottom:1.5rem; margin-bottom:2rem;">
+                            <h2 style="font-weight:700;"><i class="fab fa-github"></i> Open Source Repositories</h2>
+                            <p style="color:var(--secondary-color); margin:0;">
+                                All Wheelder source code, proof of innovation, and project history — publicly available on GitHub.
+                            </p>
+                        </div>
+                        <div class="row g-3" id="repoCards">
+                            <div class="text-center py-4 text-muted" id="repoLoading">
+                                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                                <p class="mt-2">Loading repositories...</p>
+                            </div>
+                        </div>
+                    </div>
+                <?php elseif ($displayRelease): ?>
+                    <!-- Release detail view -->
                     <div class="release-content">
                         <div class="release-header">
                             <h1 class="release-title"><?php echo htmlspecialchars($displayRelease['title']); ?></h1>
@@ -401,7 +454,6 @@ try {
                             <?php echo $displayRelease['content']; ?>
                         </div>
 
-                        <!-- Display images if any -->
                         <?php if (!empty($displayRelease['images'])): ?>
                             <div class="mt-4">
                                 <h3>Images</h3>
@@ -415,7 +467,6 @@ try {
                             </div>
                         <?php endif; ?>
 
-                        <!-- Display videos if any -->
                         <?php if (!empty($displayRelease['videos'])): ?>
                             <div class="mt-4">
                                 <h3>Videos</h3>
@@ -432,7 +483,6 @@ try {
                             </div>
                         <?php endif; ?>
 
-                        <!-- Admin controls -->
                         <?php if (!empty($_SESSION['user_id'])): ?>
                             <div class="admin-controls">
                                 <a href="/releases/cms?edit=<?php echo $displayRelease['id']; ?>" class="btn btn-sm btn-primary">
@@ -453,27 +503,6 @@ try {
                         </div>
                     </div>
                 <?php endif; ?>
-            </div>
-        </div>
-
-        <!-- GitHub Repositories Section -->
-        <div class="row mt-5 mb-4">
-            <div class="col-12">
-                <div class="release-content" id="github-repos">
-                    <div class="release-header" style="border-bottom:2px solid #dee2e6; padding-bottom:1.5rem; margin-bottom:2rem;">
-                        <h2 style="font-weight:700;"><i class="fab fa-github"></i> Open Source Repositories</h2>
-                        <p style="color:var(--secondary-color); margin:0;">
-                            All Wheelder source code, proof of innovation, and project history — publicly available on GitHub.
-                        </p>
-                    </div>
-                    <div class="row g-3" id="repoCards">
-                        <!-- Populated by JavaScript -->
-                        <div class="text-center py-4 text-muted" id="repoLoading">
-                            <i class="fas fa-spinner fa-spin fa-2x"></i>
-                            <p class="mt-2">Loading repositories...</p>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
