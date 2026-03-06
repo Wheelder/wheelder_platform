@@ -5,7 +5,6 @@ include __DIR__ . '/AppController.php';
 // Include top.php for url() helper — center sits one level higher than /learn/backup,
 // so the relative path uses one fewer ../ segments.
 require_once dirname(dirname(dirname(dirname(dirname(__DIR__))))) . '/top.php';
-require_once dirname(__DIR__, 2) . '/layouts/legacy_split.php';
 
 $note = new AppController();
 

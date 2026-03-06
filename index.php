@@ -28,11 +28,11 @@ $isLocalDev = in_array($_SERVER['HTTP_HOST'] ?? '', ['localhost', '127.0.0.1'], 
 
 
 $router->route('/', function() use ($rootDemoKey, $isLocalDev) {
-    // WHY: root redirects to /center (the new prompt modal experience) with the demo key.
-    // This ensures all users see the latest enhanced UI with the spinning prompt modal.
+    // WHY: root redirects to /circular (the meta-AI orchestrator experience) with the demo key.
+    // This ensures all users see the latest Circular UI with tool recommendations.
     if ($isLocalDev) {
-        // Dev-mode toggle — skip the redirect entirely so localhost/wheelder/center stays reachable.
-        require 'apps/edu/ui/views/center/record.php';
+        // Dev-mode toggle — skip the redirect entirely so localhost/wheelder/circular stays reachable.
+        require 'apps/edu/ui/views/circular/record.php';
         return;
     }
 
@@ -45,13 +45,13 @@ $router->route('/', function() use ($rootDemoKey, $isLocalDev) {
         // Preserve any other query params while forcing the required key.
         $query['key'] = $rootDemoKey;
         $redirectQs = http_build_query($query);
-        // WHY: redirect to /center instead of /demo so users see the new prompt modal experience.
-        header('Location: /center' . ($redirectQs ? ('?' . $redirectQs) : ''), true, 302);
+        // WHY: redirect to /circular so users see the meta-AI orchestrator experience.
+        header('Location: /circular' . ($redirectQs ? ('?' . $redirectQs) : ''), true, 302);
         exit;
     }
 
-    // WHY: serve /center directly so the new prompt modal is available immediately.
-    require 'apps/edu/ui/views/center/record.php';
+    // WHY: serve /circular directly so the meta-AI orchestrator is available immediately.
+    require 'apps/edu/ui/views/circular/record.php';
 });
 
 // Optional: legacy landing page remains reachable for marketing screenshots
@@ -408,6 +408,11 @@ $router->route('/teach_api', function() {
     require 'apps/edu/api/teachAPI.php';
 });
 
+// --- Timeline — public innovation proof & timeline page (no auth) ---
+$router->route('/timeline', function() {
+    require 'apps/edu/ui/views/timeline/app.php';
+});
+
 // --- Portfolio — public developer portfolio page (no auth) ---
 $router->route('/portfolio', function() {
     require 'apps/edu/ui/views/portfolio/app.php';
@@ -451,6 +456,34 @@ $router->route('/portfolio_api', function() {
     require 'apps/edu/api/portfolioAPI.php';
 });
 
+if (!function_exists('renderLegacyView')) {
+    function renderLegacyView(string $relativePath): void
+    {
+        static $legacyBasePath = null;
+
+        if ($legacyBasePath === null) {
+            require_once __DIR__ . '/apps/edu/ui/views/_legacy_2024/bootstrap.php';
+            $legacyBasePath = $LEGACY_BASE_PATH ?? __DIR__;
+        }
+
+        $absolutePath = __DIR__ . '/' . ltrim($relativePath, '/');
+        if (!file_exists($absolutePath)) {
+            throw new RuntimeException('Legacy view not found: ' . $relativePath);
+        }
+
+        $previousDocRoot = $_SERVER['DOCUMENT_ROOT'] ?? null;
+        $_SERVER['DOCUMENT_ROOT'] = $legacyBasePath;
+
+        require $absolutePath;
+
+        if ($previousDocRoot === null) {
+            unset($_SERVER['DOCUMENT_ROOT']);
+        } else {
+            $_SERVER['DOCUMENT_ROOT'] = $previousDocRoot;
+        }
+    }
+}
+
 // ============================================================
 // TEMPORARY: Versioned routes for reviewing all historical app versions
 // WHY: lets us browse every generation side-by-side before restructuring
@@ -460,67 +493,67 @@ $router->route('/portfolio_api', function() {
 // --- legacy: April 2024 backup — the original "wheeleder" platform before it became "wheelder" ---
 // WHY: these are extracted from the wheeleder_latest_update_and_backup_04_02_2024 repo
 $router->route('/legacy/notes', function() {
-    require 'apps/edu/ui/views/_legacy_2024/notes/app.php';
+    renderLegacyView('apps/edu/ui/views/_legacy_2024/notes/app.php');
 });
 $router->route('/legacy/notes/cms', function() {
-    require 'apps/edu/ui/views/_legacy_2024/notes/cms/list.php';
+    renderLegacyView('apps/edu/ui/views/_legacy_2024/notes/cms/list.php');
 });
 $router->route('/legacy/notes/cms/learn', function() {
-    require 'apps/edu/ui/views/_legacy_2024/notes/cms/learn.php';
+    renderLegacyView('apps/edu/ui/views/_legacy_2024/notes/cms/learn.php');
 });
 $router->route('/legacy/notes/cms/note-g', function() {
-    require 'apps/edu/ui/views/_legacy_2024/notes/cms/note_g.php';
+    renderLegacyView('apps/edu/ui/views/_legacy_2024/notes/cms/note_g.php');
 });
 $router->route('/legacy/notes/cms/topic', function() {
-    require 'apps/edu/ui/views/_legacy_2024/notes/cms/topic.php';
+    renderLegacyView('apps/edu/ui/views/_legacy_2024/notes/cms/topic.php');
 });
 $router->route('/legacy/notes/cms/view', function() {
-    require 'apps/edu/ui/views/_legacy_2024/notes/cms/view.php';
+    renderLegacyView('apps/edu/ui/views/_legacy_2024/notes/cms/view.php');
 });
 $router->route('/legacy/notes/cms/create', function() {
-    require 'apps/edu/ui/views/_legacy_2024/notes/cms/create.php';
+    renderLegacyView('apps/edu/ui/views/_legacy_2024/notes/cms/create.php');
 });
 $router->route('/legacy/notes/cms/edit', function() {
-    require 'apps/edu/ui/views/_legacy_2024/notes/cms/edit.php';
+    renderLegacyView('apps/edu/ui/views/_legacy_2024/notes/cms/edit.php');
 });
 $router->route('/legacy/notes/cms/delete', function() {
-    require 'apps/edu/ui/views/_legacy_2024/notes/cms/delete.php';
+    renderLegacyView('apps/edu/ui/views/_legacy_2024/notes/cms/delete.php');
 });
 $router->route('/legacy/blogs', function() {
-    require 'apps/edu/ui/views/_legacy_2024/blogs/app.php';
+    renderLegacyView('apps/edu/ui/views/_legacy_2024/blogs/app.php');
 });
 $router->route('/legacy/blogs/cms', function() {
-    require 'apps/edu/ui/views/_legacy_2024/blogs/cms/list.php';
+    renderLegacyView('apps/edu/ui/views/_legacy_2024/blogs/cms/list.php');
 });
 $router->route('/legacy/blogs/cms/create', function() {
-    require 'apps/edu/ui/views/_legacy_2024/blogs/cms/create.php';
+    renderLegacyView('apps/edu/ui/views/_legacy_2024/blogs/cms/create.php');
 });
 $router->route('/legacy/blogs/cms/edit', function() {
-    require 'apps/edu/ui/views/_legacy_2024/blogs/cms/edit.php';
+    renderLegacyView('apps/edu/ui/views/_legacy_2024/blogs/cms/edit.php');
 });
 $router->route('/legacy/blogs/cms/view', function() {
-    require 'apps/edu/ui/views/_legacy_2024/blogs/cms/view.php';
+    renderLegacyView('apps/edu/ui/views/_legacy_2024/blogs/cms/view.php');
 });
 $router->route('/legacy/blogs/cms/delete', function() {
-    require 'apps/edu/ui/views/_legacy_2024/blogs/cms/delete.php';
+    renderLegacyView('apps/edu/ui/views/_legacy_2024/blogs/cms/delete.php');
 });
 $router->route('/legacy/blogs/cms/topic', function() {
-    require 'apps/edu/ui/views/_legacy_2024/blogs/cms/topic.php';
+    renderLegacyView('apps/edu/ui/views/_legacy_2024/blogs/cms/topic.php');
 });
 $router->route('/legacy/search', function() {
-    require 'apps/edu/ui/views/_legacy_2024/search/search.php';
+    renderLegacyView('apps/edu/ui/views/_legacy_2024/search/search.php');
 });
 $router->route('/legacy/profile', function() {
-    require 'apps/edu/ui/views/_legacy_2024/profile/profile.php';
+    renderLegacyView('apps/edu/ui/views/_legacy_2024/profile/profile.php');
 });
 $router->route('/legacy/settings', function() {
-    require 'apps/edu/ui/views/_legacy_2024/settings/settings.php';
+    renderLegacyView('apps/edu/ui/views/_legacy_2024/settings/settings.php');
 });
 $router->route('/legacy/pricing', function() {
-    require 'apps/edu/ui/views/_legacy_2024/subscription/pricing.php';
+    renderLegacyView('apps/edu/ui/views/_legacy_2024/subscription/pricing.php');
 });
 $router->route('/legacy/read', function() {
-    require 'apps/edu/ui/views/_legacy_2024/read/index.html';
+    renderLegacyView('apps/edu/ui/views/_legacy_2024/read/index.html');
 });
 
 // --- v0: Notes App (Aug 2025 — the earliest, inline CSS/JS) ---
@@ -566,6 +599,27 @@ $router->route('/v2/learn', function() {
 // --- v3: Center (Feb 2026 — current production, enhanced from v2) ---
 $router->route('/v3/center', function() {
     require 'apps/edu/ui/views/center/record.php';
+});
+
+// --- Circular: Meta-AI Orchestrator (Mar 2026 — AI tool router and hub) ---
+$router->route('/circular', function() {
+    require 'apps/edu/ui/views/circular/record.php';
+});
+
+$router->route('/circular/ajax', function() {
+    require 'apps/edu/ui/views/circular/ajax_handler.php';
+});
+
+$router->route('/circular/setup', function() {
+    require 'apps/edu/ui/views/circular/setup.php';
+});
+
+$router->route('/circular/deepen', function() {
+    require 'apps/edu/ui/views/circular/deepen.php';
+});
+
+$router->route('/circular/deepen-store', function() {
+    require 'apps/edu/ui/views/circular/deepen_store.php';
 });
 
 // --- Handle the current request ---

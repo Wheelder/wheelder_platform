@@ -1,16 +1,14 @@
 <?php
-// $path = __DIR__;
-include __DIR__ . '/AppController.php';
+// Wheelder Circular - Meta-AI Orchestrator
+include __DIR__ . '/CircularController.php';
 
-// Include top.php for url() helper — center sits one level higher than /learn/backup,
-// so the relative path uses one fewer ../ segments.
+// Include top.php for url() helper
 require_once dirname(dirname(dirname(dirname(dirname(__DIR__))))) . '/top.php';
 require_once dirname(__DIR__, 2) . '/layouts/legacy_split.php';
 
-$note = new AppController();
-
- 
-$blog = $note;
+$circular = new CircularController();
+$note = $circular;
+$blog = $circular;
 
 // Auth is intentionally disabled for demo mode — anyone with the URL can use the app.
 // API costs are protected by: CSRF tokens (no forged requests) + rate limiting (10 req/60s per session).
@@ -18,65 +16,31 @@ $blog = $note;
 // $note->check_auth();
 
 // Fetch all past conversations for the sidebar (newest first)
-$conversations = $note->getConversations();
+$conversations = [];
+if (method_exists($circular, 'getConversations')) {
+    $conversations = $circular->getConversations();
+}
 
-// Central research thread — opens by default when no ?view= is supplied
-$defaultCenterSession = 'conv_698e63c6054173.74206200';
+// Pre-compute URLs for Circular
+$centerBaseUrl      = url('/circular');
+$centerAjaxEndpoint = url('/circular/ajax');
+$centerTtsEndpoint  = url('/circular/tts');
 
-// Pre-compute URLs so we can seamlessly point to the root path (no /center in the address bar)
-$centerBaseUrl      = url('/');
-$centerAjaxEndpoint = url('/center/ajax');
-$centerTtsEndpoint  = url('/center/tts');
-
-// If the user clicked a past conversation in the sidebar, load it via GET ?view=session_id
-// But NOT when a deepen POST is active — that means the user clicked "Circular Search/Deep Research"
-// and we need app_src.php to process the deeper request instead of showing the old stored answer
+// Load session history if viewing a past conversation
 $viewConversation = null;
-if (empty($_POST['deepen'])) {
-    $requestedSessionId = null;
-    if (!empty($_GET['view'])) {
-        // Sanitize the session_id from the URL to prevent injection
-        $requestedSessionId = htmlspecialchars($_GET['view'], ENT_QUOTES, 'UTF-8');
-    } elseif (!empty($defaultCenterSession)) {
-        $requestedSessionId = $defaultCenterSession;
-    }
-
-    if (!empty($requestedSessionId)) {
-        $viewConversation = $note->getConversationById($requestedSessionId);
-        if ($viewConversation && empty($_GET['view'])) {
-            // Mirror the default session into $_GET so active-state detection keeps working
-            $_GET['view'] = $requestedSessionId;
+if (!empty($_GET['view'])) {
+    $requestedSessionId = htmlspecialchars($_GET['view'], ENT_QUOTES, 'UTF-8');
+    if (method_exists($circular, 'getSessionHistory')) {
+        $sessionHistory = $circular->getSessionHistory($requestedSessionId);
+        // Convert to format expected by UI
+        if (!empty($sessionHistory)) {
+            $viewConversation = [$sessionHistory];
         }
     }
 }
 
-$lastEntryIndex = null;
+// Circular doesn't need image regeneration - focuses on tool recommendations
 $lastEntry = null;
-if (!empty($viewConversation)) {
-    // array_key_last keeps the structure intact even if numeric indexes are non-sequential.
-    $lastEntryIndex = function_exists('array_key_last') ? array_key_last($viewConversation) : (count($viewConversation) ? array_keys($viewConversation)[count($viewConversation) - 1] : null);
-    if ($lastEntryIndex !== null) {
-        $lastEntry = $viewConversation[$lastEntryIndex];
-
-        if (empty($lastEntry['image']) && !empty($lastEntry['question'])) {
-            try {
-                // WHY: legacy rows often lack image URLs, so we lazily regenerate one to keep the UI consistent.
-                $regeneratedImage = $note->generateImage($lastEntry['question']);
-                if (!empty($regeneratedImage)) {
-                    $viewConversation[$lastEntryIndex]['image'] = $regeneratedImage;
-                    $lastEntry = $viewConversation[$lastEntryIndex];
-
-                    if (method_exists($note, 'updateConversationImage') && !empty($lastEntry['id'])) {
-                        $note->updateConversationImage($lastEntry['id'], $regeneratedImage);
-                    }
-                }
-            } catch (Throwable $imgErr) {
-                // WHY: we log instead of surfacing to the user so UX remains smooth even if image regeneration fails.
-                error_log('center/record image regeneration failed: ' . $imgErr->getMessage());
-            }
-        }
-    }
-}
 
 // Only start a session if one isn't already active (avoids Notice when the router starts one)
 if (session_status() === PHP_SESSION_NONE) {
@@ -1220,15 +1184,18 @@ if (empty($_SESSION['csrf_token'])) {
 
                 <!-- Buttons row: Deepen + Depth badge only.
                      WHY: Ask and Clear are removed from here because they live inside the prompt modal now.
-                     The hidden askBtn and clearBtn are kept in the DOM (display:none) so existing JS handlers still work. -->
+                     The hidden askBtn and clearBtn are kept in the DOM (display:none) so existing JS handlers still work.
+                     Deepen button is shown after first successful query via JavaScript. -->
                 <div class="row justify-content-center">
                     <div class="col-md-8">
-                        <div class="d-flex gap-2 mb-3 flex-wrap">
+                        <div class="d-flex gap-2 mb-3 flex-wrap" id="controlsRow">
                             <!-- WHY: hidden but still in DOM so modal Ask can trigger askBtn.click() -->
                             <button type="button" id="askBtn" class="btn btn-dark" style="display:none;">Ask</button>
-                            <button type="button" id="deepenBtn" class="btn btn-outline-dark" style="display:none;">Circular Search/Deep Research</button>
+                            <!-- WHY: Deepen button appears after first successful query. Shows step-by-step workflow for current question -->
+                            <button type="button" id="deepenBtn" class="btn btn-outline-dark" style="display:none;">🔍 Deepen / Workflow</button>
                             <!-- WHY: hidden but still in DOM so modal Clear and page Clear logic still works -->
                             <button type="button" id="clearBtn" class="btn btn-dark" style="display:none;">Clear</button>
+                            <!-- WHY: depth badge shows current depth level (1-7) when deepening -->
                             <span id="depthBadge" class="badge bg-dark fs-6 ms-auto align-self-center" style="display:none;"></span>
                         </div>
                     </div>
@@ -1894,8 +1861,7 @@ if (empty($_SESSION['csrf_token'])) {
                 // Image() object, then render BOTH panels simultaneously once loaded.
 
                 // renderBothPanels — called once the image is ready (or on fallback)
-                // Renders the answer text and image at the same time so the user
-                // sees both panels appear together, not one-at-a-time
+                // Renders the answer text, tools panel, and image at the same time
                 function renderBothPanels(imageUrl) {
                     // Hide spinner now that everything is ready
                     loadingSpinner.style.display = 'none';
@@ -1916,8 +1882,50 @@ if (empty($_SESSION['csrf_token'])) {
                         '<div class="qa-answer">' + data.answer + '</div>';
                     scrollAnswerPanel();
 
-                    // Replace the image panel with the preloaded image + fullscreen + regenerate buttons
-                    if (imageUrl) {
+                    // Display recommended tools in the image panel if available
+                    // WHY: Circular's main feature is tool recommendations, so show them prominently
+                    if (data.recommended_tools && data.recommended_tools.length > 0) {
+                        // WHY: determine if deepen button should be visible based on depth level
+                        var showDeepenBtn = data.depth_level < 7 ? 'block' : 'none';
+                        
+                        var toolsHtml = '<div style="padding: 15px; overflow-y: auto; height: 100%;">' +
+                            '<div style="margin-bottom: 15px;">' +
+                            '<button id="deepenBtnPanel" style="display: ' + showDeepenBtn + '; width: 100%; padding: 10px 16px; background: #dc3545; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; transition: all 0.3s ease;">🔍 Deepen / Get Workflow</button>' +
+                            '</div>' +
+                            '<h3 style="margin-top: 0; color: #333;">🔧 Recommended Tools</h3>' +
+                            '<p style="color: #666; font-size: 13px;">For: <strong>' + (data.query_type || 'general') + '</strong></p>';
+                        
+                        // WHY: iterate through recommended tools and create clickable cards
+                        data.recommended_tools.forEach(function(tool, idx) {
+                            toolsHtml += '<div style="margin: 12px 0; padding: 12px; border: 1px solid #ddd; border-radius: 6px; background: #f9f9f9;">' +
+                                '<div style="font-weight: bold; color: #007bff; margin-bottom: 4px;">' + 
+                                (tool.name || 'Tool ' + (idx + 1)) + 
+                                '</div>' +
+                                '<div style="font-size: 12px; color: #666; margin-bottom: 6px;">' + 
+                                (tool.description || 'AI tool for ' + (tool.category || 'general') + ' tasks') + 
+                                '</div>';
+                            
+                            // WHY: provide direct link to tool if URL available
+                            if (tool.url) {
+                                toolsHtml += '<a href="' + tool.url + '" target="_blank" style="display: inline-block; padding: 6px 12px; background: #007bff; color: white; border-radius: 4px; font-size: 12px; text-decoration: none; margin-right: 6px;">Visit Tool →</a>';
+                            }
+                            
+                            // WHY: show how to use this tool
+                            if (tool.best_for) {
+                                toolsHtml += '<div style="font-size: 11px; color: #999; margin-top: 6px;">Best for: ' + tool.best_for + '</div>';
+                            }
+                            
+                            toolsHtml += '</div>';
+                        });
+                        
+                        toolsHtml += '<div style="margin-top: 15px; padding: 12px; background: #e7f3ff; border-radius: 6px; font-size: 12px; color: #0c5460;">' +
+                            '<strong>💡 Tip:</strong> Click the "Deepen" button in the top bar to get a step-by-step workflow using these tools.' +
+                            '</div>' +
+                            '</div>';
+                        
+                        imagePanel.innerHTML = toolsHtml;
+                    } else if (imageUrl) {
+                        // Fallback: show image if no tools available
                         imagePanel.innerHTML =
                             '<button class="img-fullscreen-btn" title="View fullscreen" onclick="openImageOverlay(this)">' +
                             '    <i class="fas fa-expand"></i>' +
@@ -1926,6 +1934,9 @@ if (empty($_SESSION['csrf_token'])) {
                             '    <i class="fas fa-redo"></i>' +
                             '</button>' +
                             '<img src="' + imageUrl + '" alt="Generated image"/>';
+                    } else {
+                        // No tools and no image: show empty state
+                        imagePanel.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">No tools or images available</div>';
                     }
 
                     // --- Add new thread to sidebar instantly (only for brand-new conversations) ---
@@ -1945,8 +1956,17 @@ if (empty($_SESSION['csrf_token'])) {
                     // Hide it if we've hit max depth (7)
                     if (data.depth_level < 7) {
                         deepenBtn.style.display = 'inline-block';
+                        // Also show the deepen button in the right panel
+                        var deepenBtnPanel = document.getElementById('deepenBtnPanel');
+                        if (deepenBtnPanel) {
+                            deepenBtnPanel.style.display = 'block';
+                        }
                     } else {
                         deepenBtn.style.display = 'none';
+                        var deepenBtnPanel = document.getElementById('deepenBtnPanel');
+                        if (deepenBtnPanel) {
+                            deepenBtnPanel.style.display = 'none';
+                        }
                     }
 
                     // Show or update the depth badge
@@ -1955,6 +1975,15 @@ if (empty($_SESSION['csrf_token'])) {
                         depthBadge.style.display = 'inline-block';
                     } else {
                         depthBadge.style.display = 'none';
+                    }
+
+                    // Attach click handler to the deepen button in the right panel
+                    var deepenBtnPanel = document.getElementById('deepenBtnPanel');
+                    if (deepenBtnPanel && !deepenBtnPanel._listenerAttached) {
+                        deepenBtnPanel.addEventListener('click', function () {
+                            deepenBtn.click();
+                        });
+                        deepenBtnPanel._listenerAttached = true;
                     }
 
                     // Re-enable buttons now that both panels are visible
@@ -2042,7 +2071,7 @@ if (empty($_SESSION['csrf_token'])) {
         });
 
         // ===========================================
-        // DEEPEN button — deepens the current answer by one level via AJAX
+        // DEEPEN button — opens workflow in new tab with Bootstrap nav-tabs
         // ===========================================
         deepenBtn.addEventListener('click', function () {
             // Safety: can't deepen without a prior conversation
@@ -2052,6 +2081,11 @@ if (empty($_SESSION['csrf_token'])) {
                 return;
             }
 
+            // Show spinner while generating workflow
+            loadingSpinner.style.display = 'block';
+            errorMsg.style.display = 'none';
+            deepenBtn.disabled = true;
+
             // Build form data for the Deepen request
             var formData = new FormData();
             formData.append('deepen', '1');
@@ -2059,9 +2093,76 @@ if (empty($_SESSION['csrf_token'])) {
             formData.append('original_question', ajaxState.originalQuestion);
             formData.append('prev_answer', ajaxState.prevAnswer);
             formData.append('session_id', ajaxState.sessionId);
+            formData.append('csrf_token', csrfToken);
+            if (accessKey) formData.append('access_key', accessKey);
 
-            // Pass the original question so it appears in the answer panel
-            sendAjax(formData, 'Deepening: ' + ajaxState.originalQuestion);
+            // WHY: fetch workflow data via AJAX, then open in new tab
+            fetch('<?php echo $centerAjaxEndpoint; ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(function (response) {
+                return response.text().then(function (text) {
+                    return { text: text, status: response.status, ct: response.headers.get('content-type') || '' };
+                });
+            })
+            .then(function (res) {
+                // Guard: check for valid JSON response
+                if (!res.text || !res.text.trim()) {
+                    throw new Error('Server returned an empty response');
+                }
+                if (res.ct.indexOf('application/json') === -1) {
+                    throw new Error('Server returned HTML instead of JSON');
+                }
+                try {
+                    return JSON.parse(res.text);
+                } catch (e) {
+                    throw new Error('Server returned invalid JSON');
+                }
+            })
+            .then(function (data) {
+                loadingSpinner.style.display = 'none';
+                
+                if (data.error) {
+                    errorMsg.textContent = data.error;
+                    errorMsg.style.display = 'block';
+                    deepenBtn.disabled = false;
+                    return;
+                }
+
+                // WHY: store workflow data in session via AJAX call to deepen.php
+                // This prepares the data for the new tab
+                var deepenData = new FormData();
+                deepenData.append('store_workflow', '1');
+                deepenData.append('answer', data.answer || '');
+                deepenData.append('recommended_tools', JSON.stringify(data.recommended_tools || []));
+                deepenData.append('query_type', data.query_type || 'general');
+                deepenData.append('original_question', data.original_question || ajaxState.originalQuestion);
+                deepenData.append('depth_level', data.depth_level || ajaxState.depthLevel + 1);
+                deepenData.append('csrf_token', csrfToken);
+
+                // WHY: send workflow data to backend to store in session
+                return fetch('<?php echo url('/circular/deepen-store'); ?>', {
+                    method: 'POST',
+                    body: deepenData
+                }).then(function(storeRes) {
+                    return storeRes.json();
+                }).then(function(storeData) {
+                    if (storeData.success) {
+                        // WHY: open deepen.php in new tab after data is stored
+                        window.open('<?php echo url('/circular/deepen'); ?>', 'deepen_workflow', 'width=1200,height=800');
+                        deepenBtn.disabled = false;
+                    } else {
+                        throw new Error('Failed to store workflow data');
+                    }
+                });
+            })
+            .catch(function (err) {
+                loadingSpinner.style.display = 'none';
+                errorMsg.textContent = 'Deepen failed: ' + err.message;
+                errorMsg.style.display = 'block';
+                deepenBtn.disabled = false;
+            });
         });
 
         // ===========================================
