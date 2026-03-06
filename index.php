@@ -352,6 +352,9 @@ $router->route('/release_new', function() {
 $router->route('/releases/cms', function() {
     require 'apps/edu/ui/views/releases/cms.php';
 });
+$router->route('/release/cms', function() {
+    require 'apps/edu/ui/views/releases/cms.php';
+});
 // --- Lesson app routes (mirrors /blog structure) ---
 
 $router->route('/lesson/cms', function() {
