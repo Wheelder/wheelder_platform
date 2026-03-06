@@ -122,6 +122,49 @@ class Login2Controller extends Controller
     }
 
     /**
+     * Authenticate user by email only (no password required)
+     * WHY: Simplified login for experimental/demo access
+     * 
+     * @param string $email User email
+     * @return array ['success' => bool, 'message' => string, 'error' => string]
+     */
+    public function authenticateByEmail($email)
+    {
+        // WHY: Normalize email
+        $email = strtolower(trim($email));
+
+        // WHY: Only allow hardcoded email
+        if ($email !== $this->allowedEmail) {
+            return ['success' => false, 'error' => 'This email is not authorized.'];
+        }
+
+        // WHY: Retrieve user from database
+        $user = $this->getUserByEmail($email);
+        if (!$user) {
+            // WHY: Auto-create user if not found (first-time setup)
+            $db = $this->connectDb();
+            $sql = "INSERT INTO users (email, user_type, user_status, date_created) VALUES (?, 'admin', 'active', ?)";
+            $stmt = $db->prepare($sql);
+            $now = date('Y-m-d H:i:s');
+            $stmt->bind_param('ss', $email, $now);
+            $stmt->execute();
+
+            $user = $this->getUserByEmail($email);
+            if (!$user) {
+                return ['success' => false, 'error' => 'Failed to create user account.'];
+            }
+        }
+
+        // WHY: Create secure session directly (no password check)
+        $this->createSession($user);
+
+        return [
+            'success' => true,
+            'message' => 'Login successful!'
+        ];
+    }
+
+    /**
      * Get user by email from database
      * WHY: Retrieves user record with prepared statement to prevent SQL injection
      * 

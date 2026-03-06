@@ -201,7 +201,7 @@ if (!empty($_SESSION['auth']) && !empty($_SESSION['log']) && $_SESSION['log'] ==
             <!-- WHY: Login header with title and subtitle -->
             <div class="login-header">
                 <h2>Welcome Back</h2>
-                <p>Sign in with your password</p>
+                <p>Sign in with your email</p>
             </div>
 
             <!-- WHY: Alert messages for errors and success -->
@@ -228,22 +228,6 @@ if (!empty($_SESSION['auth']) && !empty($_SESSION['log']) && $_SESSION['log'] ==
                     <small class="text-muted d-block mt-2">Only this email can log in</small>
                 </div>
 
-                <!-- WHY: Password is read from URL ?p= parameter so the user can bookmark the login link -->
-                <input type="hidden" name="password" value="<?php echo htmlspecialchars($_GET['p'] ?? '', ENT_QUOTES, 'UTF-8'); ?>" />
-
-                <!-- WHY: Remember me checkbox for persistent login -->
-                <div class="form-check">
-                    <input 
-                        type="checkbox" 
-                        class="form-check-input" 
-                        id="rememberMe" 
-                        name="remember_me"
-                    />
-                    <label class="form-check-label" for="rememberMe">
-                        Remember me for 30 days
-                    </label>
-                </div>
-
                 <!-- WHY: Login button with loading state -->
                 <button type="submit" class="btn-login" id="submitBtn">
                     <span id="btnText">Sign In</span>
@@ -254,10 +238,8 @@ if (!empty($_SESSION['auth']) && !empty($_SESSION['log']) && $_SESSION['log'] ==
                 </button>
             </form>
 
-            <!-- WHY: Footer with links to password reset and magic link login -->
+            <!-- WHY: Footer with link to magic link login -->
             <div class="login-footer">
-                <a href="<?php echo url('/password-reset'); ?>">Forgot your password?</a>
-                <div class="login-divider">or</div>
                 <a href="<?php echo url('/login'); ?>">Use magic link instead</a>
             </div>
         </div>

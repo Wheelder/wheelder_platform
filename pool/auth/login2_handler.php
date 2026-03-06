@@ -59,15 +59,14 @@ try {
         exit;
     }
 
-    // WHY: Get email and password from request
+    // WHY: Get email from request (password-free login for experiments)
     $email = trim($_POST['email'] ?? '');
-    $password = $_POST['password'] ?? '';
-    $rememberMe = isset($_POST['remember_me']) ? true : false;
+    $rememberMe = false;
 
     // WHY: Validate required fields
-    if (empty($email) || empty($password)) {
+    if (empty($email)) {
         http_response_code(400);
-        echo json_encode(['error' => 'Email and password are required.']);
+        echo json_encode(['error' => 'Email is required.']);
         exit;
     }
 
@@ -86,13 +85,6 @@ try {
     if ($email !== $allowedEmail) {
         http_response_code(401);
         echo json_encode(['error' => 'Invalid email or password.']);
-        exit;
-    }
-
-    // WHY: Validate password length (prevent extremely long inputs)
-    if (strlen($password) > 255) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Invalid password.']);
         exit;
     }
 
@@ -118,9 +110,9 @@ try {
         exit;
     }
 
-    // WHY: Authenticate user
+    // WHY: Authenticate user (email-only, no password)
     $login2 = new Login2Controller();
-    $result = $login2->authenticate($email, $password, $rememberMe);
+    $result = $login2->authenticateByEmail($email);
 
     if ($result['success']) {
         http_response_code(200);
