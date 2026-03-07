@@ -185,6 +185,35 @@ $router->route('/dev', function() {
     require 'pool/dev/vackup/versions.php';
 });
 
+// --- Vackup Platform (Version Control + Backup) ---
+$router->route('/vackup', function() {
+    require 'vackup/index.php';
+});
+
+$router->route('/vackup/projects', function() {
+    require 'vackup/projects.php';
+});
+
+$router->route('/vackup/projects/new', function() {
+    require 'vackup/projects_new.php';
+});
+
+$router->route('/vackup/projects/edit', function() {
+    require 'vackup/projects_edit.php';
+});
+
+$router->route('/vackup/history', function() {
+    require 'vackup/history.php';
+});
+
+$router->route('/vackup/settings', function() {
+    require 'vackup/settings.php';
+});
+
+$router->route('/vackup/setup', function() {
+    require 'vackup/config/setup.php';
+});
+
 $router->route('/backup', function() {
     if (empty($_SESSION['user_id'])) {
         http_response_code(404);
@@ -224,10 +253,10 @@ $router->route('/demo', function() {
     require 'apps/edu/ui/views/learn/backup/record.php';
 });
 
-// Center app — redirect to /circular for now
+// Center app — temporarily serve Center directly (was redirecting to /circular)
 $router->route('/center', function() {
-    header('Location: /circular');
-    exit;
+    // WHY: allow testing Center without circular redirect
+    require 'apps/edu/ui/views/center/record.php';
 });
 
 // AJAX endpoint for the /demo page — handles Ask and Deepen requests without page reload
