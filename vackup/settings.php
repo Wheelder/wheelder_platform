@@ -1,50 +1,92 @@
 <?php
 /**
  * Vackup - Global Settings
+ * WHY: Manage global configuration for Vackup (storage paths, GitHub tokens)
  */
 
+// WHY: Prevent session conflicts when included from router
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+// WHY: Load database connection and config constants
 require_once __DIR__ . '/config/config.php';
 
-$db = VackupDatabase::getInstance();
+// WHY: Initialize database connection early to avoid scope issues
+try {
+    $db = VackupDatabase::getInstance();
+} catch (Exception $e) {
+    die("Database connection failed: " . htmlspecialchars($e->getMessage()));
+}
+
 $message = '';
 $messageType = '';
 
-// Get current settings
+/**
+ * Get setting value from database
+ * WHY: Centralized settings retrieval with fallback to default
+ * @param string $key Setting key
+ * @param mixed $default Default value if not found
+ * @return mixed Setting value or default
+ */
 function getSetting($key, $default = '') {
     global $db;
-    $stmt = $db->prepare("SELECT value FROM settings WHERE key = :key");
-    $stmt->bindValue(':key', $key, PDO::PARAM_STR);
-    $stmt->execute();
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    return $row ? $row['value'] : $default;
+    try {
+        $stmt = $db->prepare("SELECT value FROM settings WHERE key = :key");
+        $stmt->bindValue(':key', $key, PDO::PARAM_STR);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ? $row['value'] : $default;
+    } catch (Exception $e) {
+        // WHY: Return default on error to prevent page break
+        error_log("getSetting error for key '$key': " . $e->getMessage());
+        return $default;
+    }
 }
 
+/**
+ * Set or update setting in database
+ * WHY: Upsert pattern - update if exists, insert if new
+ * @param string $key Setting key
+ * @param string $value Setting value
+ * @return bool Success status
+ */
 function setSetting($key, $value) {
     global $db;
-    $existing = getSetting($key, null);
-    if ($existing !== null) {
-        $stmt = $db->prepare("UPDATE settings SET value = :value, updated_at = datetime('now') WHERE key = :key");
-    } else {
-        $stmt = $db->prepare("INSERT INTO settings (key, value) VALUES (:key, :value)");
+    try {
+        $existing = getSetting($key, null);
+        if ($existing !== null) {
+            $stmt = $db->prepare("UPDATE settings SET value = :value, updated_at = datetime('now') WHERE key = :key");
+        } else {
+            $stmt = $db->prepare("INSERT INTO settings (key, value) VALUES (:key, :value)");
+        }
+        $stmt->bindValue(':key', $key, PDO::PARAM_STR);
+        $stmt->bindValue(':value', $value, PDO::PARAM_STR);
+        return $stmt->execute();
+    } catch (Exception $e) {
+        error_log("setSetting error for key '$key': " . $e->getMessage());
+        return false;
     }
-    $stmt->bindValue(':key', $key, PDO::PARAM_STR);
-    $stmt->bindValue(':value', $value, PDO::PARAM_STR);
-    return $stmt->execute();
 }
 
+// WHY: Handle form submission for saving settings
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    setSetting('default_local_storage', $_POST['default_local_storage'] ?? '');
-    setSetting('default_onedrive_path', $_POST['default_onedrive_path'] ?? '');
-    setSetting('default_gdrive_path', $_POST['default_gdrive_path'] ?? '');
-    setSetting('github_default_token', $_POST['github_default_token'] ?? '');
+    $success = true;
+    $success = $success && setSetting('default_local_storage', $_POST['default_local_storage'] ?? '');
+    $success = $success && setSetting('default_onedrive_path', $_POST['default_onedrive_path'] ?? '');
+    $success = $success && setSetting('default_gdrive_path', $_POST['default_gdrive_path'] ?? '');
+    $success = $success && setSetting('github_default_token', $_POST['github_default_token'] ?? '');
     
-    $message = 'Settings saved successfully';
-    $messageType = 'success';
+    if ($success) {
+        $message = 'Settings saved successfully';
+        $messageType = 'success';
+    } else {
+        $message = 'Error saving some settings. Check error log.';
+        $messageType = 'danger';
+    }
 }
 
+// WHY: Load current settings for display in form
 $settings = [
     'default_local_storage' => getSetting('default_local_storage', DEFAULT_LOCAL_STORAGE),
     'default_onedrive_path' => getSetting('default_onedrive_path', ''),
