@@ -23,27 +23,56 @@ class VackupEngine
      */
     public function createVackup($projectId, $version, $label, $description = '', $notes = '')
     {
-        // Get project details
+        // WHY: Retrieve project configuration from database
         $project = $this->getProject($projectId);
         if (!$project) {
-            return ['success' => false, 'error' => 'Project not found'];
+            return ['success' => false, 'error' => 'Project not found in database'];
         }
 
         $this->projectPath = $project['project_path'];
         $this->projectName = $project['name'];
         $this->excludePatterns = json_decode($project['exclude_patterns'] ?? '[]', true) ?: [];
 
-        // Generate filename: {project}-v{version}-{label}.zip
+        // WHY: Validate project directory exists before attempting backup
+        if (!is_dir($this->projectPath)) {
+            return [
+                'success' => false, 
+                'error' => "Project directory not found: {$this->projectPath}. Please update the project path in project settings."
+            ];
+        }
+
+        // WHY: Validate project directory is readable
+        if (!is_readable($this->projectPath)) {
+            return [
+                'success' => false,
+                'error' => "Project directory is not readable: {$this->projectPath}. Check file permissions."
+            ];
+        }
+
+        // WHY: Generate semantic filename following convention: {project}-v{version}-{label}.zip
         $safeLabel = $this->sanitizeFilename($label);
         $zipFilename = "{$this->projectName}-v{$version}-{$safeLabel}.zip";
 
-        // Determine storage paths
+        // WHY: Determine storage location with fallback to default
         $localPath = $project['local_storage_path'] ?: DEFAULT_LOCAL_STORAGE;
         $zipPath = rtrim($localPath, '/\\') . '/' . $zipFilename;
 
-        // Ensure directory exists
+        // WHY: Create storage directory if it doesn't exist, with error handling
         if (!is_dir($localPath)) {
-            mkdir($localPath, 0755, true);
+            if (!@mkdir($localPath, 0755, true)) {
+                return [
+                    'success' => false,
+                    'error' => "Failed to create storage directory: {$localPath}. Check parent directory permissions."
+                ];
+            }
+        }
+
+        // WHY: Validate storage directory is writable
+        if (!is_writable($localPath)) {
+            return [
+                'success' => false,
+                'error' => "Storage directory is not writable: {$localPath}. Check directory permissions (needs 755 or 775)."
+            ];
         }
 
         // Create the zip
