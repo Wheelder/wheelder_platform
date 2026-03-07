@@ -116,6 +116,31 @@ class VackupMigration
         ");
     }
 
+    /**
+     * WHY: Add column for storing the GitHub release asset download URL.
+     * The github_commit_sha column already exists from the original schema.
+     * SQLite doesn't have IF NOT EXISTS for ALTER TABLE, so we check first.
+     */
+    public function add_github_asset_column()
+    {
+        try {
+            $result = $this->db->query("PRAGMA table_info(vackups)");
+            $columns = [];
+            while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
+                $columns[] = $row['name'];
+            }
+
+            if (!in_array('github_asset_url', $columns)) {
+                $this->db->exec("ALTER TABLE vackups ADD COLUMN github_asset_url TEXT");
+                echo "Column <strong>github_asset_url</strong> added to vackups table<br>";
+            } else {
+                echo "Column <strong>github_asset_url</strong> already exists, skipping<br>";
+            }
+        } catch (Exception $e) {
+            echo "Error adding github_asset_url column: " . $e->getMessage() . "<br>";
+        }
+    }
+
     public function runAll()
     {
         echo "<h3>Vackup Database Migration</h3>";
@@ -126,6 +151,7 @@ class VackupMigration
         $this->vackups_table();
         $this->settings_table();
         $this->notes_table();
+        $this->add_github_asset_column();
 
         echo "<hr>";
         echo "<p><strong>Migration complete.</strong></p>";

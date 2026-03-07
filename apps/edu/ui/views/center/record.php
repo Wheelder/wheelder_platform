@@ -314,6 +314,7 @@ $extraHead = ob_get_clean();
 ob_start();
 ?>
 <span class="center-toolbar d-flex align-items-center gap-1 flex-wrap">
+    <button type="button" class="btn btn-outline-dark btn-sm" data-legacy-toggle="#legacySidebar" aria-expanded="false" aria-controls="legacySidebar" title="Toggle sidebar">=</button>
     <i id="start" class="fas fa-play" title="Read aloud"></i>
     <i id="pause" class="fas fa-pause" title="Pause"></i>
     <i id="resume" class="fas fa-step-forward" title="Resume"></i>
@@ -800,6 +801,11 @@ ob_start();
                 else depthBadge.style.display = 'none';
 
                 askBtn.disabled = false; deepenBtn.disabled = false;
+
+                // WHY: trigger auto-show hook after answer is rendered and panels are populated
+                if (typeof window.onAnswerGenerated === 'function') {
+                    try { window.onAnswerGenerated(); } catch (e) { console.error('onAnswerGenerated hook failed:', e); }
+                }
             }
 
             if (data.image) {
@@ -999,6 +1005,20 @@ ob_start();
             }).catch(function (e) { console.error('Failed to exit fullscreen mode: ', e); });
         }
     });
+
+    // WHY: Auto-show panels after answer generation. Panels are visible by default;
+    // this hook fires when AJAX completes to ensure smooth UX after response arrives.
+    window.onAnswerGenerated = function() {
+        try {
+            var answerPanel = document.getElementById('answerPanel');
+            var imagePanel = document.getElementById('imagePanel');
+            // WHY: show() ensures panels are visible after answer arrives; safe if already visible
+            if (answerPanel) answerPanel.style.display = 'block';
+            if (imagePanel) imagePanel.style.display = 'block';
+        } catch (e) {
+            console.error('Failed to show panels after answer generation:', e);
+        }
+    };
 </script>
 <?php
 $extraScripts = ob_get_clean();
@@ -1012,7 +1032,7 @@ renderLegacySplitLayout([
     'created_label'  => 'Created · Aug 2023',
     'toolbar'        => $toolbarHtml,
     'sidebar'        => $sidebarHtml,
-    'sidebar_hidden' => true,
+    'sidebar_hidden' => false,
     'above_panels'   => $abovePanelsHtml,
     'left'           => $leftPaneHtml,
     'right'          => $rightPaneHtml,

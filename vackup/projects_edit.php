@@ -184,6 +184,7 @@ $excludePatternsText = implode("\n", $excludePatterns);
                                         <label class="form-label">GitHub Repository</label>
                                         <input type="text" class="form-control" name="github_repo"
                                                value="<?= htmlspecialchars($project['github_repo']) ?>">
+                                        <small class="text-muted">Format: owner/repo (e.g., Wheelder/my-project). Full GitHub URLs also accepted.</small>
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">GitHub Token</label>
@@ -191,10 +192,10 @@ $excludePatternsText = implode("\n", $excludePatterns);
                                                value="<?= htmlspecialchars($project['github_token']) ?>">
                                     </div>
                                     <div class="form-check">
-                                        <input type="checkbox" class="form-check-input" name="auto_push_github" 
+                                        <input type="checkbox" class="form-check-input" name="auto_push_github"
                                                id="auto_push_github" <?= $project['auto_push_github'] ? 'checked' : '' ?>>
                                         <label class="form-check-label" for="auto_push_github">
-                                            Auto-create GitHub release
+                                            Auto-commit, push & create GitHub release on each Vackup
                                         </label>
                                     </div>
                                 </div>

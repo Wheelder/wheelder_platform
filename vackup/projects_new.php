@@ -179,7 +179,7 @@ $defaultExcludes = implode("\n", [
                                         <label class="form-label">GitHub Repository</label>
                                         <input type="text" class="form-control" name="github_repo"
                                                placeholder="e.g., username/repo-name">
-                                        <small class="text-muted">Format: owner/repository</small>
+                                        <small class="text-muted">Format: owner/repo (e.g., Wheelder/my-project). Full GitHub URLs also accepted.</small>
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">GitHub Personal Access Token</label>
@@ -190,7 +190,7 @@ $defaultExcludes = implode("\n", [
                                     <div class="form-check">
                                         <input type="checkbox" class="form-check-input" name="auto_push_github" id="auto_push_github">
                                         <label class="form-check-label" for="auto_push_github">
-                                            Auto-create GitHub release on each Vackup
+                                            Auto-commit, push & create GitHub release on each Vackup
                                         </label>
                                     </div>
                                 </div>

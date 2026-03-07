@@ -47,6 +47,64 @@ class GitHubClient
     }
 
     /**
+     * Upload a file as a release asset (the zip backup)
+     * WHY: GitHub Release API creates the release metadata, but the actual
+     * zip file must be uploaded separately via uploads.github.com endpoint.
+     * This is a binary upload, not JSON, so it needs different headers.
+     */
+    public function uploadReleaseAsset($repo, $releaseId, $filePath, $filename)
+    {
+        // WHY: GitHub release asset uploads go to uploads.github.com, not api.github.com
+        $uploadUrl = "https://uploads.github.com/repos/{$repo}/releases/{$releaseId}/assets?name=" . urlencode($filename);
+
+        $fileSize = filesize($filePath);
+
+        $headers = [
+            'Accept: application/vnd.github.v3+json',
+            'Authorization: Bearer ' . $this->token,
+            'User-Agent: Vackup-Platform',
+            'Content-Type: application/zip',
+            'Content-Length: ' . $fileSize
+        ];
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $uploadUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_POST, true);
+        // WHY: Read file as binary for upload; fine for typical Vackup zips under 100MB
+        curl_setopt($ch, CURLOPT_POSTFIELDS, file_get_contents($filePath));
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        // WHY: Large zips may take a while to upload; default 30s timeout is too short
+        curl_setopt($ch, CURLOPT_TIMEOUT, 300);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        if ($error) {
+            return ['success' => false, 'error' => 'Upload failed: ' . $error];
+        }
+
+        $decoded = json_decode($response, true);
+
+        if ($httpCode === 201 && isset($decoded['id'])) {
+            return [
+                'success' => true,
+                'asset_id' => $decoded['id'],
+                'download_url' => $decoded['browser_download_url'] ?? '',
+                'size' => $decoded['size'] ?? $fileSize
+            ];
+        }
+
+        return [
+            'success' => false,
+            'error' => $decoded['message'] ?? "Upload failed with HTTP {$httpCode}"
+        ];
+    }
+
+    /**
      * Get repository info
      */
     public function getRepo($repo)

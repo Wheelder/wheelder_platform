@@ -44,6 +44,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if ($result['success']) {
             $message = "Vackup v{$version} created successfully! ({$result['zip_size']}, {$result['files_count']} files)";
+
+            // WHY: Show git commit info so user knows the push succeeded
+            if (!empty($result['git_result'])) {
+                $gr = $result['git_result'];
+                if ($gr['success']) {
+                    if (!empty($gr['skipped'])) {
+                        $message .= " | Git: No changes to commit";
+                    } else {
+                        $shortSha = substr($gr['sha'], 0, 7);
+                        $message .= " | Git: Committed & pushed ({$shortSha})";
+                    }
+                } else {
+                    $message .= " | Git: " . ($gr['error'] ?? 'Failed');
+                }
+            }
+
+            // WHY: Show GitHub release info including asset upload status
+            if (!empty($result['github_result'])) {
+                $ghr = $result['github_result'];
+                if ($ghr['success']) {
+                    $message .= " | Release created";
+                    if (!empty($ghr['asset_url'])) {
+                        $message .= " (zip attached)";
+                    } elseif (!empty($ghr['asset_error'])) {
+                        $message .= " (zip upload failed)";
+                    }
+                }
+            }
+
             $messageType = 'success';
             // Refresh data
             $vackupHistory = $engine->getVackupHistory($selectedProjectId, 20);
@@ -382,6 +411,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <?php endif; ?>
                                         <?php if ($vackup['github_pushed']): ?>
                                         <span class="storage-badge github"><i class="fas fa-check"></i> GitHub</span>
+                                        <?php endif; ?>
+                                        <?php if (!empty($vackup['github_commit_sha'])): ?>
+                                        <span class="storage-badge" style="background: #f0f0f0; color: #333;">
+                                            <i class="fas fa-code-branch"></i> <?= substr($vackup['github_commit_sha'], 0, 7) ?>
+                                        </span>
                                         <?php endif; ?>
                                         <span class="text-muted small float-end">
                                             <?= $vackup['zip_size_formatted'] ?> • <?= $vackup['files_count'] ?> files

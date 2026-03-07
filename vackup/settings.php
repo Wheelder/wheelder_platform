@@ -12,7 +12,10 @@ if (session_status() === PHP_SESSION_NONE) {
 // WHY: Load database connection and config constants
 require_once __DIR__ . '/config/config.php';
 
-// WHY: Initialize database connection early to avoid scope issues
+// WHY: Declare $db in global scope so getSetting/setSetting functions can access it
+// When this file is require'd from a router closure, variables are local to that closure.
+// The functions use 'global $db', which looks in the global scope — so we must put $db there.
+global $db;
 try {
     $db = VackupDatabase::getInstance();
 } catch (Exception $e) {

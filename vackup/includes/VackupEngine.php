@@ -117,15 +117,60 @@ class VackupEngine
             $copyResults['gdrive'] = $this->copyToStorage($zipPath, $project['google_drive_path'], $zipFilename, $vackupId, 'gdrive');
         }
 
-        // Push to GitHub if enabled
+        // WHY: Git commit+push must happen BEFORE creating the GitHub release,
+        // because the release tag should point to a commit that exists on the remote.
+        $gitResult = null;
         $githubResult = null;
+
         if ($project['auto_push_github'] && !empty($project['github_repo']) && !empty($project['github_token'])) {
-            require_once __DIR__ . '/GitHubClient.php';
-            $github = new GitHubClient($project['github_token']);
-            $githubResult = $github->createRelease($project['github_repo'], $version, $label, $notes);
-            
-            if ($githubResult['success']) {
-                $this->db->exec("UPDATE vackups SET github_pushed = 1, github_tag = 'v{$version}' WHERE id = {$vackupId}");
+
+            // WHY: Normalize github_repo to 'owner/repo' format in case user stored full URL
+            $repo = $this->normalizeGitHubRepo($project['github_repo']);
+
+            // Phase 1: Git commit + push (local git operations)
+            require_once __DIR__ . '/GitClient.php';
+            $git = new GitClient($this->projectPath);
+
+            if ($git->isGitRepo()) {
+                $commitMessage = "Vackup v{$version} - {$label}";
+                $gitResult = $git->commitAndPush($commitMessage);
+
+                if ($gitResult['success'] && !empty($gitResult['sha'])) {
+                    // WHY: Store commit SHA immediately, even if release creation fails later
+                    $stmt = $this->db->prepare("UPDATE vackups SET github_commit_sha = :sha WHERE id = :id");
+                    $stmt->bindValue(':sha', $gitResult['sha'], PDO::PARAM_STR);
+                    $stmt->bindValue(':id', $vackupId, PDO::PARAM_INT);
+                    $stmt->execute();
+                }
+            } else {
+                $gitResult = ['success' => false, 'error' => 'Project directory is not a git repository'];
+            }
+
+            // Phase 2: GitHub Release + asset upload (API operations)
+            // WHY: Only create release if git push succeeded (or was skipped because no changes).
+            // A release without a pushed commit would create an orphan tag.
+            if ($gitResult['success']) {
+                require_once __DIR__ . '/GitHubClient.php';
+                $github = new GitHubClient($project['github_token']);
+                $githubResult = $github->createRelease($repo, $version, $label, $notes);
+
+                if ($githubResult['success']) {
+                    $this->db->exec("UPDATE vackups SET github_pushed = 1, github_tag = 'v{$version}' WHERE id = {$vackupId}");
+
+                    // WHY: Upload the zip as a release asset so users can download it
+                    // directly from the GitHub release page
+                    $assetResult = $github->uploadReleaseAsset($repo, $githubResult['release_id'], $zipPath, $zipFilename);
+                    if ($assetResult['success']) {
+                        $githubResult['asset_url'] = $assetResult['download_url'];
+                        $stmt = $this->db->prepare("UPDATE vackups SET github_asset_url = :url WHERE id = :id");
+                        $stmt->bindValue(':url', $assetResult['download_url'], PDO::PARAM_STR);
+                        $stmt->bindValue(':id', $vackupId, PDO::PARAM_INT);
+                        $stmt->execute();
+                    } else {
+                        // WHY: Asset upload failure is non-fatal; the release itself succeeded
+                        $githubResult['asset_error'] = $assetResult['error'];
+                    }
+                }
             }
         }
 
@@ -145,6 +190,7 @@ class VackupEngine
             'zip_size' => $this->formatBytes($zipSize),
             'files_count' => $filesCount,
             'copy_results' => $copyResults,
+            'git_result' => $gitResult,
             'github_result' => $githubResult
         ];
     }
@@ -364,5 +410,20 @@ class VackupEngine
         $pow = min($pow, count($units) - 1);
         $bytes /= pow(1024, $pow);
         return round($bytes, $precision) . ' ' . $units[$pow];
+    }
+
+    /**
+     * Normalize GitHub repo input to 'owner/repo' format
+     * WHY: Users might paste full GitHub URLs instead of 'owner/repo'.
+     * This handles both formats gracefully without requiring re-entry.
+     */
+    private function normalizeGitHubRepo($input)
+    {
+        $input = trim($input);
+        // WHY: Handle full URLs like https://github.com/Wheelder/wheelder_platform
+        if (preg_match('#github\.com/([^/]+/[^/]+?)(?:\.git)?$#i', $input, $matches)) {
+            return $matches[1];
+        }
+        return $input;
     }
 }

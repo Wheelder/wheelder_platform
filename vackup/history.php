@@ -120,6 +120,7 @@ function formatBytes($bytes, $precision = 2) {
                                     <th>Label</th>
                                     <th>Size</th>
                                     <th>Storage</th>
+                                    <th>Commit</th>
                                     <th>Created</th>
                                 </tr>
                             </thead>
@@ -139,6 +140,13 @@ function formatBytes($bytes, $precision = 2) {
                                         <?php if ($v['onedrive_copied']): ?><span class="storage-badge onedrive">OneDrive</span><?php endif; ?>
                                         <?php if ($v['gdrive_copied']): ?><span class="storage-badge gdrive">GDrive</span><?php endif; ?>
                                         <?php if ($v['github_pushed']): ?><span class="storage-badge github">GitHub</span><?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($v['github_commit_sha'])): ?>
+                                        <code class="small"><?= substr($v['github_commit_sha'], 0, 7) ?></code>
+                                        <?php else: ?>
+                                        <small class="text-muted">-</small>
+                                        <?php endif; ?>
                                     </td>
                                     <td><small><?= date('M j, Y g:ia', strtotime($v['created_at'])) ?></small></td>
                                 </tr>
