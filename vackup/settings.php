@@ -16,9 +16,9 @@ $messageType = '';
 function getSetting($key, $default = '') {
     global $db;
     $stmt = $db->prepare("SELECT value FROM settings WHERE key = :key");
-    $stmt->bindValue(':key', $key, SQLITE3_TEXT);
-    $result = $stmt->execute();
-    $row = $result->fetchArray(SQLITE3_ASSOC);
+    $stmt->bindValue(':key', $key, PDO::PARAM_STR);
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
     return $row ? $row['value'] : $default;
 }
 
@@ -30,8 +30,8 @@ function setSetting($key, $value) {
     } else {
         $stmt = $db->prepare("INSERT INTO settings (key, value) VALUES (:key, :value)");
     }
-    $stmt->bindValue(':key', $key, SQLITE3_TEXT);
-    $stmt->bindValue(':value', $value, SQLITE3_TEXT);
+    $stmt->bindValue(':key', $key, PDO::PARAM_STR);
+    $stmt->bindValue(':value', $value, PDO::PARAM_STR);
     return $stmt->execute();
 }
 
